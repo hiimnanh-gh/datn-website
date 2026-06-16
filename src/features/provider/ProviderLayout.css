@@ -1,0 +1,119 @@
+.provider-mock-login {
+  @apply min-h-screen bg-slate-50 flex items-center justify-center p-4;
+}
+
+.provider-mock-login .login-card {
+  @apply bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-slate-100;
+}
+
+.provider-mock-login .login-header {
+  @apply text-center mb-8;
+}
+
+.provider-mock-login .login-icon {
+  @apply w-12 h-12 text-orange-600 mx-auto mb-4;
+}
+
+.provider-mock-login .login-header h2 {
+  @apply text-2xl font-bold text-slate-800 mb-2;
+}
+
+.provider-mock-login .login-header p {
+  @apply text-slate-500;
+}
+
+.provider-mock-login .login-actions {
+  @apply space-y-4;
+}
+
+.provider-mock-login .btn {
+  @apply w-full py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center;
+}
+
+.provider-mock-login .btn-admin {
+  @apply bg-slate-800 hover:bg-slate-900 text-white;
+}
+
+.provider-mock-login .btn-staff {
+  @apply bg-orange-600 hover:bg-orange-700 text-white;
+}
+
+/* Layout Styles */
+.provider-layout {
+  @apply flex h-screen bg-slate-50 font-sans;
+}
+
+/* Sidebar */
+.provider-sidebar {
+  @apply w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800;
+}
+
+.provider-sidebar .sidebar-header {
+  @apply h-16 flex items-center px-6 border-b border-slate-800;
+}
+
+.provider-sidebar .sidebar-logo {
+  @apply w-8 h-8 text-orange-500 mr-3 shrink-0;
+}
+
+.provider-sidebar .sidebar-brand {
+  @apply flex flex-col min-w-0;
+}
+
+.provider-sidebar .brand-name {
+  @apply font-bold text-white truncate;
+}
+
+.provider-sidebar .brand-role {
+  @apply text-xs text-orange-400 font-medium tracking-wide uppercase;
+}
+
+.provider-sidebar .sidebar-nav {
+  @apply flex-1 px-4 py-6 space-y-2 overflow-y-auto;
+}
+
+.provider-sidebar .nav-link {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors hover:bg-slate-800 hover:text-white;
+}
+
+.provider-sidebar .nav-link.active {
+  @apply bg-orange-600 text-white;
+}
+
+/* Sidebar Footer */
+.provider-sidebar .sidebar-footer {
+  @apply p-4 border-t border-slate-800 bg-slate-900/50;
+}
+
+.provider-sidebar .user-info {
+  @apply flex items-center gap-3 mb-4 px-2;
+}
+
+.provider-sidebar .user-avatar {
+  @apply text-slate-400 shrink-0;
+}
+
+.provider-sidebar .user-details {
+  @apply flex flex-col overflow-hidden;
+}
+
+.provider-sidebar .user-name {
+  @apply text-sm font-bold text-white truncate;
+}
+
+.provider-sidebar .user-role-badge {
+  @apply text-[10px] uppercase tracking-wider font-semibold text-orange-200 bg-orange-600/30 px-1.5 py-0.5 rounded-sm inline-block mt-0.5 w-max;
+}
+
+.provider-sidebar .logout-btn {
+  @apply w-full flex items-center justify-center gap-2 py-2 px-3 rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors font-medium text-sm;
+}
+
+/* Main Content */
+.provider-main {
+  @apply flex-1 flex flex-col overflow-hidden;
+}
+
+.provider-main .main-content-wrapper {
+  @apply flex-1 overflow-y-auto p-8;
+}

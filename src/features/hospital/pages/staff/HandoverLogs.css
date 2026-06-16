@@ -1,0 +1,86 @@
+.handover-logs {
+  @apply w-full h-full space-y-6;
+}
+
+.page-header {
+  @apply flex justify-between items-end;
+}
+
+.header-actions {
+  @apply flex gap-3;
+}
+
+.btn-secondary {
+  @apply flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 px-4 py-2 rounded-lg font-medium transition-colors text-sm;
+}
+
+/* Table Container */
+.table-container {
+  @apply bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden;
+}
+
+.table-toolbar {
+  @apply p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 flex-wrap gap-4;
+}
+
+.search-box {
+  @apply relative max-w-md w-full;
+}
+
+.search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 text-slate-400;
+}
+
+.search-input {
+  @apply w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors text-sm;
+}
+
+.shift-summary {
+  @apply flex items-center gap-2 bg-teal-50 px-4 py-2 rounded-lg border border-teal-100;
+}
+
+.summary-label {
+  @apply text-sm font-semibold text-teal-800;
+}
+
+.summary-value {
+  @apply text-lg font-black text-teal-600;
+}
+
+/* Table Styles */
+.table-wrapper {
+  @apply overflow-x-auto;
+}
+
+.logs-table {
+  @apply w-full text-left border-collapse;
+}
+
+.logs-table th {
+  @apply px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50 whitespace-nowrap;
+}
+
+.logs-table td {
+  @apply px-6 py-4 border-b border-slate-50 text-sm whitespace-nowrap;
+}
+
+.logs-table tbody tr {
+  @apply hover:bg-slate-50/50 transition-colors;
+}
+
+/* Badges */
+.provider-badge {
+  @apply px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-700 rounded-md inline-block;
+}
+
+.status-badge {
+  @apply px-2.5 py-1 text-xs font-bold rounded-full inline-flex items-center gap-1.5 uppercase tracking-wide;
+}
+
+.status-badge.received {
+  @apply bg-green-100 text-green-700;
+}
+
+.empty-state {
+  @apply text-center py-12 text-slate-500 italic;
+}

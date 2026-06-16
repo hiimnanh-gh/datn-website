@@ -1,0 +1,90 @@
+.hospital-profile {
+  @apply w-full space-y-6;
+}
+
+.page-header {
+  @apply flex justify-between items-end;
+}
+
+.btn-save {
+  @apply flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors;
+}
+
+.profile-grid {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-6 items-start;
+}
+
+.profile-card {
+  @apply bg-white rounded-xl shadow-sm border border-slate-100 p-6;
+}
+
+.card-title {
+  @apply text-lg font-semibold text-slate-800 mb-4;
+}
+
+.card-description {
+  @apply text-sm text-slate-500 mb-6;
+}
+
+/* Form Styles */
+.form-group {
+  @apply mb-5;
+}
+
+.form-row {
+  @apply flex gap-4;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-slate-700 mb-1.5;
+}
+
+.input-wrapper {
+  @apply relative;
+}
+
+.input-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 text-slate-400;
+}
+
+.form-input {
+  @apply w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors text-slate-800;
+}
+
+/* Toggles List */
+.capabilities-list {
+  @apply space-y-4;
+}
+
+.capability-item {
+  @apply flex items-center justify-between p-4 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors;
+}
+
+.capability-info {
+  @apply flex flex-col;
+}
+
+.capability-name {
+  @apply font-medium text-slate-800;
+}
+
+.capability-desc {
+  @apply text-xs text-slate-500 mt-0.5;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  @apply relative w-11 h-6 bg-slate-200 rounded-full transition-colors duration-200 ease-in-out cursor-pointer shrink-0 border-2 border-transparent;
+}
+
+.toggle-switch.active {
+  @apply bg-teal-600;
+}
+
+.toggle-slider {
+  @apply absolute left-0 top-0 bg-white w-5 h-5 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out;
+}
+
+.toggle-switch.active .toggle-slider {
+  @apply translate-x-5;
+}

@@ -1,0 +1,101 @@
+.fleet-management {
+  @apply w-full h-full flex flex-col space-y-6;
+}
+
+.page-header {
+  @apply flex justify-between items-end;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-slate-800;
+}
+
+.page-subtitle {
+  @apply text-slate-500 mt-1;
+}
+
+.btn-add-unit {
+  @apply flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm;
+}
+
+.fleet-card {
+  @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col flex-1;
+}
+
+.fleet-toolbar {
+  @apply p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50;
+}
+
+.search-bar {
+  @apply relative w-full max-w-sm;
+}
+
+.search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 text-slate-400;
+}
+
+.search-input {
+  @apply w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-shadow text-sm;
+}
+
+.table-responsive {
+  @apply overflow-x-auto;
+}
+
+.fleet-table {
+  @apply w-full text-left border-collapse;
+}
+
+.fleet-table th {
+  @apply bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold py-3 px-6 border-b border-slate-200;
+}
+
+.fleet-table td {
+  @apply py-4 px-6 border-b border-slate-100 text-sm text-slate-700 align-middle;
+}
+
+.fleet-table tbody tr:hover {
+  @apply bg-slate-50/50 transition-colors;
+}
+
+.unit-id-cell {
+  @apply flex items-center gap-2;
+}
+
+/* Badges */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
+}
+
+.badge-success {
+  @apply bg-emerald-50 text-emerald-700 border-emerald-200;
+}
+
+.badge-warning {
+  @apply bg-amber-50 text-amber-700 border-amber-200;
+}
+
+.badge-danger {
+  @apply bg-red-50 text-red-700 border-red-200;
+}
+
+/* Actions */
+.action-buttons {
+  @apply flex items-center justify-end gap-2;
+}
+
+.btn-icon {
+  @apply p-2 rounded-md transition-colors text-slate-400 hover:text-slate-700;
+}
+
+.btn-edit:hover {
+  @apply text-blue-600 bg-blue-50;
+}
+
+.btn-delete:hover {
+  @apply text-red-600 bg-red-50;
+}
+
+.empty-state {
+  @apply text-center text-slate-500 py-8 italic;
+}

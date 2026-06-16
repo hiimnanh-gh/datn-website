@@ -1,0 +1,81 @@
+.bed-controller {
+  @apply w-full h-full;
+}
+
+.beds-grid {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-8;
+}
+
+.bed-control-card {
+  @apply bg-white rounded-3xl shadow-sm border-2 overflow-hidden flex flex-col relative transition-transform hover:-translate-y-1;
+}
+
+/* Color Themes */
+.color-red {
+  @apply border-red-100 shadow-red-100/50;
+}
+.color-red .icon-wrapper { @apply bg-red-100 text-red-600; }
+.color-red .current-count { @apply text-red-600; }
+.color-red .btn-plus { @apply bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border-red-100; }
+.color-red .btn-minus { @apply bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border-red-100; }
+
+.color-teal {
+  @apply border-teal-100 shadow-teal-100/50;
+}
+.color-teal .icon-wrapper { @apply bg-teal-100 text-teal-600; }
+.color-teal .current-count { @apply text-teal-600; }
+.color-teal .btn-plus { @apply bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white border-teal-100; }
+.color-teal .btn-minus { @apply bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white border-teal-100; }
+
+.color-purple {
+  @apply border-purple-100 shadow-purple-100/50;
+}
+.color-purple .icon-wrapper { @apply bg-purple-100 text-purple-600; }
+.color-purple .current-count { @apply text-purple-600; }
+.color-purple .btn-plus { @apply bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white border-purple-100; }
+.color-purple .btn-minus { @apply bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white border-purple-100; }
+
+/* Card Layout */
+.card-header {
+  @apply flex flex-col items-center justify-center pt-8 pb-4;
+}
+
+.icon-wrapper {
+  @apply w-20 h-20 rounded-2xl flex items-center justify-center mb-4;
+}
+
+.bed-label {
+  @apply text-2xl font-bold text-slate-800;
+}
+
+.card-body {
+  @apply flex flex-col items-center justify-center py-6 bg-slate-50 border-y border-slate-100;
+}
+
+.count-display {
+  @apply flex items-baseline gap-2;
+}
+
+.current-count {
+  @apply text-7xl font-black tabular-nums tracking-tighter;
+}
+
+.total-count {
+  @apply text-3xl font-bold text-slate-400;
+}
+
+.availability-label {
+  @apply text-sm font-bold text-slate-500 uppercase tracking-widest mt-2;
+}
+
+.card-actions {
+  @apply flex items-center justify-center p-6 gap-6;
+}
+
+.btn-control {
+  @apply w-24 h-24 rounded-2xl flex items-center justify-center transition-all border-2 disabled:opacity-30 disabled:cursor-not-allowed;
+}
+
+.zero-warning {
+  @apply absolute top-4 right-4 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 animate-pulse shadow-md shadow-red-600/30;
+}

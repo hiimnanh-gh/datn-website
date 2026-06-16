@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply m-0 p-0 antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Material Symbols baseline */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+    font-size: inherit;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@layer utilities {
+  @keyframes slide-in {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  .animate-slide-in {
+    animation: slide-in 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  /* Sidebar pulse dot */
+  .pulse-dot {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .45; }
+  }
+
+  /* Scrollbar - thin & subtle */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+}

@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* Mock Login Styles */
+  .hospital-mock-login {
+    @apply min-h-screen bg-slate-50 flex items-center justify-center p-4;
+  }
+  
+  .login-card {
+    @apply bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-slate-100;
+  }
+
+  .login-header {
+    @apply text-center mb-8;
+  }
+
+  .login-icon {
+    @apply w-12 h-12 text-teal-600 mx-auto mb-4;
+  }
+
+  .login-header h2 {
+    @apply text-2xl font-bold text-slate-800 mb-2;
+  }
+
+  .login-header p {
+    @apply text-slate-500;
+  }
+
+  .login-actions {
+    @apply space-y-4;
+  }
+
+  .btn {
+    @apply w-full py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center;
+  }
+
+  .btn-admin {
+    @apply bg-teal-600 hover:bg-teal-700 text-white;
+  }
+
+  .btn-staff {
+    @apply bg-blue-600 hover:bg-blue-700 text-white;
+  }
+
+  /* Layout Styles */
+  .hospital-layout {
+    @apply flex h-screen bg-slate-50 font-sans;
+  }
+
+  /* Sidebar */
+  .hospital-sidebar {
+    @apply w-64 bg-white border-r border-slate-200 flex flex-col;
+  }
+
+  .sidebar-header {
+    @apply h-16 flex items-center px-6 border-b border-slate-100;
+  }
+
+  .sidebar-logo {
+    @apply w-8 h-8 text-teal-600 mr-3 shrink-0;
+  }
+
+  .sidebar-brand {
+    @apply flex flex-col min-w-0;
+  }
+
+  .brand-name {
+    @apply font-bold text-slate-800 truncate;
+  }
+
+  .brand-role {
+    @apply text-xs text-slate-500 font-medium tracking-wide uppercase;
+  }
+
+  .sidebar-nav {
+    @apply flex-1 px-4 py-6 space-y-1 overflow-y-auto;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 font-medium transition-colors hover:bg-slate-50 hover:text-teal-600;
+  }
+
+  .nav-link.active {
+    @apply bg-teal-50 text-teal-700;
+  }
+
+  /* Sidebar Footer */
+  .sidebar-footer {
+    @apply p-4 border-t border-slate-100 bg-slate-50;
+  }
+
+  .user-info {
+    @apply flex items-center gap-3 mb-4 px-2;
+  }
+
+  .user-avatar {
+    @apply text-slate-400 shrink-0;
+  }
+
+  .user-details {
+    @apply flex flex-col overflow-hidden;
+  }
+
+  .user-name {
+    @apply text-sm font-bold text-slate-800 truncate;
+  }
+
+  .user-role-badge {
+    @apply text-[10px] uppercase tracking-wider font-semibold text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded-sm inline-block mt-0.5 w-max;
+  }
+
+  .logout-btn {
+    @apply w-full flex items-center justify-center gap-2 py-2 px-3 rounded-md text-red-600 hover:bg-red-50 transition-colors font-medium text-sm;
+  }
+
+  /* Main Content */
+  .hospital-main {
+    @apply flex-1 flex flex-col overflow-hidden;
+  }
+
+  .main-content-wrapper {
+    @apply flex-1 overflow-y-auto p-8;
+  }
+}

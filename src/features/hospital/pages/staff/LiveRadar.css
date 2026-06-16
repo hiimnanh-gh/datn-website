@@ -1,0 +1,123 @@
+.live-radar {
+  @apply w-full h-full flex flex-col space-y-6;
+}
+
+.radar-header {
+  @apply flex items-center justify-between bg-white p-6 rounded-xl shadow-sm border border-slate-100;
+}
+
+/* Status Toggle */
+.status-toggle-wrapper {
+  @apply flex items-center gap-4;
+}
+
+.status-label {
+  @apply text-sm font-semibold text-slate-500 uppercase tracking-wider;
+}
+
+.status-btn {
+  @apply flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-sm uppercase tracking-wide transition-all shadow-sm;
+}
+
+.status-accepting {
+  @apply bg-teal-600 text-white hover:bg-teal-700 shadow-teal-600/20;
+}
+
+.status-divert {
+  @apply bg-red-600 text-white hover:bg-red-700 shadow-red-600/20 animate-pulse;
+}
+
+/* Grid Layout */
+.radar-grid {
+  @apply flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden;
+}
+
+.radar-main {
+  @apply lg:col-span-2 flex flex-col;
+}
+
+.radar-sidebar {
+  @apply lg:col-span-1 flex flex-col;
+}
+
+.section-header {
+  @apply mb-4 flex items-center justify-between;
+}
+
+.section-title {
+  @apply text-lg font-bold text-slate-800;
+}
+
+/* Ambulance Cards */
+.ambulance-list {
+  @apply space-y-4 overflow-y-auto pr-2 pb-4;
+}
+
+.ambulance-card {
+  @apply p-5 rounded-xl border-2 shadow-sm transition-transform hover:-translate-y-1;
+}
+
+.card-top {
+  @apply flex justify-between items-start mb-4;
+}
+
+.amb-id {
+  @apply flex items-center gap-3;
+}
+
+.eta-badge {
+  @apply flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-bold;
+}
+
+.card-body {
+  @apply flex justify-between items-end;
+}
+
+.complaint {
+  @apply text-lg font-bold text-slate-800 mb-1;
+}
+
+.vitals {
+  @apply flex items-center gap-2 text-sm font-medium text-slate-500 bg-white/50 px-2 py-1 rounded-md inline-flex;
+}
+
+.status-indicator {
+  @apply flex items-center gap-2;
+}
+
+.status-dot {
+  @apply w-3 h-3 rounded-full;
+}
+
+/* Bed Summary */
+.bed-summary-cards {
+  @apply space-y-4;
+}
+
+.summary-card {
+  @apply bg-white p-5 rounded-xl border border-slate-100 shadow-sm;
+}
+
+.summary-header {
+  @apply flex items-center gap-2 font-bold mb-4 text-lg;
+}
+
+.summary-body {
+  @apply flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border border-slate-100;
+}
+
+.bed-count {
+  @apply flex items-baseline gap-1;
+}
+
+.count-value {
+  @apply text-4xl font-black;
+}
+
+.count-total {
+  @apply text-xl font-bold text-slate-400;
+}
+
+.count-label {
+  @apply text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1;
+}
