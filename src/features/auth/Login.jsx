@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
-import useHospitalAuthStore from '../../store/useHospitalAuthStore';
-import useProviderAuthStore from '../../store/useProviderAuthStore';
 
 /* ─── inline styles that can't be expressed cleanly in Tailwind ─── */
 const styles = {
@@ -132,20 +130,21 @@ const Login = () => {
     }
     setError('');
 
-    if (role === 'HOSPITAL') {
-      const hospitalRole = username.toLowerCase().includes('staff') ? 'HOSPITAL_STAFF' : 'HOSPITAL_ADMIN';
-      useHospitalAuthStore.getState().loginAs(hospitalRole);
-      navigate(hospitalRole === 'HOSPITAL_ADMIN' ? '/hospital/admin/dashboard' : '/hospital/staff/radar');
+    login(
+      { role, name: username },
+      'mock-jwt-token',
+    );
+
+    if (role === 'ADMIN') {
+      navigate('/admin/dashboard');
     } else if (role === 'PROVIDER') {
-      const providerRole = username.toLowerCase().includes('staff') ? 'PROVIDER_STAFF' : 'PROVIDER_ADMIN';
-      useProviderAuthStore.getState().loginAs(providerRole);
-      navigate(providerRole === 'PROVIDER_ADMIN' ? '/provider/admin/dashboard' : '/provider/staff/mission-control');
+      navigate('/provider/dashboard');
+    } else if (role === 'DISPATCHER') {
+      navigate('/dispatcher/hub');
+    } else if (role === 'DRIVER') {
+      navigate('/driver/mission');
     } else {
-      login(
-        { role, name: username },
-        'mock-jwt-token',
-      );
-      navigate(role === 'ADMIN' ? '/admin/dashboard' : '/dispatcher/hub');
+      navigate('/');
     }
   };
 
@@ -211,6 +210,22 @@ const Login = () => {
 
               <button
                 type="button"
+                onClick={() => setRole('PROVIDER')}
+                className={`
+                  rounded-lg border-2 py-2 text-sm font-semibold transition-all duration-200
+                  ${role === 'PROVIDER'
+                    ? 'border-orange-500 bg-orange-50 text-orange-700'
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'}
+                `}
+              >
+                <span className="material-symbols-outlined mr-1 align-middle text-[16px]">
+                  ambulance
+                </span>
+                Provider
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setRole('DISPATCHER')}
                 className={`
                   rounded-lg border-2 py-2 text-sm font-semibold transition-all duration-200
@@ -227,34 +242,18 @@ const Login = () => {
 
               <button
                 type="button"
-                onClick={() => setRole('HOSPITAL')}
+                onClick={() => setRole('DRIVER')}
                 className={`
                   rounded-lg border-2 py-2 text-sm font-semibold transition-all duration-200
-                  ${role === 'HOSPITAL'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                  ${role === 'DRIVER'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                     : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'}
                 `}
               >
                 <span className="material-symbols-outlined mr-1 align-middle text-[16px]">
-                  local_hospital
+                  drive_eta
                 </span>
-                Hospital
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setRole('PROVIDER')}
-                className={`
-                  rounded-lg border-2 py-2 text-sm font-semibold transition-all duration-200
-                  ${role === 'PROVIDER'
-                    ? 'border-orange-500 bg-orange-50 text-orange-700'
-                    : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'}
-                `}
-              >
-                <span className="material-symbols-outlined mr-1 align-middle text-[16px]">
-                  ambulance
-                </span>
-                Provider
+                Driver
               </button>
             </div>
           </div>
@@ -267,7 +266,7 @@ const Login = () => {
             <InputField
               id="username"
               label="Username / ID"
-              placeholder={(role === 'HOSPITAL' || role === 'PROVIDER') ? "Enter 'admin' or 'staff'" : "Enter your operator ID"}
+              placeholder={role === 'PROVIDER' ? "Enter your provider name" : role === 'DRIVER' ? "Enter driver ID" : "Enter operator ID"}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               icon="person"

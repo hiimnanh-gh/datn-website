@@ -13,7 +13,7 @@ const AdminLayout = () => {
   }
 
   return (
-    <div className="flex h-screen bg-[#f7f9fb] text-[#191c1e] overflow-hidden">
+    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
       {/* ── Sidebar ── */}
       <AdminSidebar
         open={sidebarOpen}
@@ -26,7 +26,7 @@ const AdminLayout = () => {
         <AdminTopbar onMenuClick={() => setSidebarOpen(true)} />
 
         {/* ── Scrollable page content ── */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
+        <main className="flex-1 overflow-y-auto bg-slate-950 p-0">
           <Outlet />
         </main>
       </div>

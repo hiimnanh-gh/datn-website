@@ -33,7 +33,7 @@ const DispatcherLayout = () => {
                 title={title}
                 className={`p-3 rounded-xl transition-all
                   ${active
-                    ? 'bg-slate-700 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
               >
                 {icon}

@@ -34,7 +34,7 @@ const AdminSidebar = ({ open, onClose }) => {
         id="mobile-sidebar"
         className={`
           fixed left-0 top-0 h-screen w-[260px] z-50 
-          bg-[#131b2e] shadow-xl 
+          bg-slate-900 border-r border-slate-800 shadow-xl 
           flex flex-col py-6
           transition-transform duration-300 ease-in-out
           ${open ? 'translate-x-0' : '-translate-x-full'}
@@ -60,8 +60,8 @@ const AdminSidebar = ({ open, onClose }) => {
               to={to}
               className={({ isActive }) =>
                 isActive
-                  ? 'flex items-center gap-3 px-4 py-2.5 bg-[#2563eb] text-white rounded-lg font-medium shadow-sm transition-transform active:scale-95'
-                  : 'flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors duration-200 rounded-lg font-medium active:scale-95'
+                  ? 'flex items-center gap-3 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-sm transition-transform active:scale-95'
+                  : 'flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors duration-200 rounded-lg font-medium active:scale-95'
               }
             >
               {({ isActive }) => (
@@ -82,7 +82,7 @@ const AdminSidebar = ({ open, onClose }) => {
         </nav>
 
         {/* ── Bottom actions ── */}
-        <div className="px-4 mt-auto pt-6 border-t border-white/10">
+        <div className="px-4 mt-auto pt-6 border-t border-slate-800">
           <button
             onClick={handleDispatchNow}
             className="w-full bg-[#ba1a1a] text-white font-medium text-[14px] py-2.5 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 mb-6 shadow-md flex items-center justify-center gap-2 active:scale-95"
@@ -98,8 +98,8 @@ const AdminSidebar = ({ open, onClose }) => {
                 to={to}
                 className={({ isActive }) =>
                   isActive
-                    ? 'flex items-center gap-3 px-4 py-2.5 bg-[#2563eb] text-white rounded-lg font-medium'
-                    : 'flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors duration-200 rounded-lg font-medium'
+                    ? 'flex items-center gap-3 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium'
+                    : 'flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors duration-200 rounded-lg font-medium'
                 }
               >
                 {({ isActive }) => (

@@ -1,73 +1,34 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Truck,
-  Megaphone,
-  RadioTower,
   LogOut,
   UserCircle2,
-  Ambulance
+  Ambulance,
+  DollarSign
 } from 'lucide-react';
-import useProviderAuthStore from '../../store/useProviderAuthStore';
+import useAuthStore from '../../store/useAuthStore';
 import './ProviderLayout.css';
 
 const ProviderLayout = () => {
-  const { user, isAuthenticated, loginAs, logout } = useProviderAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
 
-  // Mock login screen fallback
-  if (!isAuthenticated) {
-    return (
-      <div className="provider-mock-login">
-        <div className="login-card">
-          <div className="login-header">
-            <Ambulance className="login-icon" />
-            <h2>Provider Portal Login</h2>
-            <p>Select a role to continue</p>
-          </div>
-          <div className="login-actions">
-            <button 
-              className="btn btn-admin"
-              onClick={() => {
-                loginAs('PROVIDER_ADMIN');
-                navigate('/provider/admin/dashboard');
-              }}
-            >
-              Log in as Admin
-            </button>
-            <button 
-              className="btn btn-staff"
-              onClick={() => {
-                loginAs('PROVIDER_STAFF');
-                navigate('/provider/staff/mission-control');
-              }}
-            >
-              Log in as Dispatch Staff
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  if (!isAuthenticated || user?.role !== 'PROVIDER') {
+    return <Navigate to="/login" replace />;
   }
 
-  const isAdmin = user?.role === 'PROVIDER_ADMIN';
-
-  const adminLinks = [
-    { to: '/provider/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Analytics Dashboard' },
-    { to: '/provider/admin/fleet', icon: <Truck size={20} />, label: 'Fleet Management' },
-    { to: '/provider/admin/marketing', icon: <Megaphone size={20} />, label: 'Promotions' },
+  const links = [
+    { to: '/provider/dashboard', icon: <LayoutDashboard size={20} />, label: 'Analytics Dashboard' },
+    { to: '/provider/fleet', icon: <Truck size={20} />, label: 'Fleet Management' },
+    { to: '/provider/drivers', icon: <UserCircle2 size={20} />, label: 'Driver Accounts' },
+    { to: '/provider/commission', icon: <DollarSign size={20} />, label: 'Commission Settlement' },
   ];
-
-  const staffLinks = [
-    { to: '/provider/staff/mission-control', icon: <RadioTower size={20} />, label: 'Mission Control' },
-  ];
-
-  const links = isAdmin ? adminLinks : staffLinks;
 
   const handleLogout = () => {
     logout();
-    navigate('/provider');
+    navigate('/login');
   };
 
   return (
@@ -77,8 +38,8 @@ const ProviderLayout = () => {
         <div className="sidebar-header">
           <Ambulance className="sidebar-logo" />
           <div className="sidebar-brand">
-            <span className="brand-name">{user?.providerName}</span>
-            <span className="brand-role">{isAdmin ? 'Admin Portal' : 'Staff Portal'}</span>
+            <span className="brand-name">{user?.name || 'City EMS'}</span>
+            <span className="brand-role">Provider Portal</span>
           </div>
         </div>
 
@@ -100,7 +61,7 @@ const ProviderLayout = () => {
             <UserCircle2 size={24} className="user-avatar" />
             <div className="user-details">
               <span className="user-name">{user?.name}</span>
-              <span className="user-role-badge">{user?.role}</span>
+              <span className="user-role-badge">PROVIDER</span>
             </div>
           </div>
           <button className="logout-btn" onClick={handleLogout}>

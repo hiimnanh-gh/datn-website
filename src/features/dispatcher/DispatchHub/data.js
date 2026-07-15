@@ -2,38 +2,42 @@ export const MOCK_PROVIDERS = [
   {
     id: "PROV-01",
     name: "115 Sài Gòn Emergency",
-    fare: 1200000, // 1,200,000 VND
-    commissionRate: 0.15, // 15%
+    fare: 1200000,
+    commissionRate: 0.15,
     eta: "5 mins",
     distance: "1.5 km",
     rating: 4.8,
+    walletBalance: 3450.00,
   },
   {
     id: "PROV-02",
     name: "Family Medical Practice Services",
-    fare: 2500000, // 2,500,000 VND
-    commissionRate: 0.18, // 18%
+    fare: 2500000,
+    commissionRate: 0.18,
     eta: "8 mins",
     distance: "2.8 km",
     rating: 4.9,
+    walletBalance: 4800.00,
   },
   {
     id: "PROV-03",
     name: "FV Hospital Ambulance",
-    fare: 3000000, // 3,000,000 VND
-    commissionRate: 0.20, // 20%
+    fare: 3000000,
+    commissionRate: 0.20,
     eta: "11 mins",
     distance: "4.2 km",
     rating: 4.7,
+    walletBalance: 850.00,
   },
   {
     id: "PROV-04",
     name: "SOS Vietnam Rescue",
-    fare: 1800000, // 1,800,000 VND
-    commissionRate: 0.16, // 16%
+    fare: 1800000,
+    commissionRate: 0.16,
     eta: "14 mins",
     distance: "5.5 km",
     rating: 4.5,
+    walletBalance: 0.00, // Trigger INSUFFICIENT FUNDS
   },
 ];
 
@@ -53,6 +57,7 @@ export const INITIAL_INCIDENTS = [
     victimConditions: "Đau ngực dữ dội, ngất xỉu, bất tỉnh, khó thở thoi thóp",
     genderAge: "MALE 55",
     providerSelected: null,
+    userTier: "GOLD MEMBER - PRIORITY",
     transcription: [
       { time: "00:15", sender: "Caller", text: "Alo cứu hộ khẩn cấp phải không, chồng tôi tự nhiên lên cơn đau ngực rồi ngất xỉu giữa nhà rồi!" },
       { time: "00:22", sender: "Dispatcher", text: "Dạ chị bình tĩnh, ảnh còn tỉnh táo hay thở được không chị? Cho em xin địa chỉ chính xác ạ." },
@@ -75,7 +80,8 @@ export const INITIAL_INCIDENTS = [
     victimAddress: "Công viên Tao Đàn, Quận 1, TP.HCM",
     victimConditions: "Ngã gãy chân, nghi chấn thương đầu nhẹ, chảy máu đầu",
     genderAge: "MALE 28",
-    providerSelected: "Family Medical Practice Services",
+    providerSelected: "PROV-02",
+    userTier: "SILVER MEMBER",
     transcription: [
       { time: "00:10", sender: "Caller", text: "Tôi vừa bị ngã xe ở trong khu vực Công viên Tao Đàn, chân đau lắm không đi nổi, đầu hơi chảy máu." },
       { time: "00:18", sender: "Dispatcher", text: "Nhận thông tin yêu cầu của anh. Anh có muốn chỉ định đơn vị cứu hộ cụ thể nào không?" },
@@ -98,6 +104,7 @@ export const INITIAL_INCIDENTS = [
     victimConditions: "Lên cơn hen suyễn nặng, khó thở, tím tái môi, bình xịt hết thuốc",
     genderAge: "MALE 22",
     providerSelected: null,
+    userTier: "BRONZE MEMBER",
     transcription: [
       { time: "00:12", sender: "Caller", text: "Bạn tôi đang bị lên cơn hen suyễn cấp tính rất nặng ở Cư xá Thanh Đa, có bình xịt nhưng đã hết thuốc rồi!" },
       { time: "00:20", sender: "Dispatcher", text: "Dạ em hiểu, bạn anh có còn tỉnh táo tự thở được không, và có cần xe hỗ trợ khẩn cấp từ bên nào không?" },

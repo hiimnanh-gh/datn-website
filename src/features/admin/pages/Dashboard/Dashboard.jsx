@@ -1,611 +1,561 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import useTopbarStore from "../../../../store/useTopbarStore";
+import React, { useState, useEffect } from "react";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Cell
 } from "recharts";
-
-// Styles
-import "./Dashboard.css";
-
-// Sub-components
-import { FilterBtn } from "./FilterBtn";
-import { SectionHeader } from "./SectionHeader";
-import { KpiCard } from "./KpiCard";
-import { KpiDetailModal } from "./KpiDetailModal";
-
-// Data and helpers
 import {
-  generateDayData,
-  generateMonthData,
-  generateYearData,
-  responseTimeData,
-  incidentTypeData,
+  DollarSign,
+  TrendingUp,
+  Truck,
+  AlertTriangle,
+  RefreshCw,
+  Search,
+  UserCheck,
+  EyeOff,
+  Flag,
+  CheckCircle,
+  Database,
+  ArrowUpRight,
+  ShieldAlert
+} from "lucide-react";
+import useTopbarStore from "../../../../store/useTopbarStore";
+import {
+  PROVIDER_PERFORMANCE_DATA,
+  PROVIDERS_WALLETS,
+  INITIAL_REVIEWS,
   SEED_FEED,
-  TAG_STYLES,
+  TAG_STYLES
 } from "./data";
 
-/* ─────────────────────────── Main Page ──────────────────── */
-const VIEW_MODES = ["Năm", "Tháng", "Ngày"];
-const HOUR_RANGES = ["24h", "12h", "6h"];
-
 const Dashboard = () => {
-  const [activeCard, setActiveCard] = useState(null); // which KPI drawer is open
-  const [viewMode, setViewMode] = useState("Ngày");
-  const [hourRange, setHourRange] = useState("24h");
-  const [chartData, setChartData] = useState(() => generateDayData());
-  const [feedItems, setFeedItems] = useState(SEED_FEED);
-  const [cpuUsage, setCpuUsage] = useState(45);
-  const [dbLoad, setDbLoad] = useState(60);
-  const [wsNodes, setWsNodes] = useState(1240);
-  const [latency, setLatency] = useState(42);
+  // Live Sync & Mock States
   const [liveSync, setLiveSync] = useState(true);
   const [lastUpdate, setLastUpdate] = useState("just now");
+  
+  // Platform Metrics
+  const [platformRevenue, setPlatformRevenue] = useState(284500);
+  const [flaggedCount, setFlaggedCount] = useState(18);
+  
+  // Providers Table State
+  const [wallets, setWallets] = useState(PROVIDERS_WALLETS);
+  const [searchProvider, setSearchProvider] = useState("");
+  
+  // Reviews Feed State
+  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
+  const [feedItems, setFeedItems] = useState(SEED_FEED);
+
   const { setSlot, clearSlot } = useTopbarStore();
 
-  /* ── Topbar slot: LIVE badge + timestamp + toggle ── */
+  // Topbar LIVE indicator injection
   useEffect(() => {
     setSlot(
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 font-mono">
         <button
           onClick={() => setLiveSync((v) => !v)}
           className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full border transition-all ${
             liveSync
-              ? "bg-green-50 border-green-200 text-green-700"
-              : "bg-gray-100 border-gray-200 text-gray-500"
+              ? "bg-emerald-950/45 border-emerald-900 text-emerald-400"
+              : "bg-slate-900 border-slate-800 text-slate-500"
           }`}
         >
           <span
             className={`w-2 h-2 rounded-full ${
-              liveSync ? "bg-green-500 animate-pulse" : "bg-gray-400"
+              liveSync ? "bg-emerald-500 animate-pulse" : "bg-gray-600"
             }`}
           />
-          {liveSync ? "LIVE" : "PAUSED"}
+          {liveSync ? "AUTO-SYNC ACTIVE" : "PAUSED"}
         </button>
-        <span className="text-[11px] text-gray-400 hidden lg:block">
-          updated {lastUpdate}
+        <span className="text-[11px] text-slate-500 hidden lg:block">
+          rev: ${(platformRevenue).toLocaleString()}
         </span>
-      </div>,
+      </div>
     );
     return () => clearSlot();
-  }, [liveSync, lastUpdate]);
+  }, [liveSync, platformRevenue]);
 
-  /* Regenerate chart data on view mode change */
-  useEffect(() => {
-    if (viewMode === "Năm") setChartData(generateYearData());
-    if (viewMode === "Tháng") setChartData(generateMonthData());
-    if (viewMode === "Ngày") setChartData(generateDayData());
-    setHourRange("24h");
-  }, [viewMode]);
-
-  const displayData = useMemo(() => {
-    if (viewMode !== "Ngày") return chartData;
-    if (hourRange === "6h") return chartData.slice(18);
-    if (hourRange === "12h") return chartData.slice(12);
-    return chartData;
-  }, [chartData, viewMode, hourRange]);
-
-  const formatY = (v) => (viewMode === "Năm" ? `${(v / 1000).toFixed(0)}K` : v);
-  const tooltipLabel =
-    viewMode === "Năm" ? "Tháng" : viewMode === "Tháng" ? "Ngày" : "Giờ";
-
-  /* Live updates */
+  // Simulation loop for live feed & financials
   useEffect(() => {
     if (!liveSync) return;
-    const id = setInterval(() => {
-      setCpuUsage((v) =>
-        Math.min(95, Math.max(20, v + (Math.random() - 0.48) * 6)),
-      );
-      setDbLoad((v) =>
-        Math.min(95, Math.max(20, v + (Math.random() - 0.5) * 5)),
-      );
-      setWsNodes((v) =>
-        Math.min(
-          1500,
-          Math.max(900, v + Math.round((Math.random() - 0.5) * 20)),
-        ),
-      );
-      setLatency((v) =>
-        Math.min(200, Math.max(20, v + Math.round((Math.random() - 0.5) * 8))),
-      );
-      setLastUpdate(new Date().toLocaleTimeString());
-      if (Math.random() < 0.4) {
-        const tags = ["AUTH", "DISPATCH", "SYSTEM", "ALERT", "INFO"];
-        const msgs = [
-          "Heartbeat check passed on all 48 active units.",
-          "Fleet GPS sync completed in 1.1 s.",
-          "User session refreshed — token rotated.",
-          "WebSocket reconnect on Dispatcher #3.",
+    const interval = setInterval(() => {
+      // Randomly adjust platform revenue
+      setPlatformRevenue(prev => prev + Math.floor(Math.random() * 250) + 50);
+      
+      // Randomly trigger flagged warning or top-up simulation
+      if (Math.random() < 0.3) {
+        const events = [
+          {
+            tag: "FINANCE",
+            msg: `Provider top-up request processed. Wallet balance adjusted +$1,500.`
+          },
+          {
+            tag: "FRAUD",
+            msg: `GPS Telemetry audit: Speed limit anomaly detected on fleet 'FV Hospital Rescue'.`
+          },
+          {
+            tag: "SECURITY",
+            msg: `System scan: B2B clearing threshold successfully checked for all active providers.`
+          }
         ];
-        const tag = tags[Math.floor(Math.random() * tags.length)];
-        setFeedItems((prev) => [
+        const selectedEvent = events[Math.floor(Math.random() * events.length)];
+        
+        if (selectedEvent.tag === "FRAUD") {
+          setFlaggedCount(f => f + 1);
+        }
+
+        setFeedItems(prev => [
           {
             id: Date.now(),
             time: new Date().toLocaleTimeString("en-GB"),
-            tag,
-            msg: msgs[Math.floor(Math.random() * msgs.length)],
+            ...selectedEvent
           },
-          ...prev.slice(0, 11),
+          ...prev.slice(0, 12)
         ]);
       }
-    }, 3000);
-    return () => clearInterval(id);
+      setLastUpdate(new Date().toLocaleTimeString());
+    }, 4500);
+
+    return () => clearInterval(interval);
   }, [liveSync]);
 
-  const refreshChart = useCallback(() => {
-    if (viewMode === "Năm") setChartData(generateYearData());
-    if (viewMode === "Tháng") setChartData(generateMonthData());
-    if (viewMode === "Ngày") setChartData(generateDayData());
-  }, [viewMode]);
+  // Review Actions
+  const handleApproveReview = (id, user) => {
+    setReviews(prev => prev.filter(r => r.id !== id));
+    // Log in audit log
+    setFeedItems(prev => [
+      {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString("en-GB"),
+        tag: "SECURITY",
+        msg: `Review from customer '${user}' approved and published by Admin.`
+      },
+      ...prev
+    ]);
+  };
 
-  const HealthBar = ({ label, value, max = 100, color, note }) => (
-    <div>
-      <div className="flex justify-between items-center mb-1.5">
-        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-          {label}
-        </span>
-        <span className="text-[13px] font-mono font-semibold text-gray-800">
-          {value.toFixed(0)}
-          {max === 100 ? "%" : ""}
-        </span>
-      </div>
-      <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-        <div
-          className={`${color} h-2.5 rounded-full transition-all duration-700`}
-          style={{ width: `${Math.min(100, (value / max) * 100)}%` }}
-        />
-      </div>
-      {note && (
-        <p className="text-[10px] text-gray-400 mt-1 text-right">{note}</p>
-      )}
-    </div>
+  const handleHideReview = (id, user) => {
+    setReviews(prev => prev.filter(r => r.id !== id));
+    // Log in audit log
+    setFeedItems(prev => [
+      {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString("en-GB"),
+        tag: "SECURITY",
+        msg: `Review from customer '${user}' hidden from public index by Admin.`
+      },
+      ...prev
+    ]);
+  };
+
+  const handleFlagProvider = (id, provider) => {
+    setReviews(prev => prev.filter(r => r.id !== id));
+    setFlaggedCount(f => f + 1);
+    // Log in audit log
+    setFeedItems(prev => [
+      {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString("en-GB"),
+        tag: "FRAUD",
+        msg: `Admin flagged provider '${provider}' for investigation based on user dispute.`
+      },
+      ...prev
+    ]);
+  };
+
+  // Wallet top-up action from clearing datatable
+  const handleTriggerTopUp = (providerId, providerName) => {
+    setWallets(prev => prev.map(p => 
+      p.id === providerId ? { ...p, balance: p.balance + 1500, status: "Active" } : p
+    ));
+    setFeedItems(prev => [
+      {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString("en-GB"),
+        tag: "FINANCE",
+        msg: `Manual emergency clearing top-up of +$1,500.00 triggered for provider '${providerName}'.`
+      },
+      ...prev
+    ]);
+  };
+
+  // Filter wallets based on search query
+  const filteredWallets = wallets.filter(w => 
+    w.name.toLowerCase().includes(searchProvider.toLowerCase())
   );
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-12 space-y-6">
-      {/* KPI Detail Drawer */}
-      {activeCard && (
-        <KpiDetailModal
-          cardKey={activeCard}
-          onClose={() => setActiveCard(null)}
-        />
-      )}
-
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 space-y-6 font-sans">
+      
       {/* ── Page Header ── */}
-      <div className="flex flex-wrap justify-between items-center gap-4">
+      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-900 pb-5">
         <div>
-          <h1 className="text-[26px] font-bold text-gray-900">
-            System Overview
+          <h1 className="text-2xl font-bold tracking-wider font-mono text-white flex items-center gap-2">
+            <ShieldAlert className="text-red-500 animate-pulse" size={24} />
+            SUPER ADMIN COMMAND CENTER
           </h1>
-          <p className="text-[13px] text-gray-500 mt-0.5">
-            Real-time metrics · updated {lastUpdate}
+          <p className="text-[11px] text-slate-500 mt-1 uppercase font-mono tracking-widest">
+            Dispatch Marketplace Operations · Updated {lastUpdate}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2.5">
           <button
-            onClick={() => setLiveSync((v) => !v)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-bold border transition-all
-              ${liveSync ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-100 text-gray-500 border-gray-200"}`}
+            onClick={() => setLiveSync(l => !l)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono font-bold border transition-all ${
+              liveSync 
+                ? "bg-emerald-950/40 border-emerald-800 text-emerald-400" 
+                : "bg-slate-900 border-slate-800 text-slate-400"
+            }`}
           >
-            <span
-              className={`w-2 h-2 rounded-full ${liveSync ? "bg-green-500 pulse-dot" : "bg-gray-400"}`}
-            />
-            {liveSync ? "LIVE" : "PAUSED"}
-          </button>
-          <button
-            onClick={refreshChart}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg text-[12px] font-medium text-gray-700 hover:bg-gray-50 shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              refresh
-            </span>{" "}
-            Refresh
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg text-[12px] font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
-            <span className="material-symbols-outlined text-[16px]">
-              download
-            </span>{" "}
-            Export
+            <RefreshCw size={14} className={liveSync ? "animate-spin" : ""} />
+            {liveSync ? "LIVE TELEMETRY" : "PAUSED"}
           </button>
         </div>
       </div>
 
-      {/* ── KPI CARDS (clickable) ── */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard
-          cardKey="users"
-          icon="group"
-          iconBg="bg-blue-50"
-          iconColor="text-blue-600"
-          label="Total Active Users"
-          value="12,450"
-          trend="+4.2%"
-          trendUp
-          onClick={setActiveCard}
-        />
-        <KpiCard
-          cardKey="fleet"
-          icon="local_shipping"
-          iconBg="bg-slate-100"
-          iconColor="text-slate-600"
-          label="Fleet Availability"
-          value="92"
-          unit="%"
-          trend="-2.0%"
-          trendUp={false}
-          onClick={setActiveCard}
-        />
-        <KpiCard
-          cardKey="capacity"
-          icon="local_hospital"
-          iconBg="bg-red-50"
-          iconColor="text-red-600"
-          label="Global ER Capacity"
-          value="78"
-          unit="%"
-          trend="+1.5%"
-          trendUp
-          onClick={setActiveCard}
-        />
-        <KpiCard
-          cardKey="latency"
-          icon="speed"
-          iconBg="bg-indigo-50"
-          iconColor="text-indigo-600"
-          label="Avg System Latency"
-          value={latency}
-          unit="ms"
-          trend="-5ms"
-          trendUp
-          onClick={setActiveCard}
-        />
-      </div>
-
-      {/* ── CHART ROW 1 ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Area Chart with hierarchical filter */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <SectionHeader icon="show_chart" title="Emergency Call Volume">
-            <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
-              {VIEW_MODES.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setViewMode(m)}
-                  className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all
-                    ${viewMode === m ? "bg-white text-blue-700 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
-                >
-                  {m}
-                </button>
-              ))}
+      {/* ── 1. TOP METRICS ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Metric 1: Total Platform Revenue */}
+        <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl relative overflow-hidden shadow-xl hover:border-slate-700 transition-all text-left">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-bold font-mono text-slate-500 uppercase tracking-widest block">Total Platform Revenue</span>
+              <span className="text-[9px] font-mono text-slate-500 block mt-0.5">(Wallet Deductions)</span>
             </div>
-            {viewMode === "Ngày" && (
-              <div className="flex items-center gap-1">
-                {HOUR_RANGES.map((r) => (
-                  <FilterBtn
-                    key={r}
-                    active={hourRange === r}
-                    onClick={() => setHourRange(r)}
-                  >
-                    {r}
-                  </FilterBtn>
-                ))}
-              </div>
-            )}
-          </SectionHeader>
-          <p className="text-[12px] text-gray-400 mb-4">
-            {viewMode === "Năm" && "Tổng quan 12 tháng qua"}
-            {viewMode === "Tháng" &&
-              `Dữ liệu tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`}
-            {viewMode === "Ngày" &&
-              `Hôm nay — ${hourRange === "24h" ? "00:00–23:59" : hourRange === "12h" ? "12:00–23:59" : "18:00–23:59"}`}
-          </p>
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart
-              data={displayData}
-              margin={{
-                top: 5,
-                right: 10,
-                left: viewMode === "Năm" ? 5 : -10,
-                bottom: 0,
-              }}
-            >
-              <defs>
-                <linearGradient id="gradCalls" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradResolved" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                tickLine={false}
-                axisLine={false}
-                interval={
-                  viewMode === "Tháng"
-                    ? 4
-                    : viewMode === "Ngày"
-                      ? hourRange === "24h"
-                        ? 3
-                        : 1
-                      : 0
-                }
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={formatY}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-                labelStyle={{
-                  fontWeight: 600,
-                  color: "#374151",
-                  marginBottom: 4,
-                }}
-                labelFormatter={(l) => `${tooltipLabel}: ${l}`}
-                formatter={(v, n) => [
-                  viewMode === "Năm" ? `${(v / 1000).toFixed(1)}K` : v,
-                  n,
-                ]}
-              />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="calls"
-                name="Tổng cuộc gọi"
-                stroke="#2563eb"
-                strokeWidth={2}
-                fill="url(#gradCalls)"
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="resolved"
-                name="Đã xử lý"
-                stroke="#10b981"
-                strokeWidth={2}
-                fill="url(#gradResolved)"
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* System Health */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-          <SectionHeader icon="monitor_heart" title="System Health">
-            <span className="text-[10px] text-gray-400 px-2 py-1 bg-gray-100 rounded-md">
-              auto-refresh
+            <div className="p-2 rounded-xl bg-emerald-950/50 border border-emerald-900 text-emerald-400">
+              <DollarSign size={20} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-bold font-mono tracking-tight text-white">
+              ${platformRevenue.toLocaleString()}
             </span>
-          </SectionHeader>
-          <div className="space-y-5 flex-1">
-            <HealthBar
-              label="Core CPU Usage"
-              value={cpuUsage}
-              color="bg-blue-500"
-            />
-            <HealthBar
-              label="Database I/O Load"
-              value={dbLoad}
-              color="bg-amber-500"
-            />
-            <HealthBar
-              label="Active WS Nodes"
-              value={wsNodes}
-              max={1500}
-              color="bg-green-500"
-              note="Capacity: 1,500"
-            />
-            <HealthBar label="Memory Usage" value={68} color="bg-purple-500" />
+            <span className="text-xs font-bold font-mono text-emerald-400 flex items-center gap-0.5">
+              <TrendingUp size={14} />
+              +14.2%
+            </span>
           </div>
-          <div className="mt-5 p-3.5 bg-green-50 rounded-xl border border-green-100">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span
-                className="material-symbols-outlined text-green-600 text-[18px]"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                check_circle
-              </span>
-              <span className="text-[13px] text-green-800 font-semibold">
-                All Systems Operational
-              </span>
+        </div>
+
+        {/* Metric 2: Active Providers */}
+        <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl relative overflow-hidden shadow-xl hover:border-slate-700 transition-all text-left">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-bold font-mono text-slate-500 uppercase tracking-widest block">Active Providers</span>
+              <span className="text-[9px] font-mono text-slate-500 block mt-0.5">(On-duty Fleets)</span>
             </div>
-            <p className="text-[10px] text-green-600 ml-[26px]">
-              Last checked: {lastUpdate}
-            </p>
+            <div className="p-2 rounded-xl bg-blue-950/50 border border-blue-900 text-blue-400">
+              <Truck size={20} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-bold font-mono tracking-tight text-white">
+              {wallets.filter(w => w.status === "Active").length} / {wallets.length}
+            </span>
+            <span className="text-xs font-bold font-mono text-blue-400">
+              Contracted
+            </span>
+          </div>
+        </div>
+
+        {/* Metric 3: Flagged Rides */}
+        <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl relative overflow-hidden shadow-xl hover:border-slate-700 transition-all text-left">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500" />
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-bold font-mono text-slate-500 uppercase tracking-widest block">Flagged Rides</span>
+              <span className="text-[9px] font-mono text-slate-500 block mt-0.5">(Telemetry/Disputes)</span>
+            </div>
+            <div className="p-2 rounded-xl bg-red-950/50 border border-red-900/80 text-red-400">
+              <AlertTriangle size={20} className="animate-pulse" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-bold font-mono tracking-tight text-red-500">
+              {flaggedCount}
+            </span>
+            <span className="bg-red-950 text-red-400 font-mono text-[9px] font-bold px-2 py-0.5 rounded border border-red-900">
+              High Risk
+            </span>
           </div>
         </div>
       </div>
 
-      {/* ── CHART ROW 2 ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Response Time Bar */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <SectionHeader icon="timer" title="Avg Response Time (min)" />
-          <ResponsiveContainer width="100%" height={240}>
+      {/* ── 2. CHART AREA ── */}
+      <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl shadow-2xl text-left">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase">Provider Performance & Issue Telemetry</h2>
+            <p className="text-xs text-slate-500 mt-1">Cross-referencing overall compliance scores against telemetry violation / issue rates.</p>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-cyan-400 rounded-sm" /> Average Rating (0-5)</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-rose-500 rounded-sm" /> Issue Rate (%)</span>
+          </div>
+        </div>
+
+        <div className="h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={responseTimeData}
-              margin={{ top: 5, right: 10, left: -15, bottom: 5 }}
-              barGap={6}
+              data={PROVIDER_PERFORMANCE_DATA}
+              margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#f0f0f0"
-                vertical={false}
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis 
+                dataKey="name" 
+                stroke="#64748b" 
+                tick={{ fill: "#64748b", fontSize: 10, fontFamily: "monospace" }} 
+                tickLine={false}
               />
-              <XAxis
-                dataKey="category"
-                tick={{ fontSize: 11, fill: "#9ca3af" }}
+              {/* Left Y Axis for Rating */}
+              <YAxis 
+                yAxisId="left"
+                domain={[0, 5]} 
+                stroke="#06b6d4" 
+                tick={{ fill: "#06b6d4", fontSize: 10, fontFamily: "monospace" }}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis
-                tick={{ fontSize: 10, fill: "#9ca3af" }}
+              {/* Right Y Axis for Issue Rate */}
+              <YAxis 
+                yAxisId="right"
+                orientation="right"
+                domain={[0, 15]} 
+                unit="%"
+                stroke="#f43f5e" 
+                tick={{ fill: "#f43f5e", fontSize: 10, fontFamily: "monospace" }}
                 tickLine={false}
                 axisLine={false}
-                unit="m"
               />
               <Tooltip
                 contentStyle={{
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                  fontSize: 12,
+                  background: "#0f172a",
+                  border: "1px solid #1e293b",
+                  borderRadius: "12px",
+                  fontSize: "11px",
+                  color: "#cbd5e1"
                 }}
-                formatter={(v) => [`${v} min`]}
+                labelStyle={{ fontWeight: "bold", color: "#fff", fontFamily: "monospace" }}
               />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 12 }}
-              />
-              <Bar
-                dataKey="avgMin"
-                name="Actual"
-                fill="#2563eb"
-                radius={[6, 6, 0, 0]}
-                maxBarSize={36}
-              />
-              <Bar
-                dataKey="target"
-                name="Target"
-                fill="#e5e7eb"
-                radius={[6, 6, 0, 0]}
-                maxBarSize={36}
-              />
+              <Bar yAxisId="left" dataKey="rating" name="Avg Rating" fill="#22d3ee" radius={[4, 4, 0, 0]} maxBarSize={30}>
+                {PROVIDER_PERFORMANCE_DATA.map((entry, index) => (
+                  <Cell key={`cell-rating-${index}`} fill="#06b6d4" fillOpacity={0.85} />
+                ))}
+              </Bar>
+              <Bar yAxisId="right" dataKey="issueRate" name="Issue Rate (%)" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={30}>
+                {PROVIDER_PERFORMANCE_DATA.map((entry, index) => (
+                  <Cell key={`cell-issues-${index}`} fill="#f43f5e" fillOpacity={0.85} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Incident Pie */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <SectionHeader icon="pie_chart" title="Incident Type Distribution" />
-          <div className="flex items-center gap-4">
-            <ResponsiveContainer width="55%" height={220}>
-              <PieChart>
-                <Pie
-                  data={incidentTypeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={90}
-                  paddingAngle={3}
-                  dataKey="value"
-                  strokeWidth={0}
-                >
-                  {incidentTypeData.map((e) => (
-                    <Cell key={e.name} fill={e.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  formatter={(v, n) => [`${v}%`, n]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex-1 space-y-3">
-              {incidentTypeData.map(({ name, value, color }) => (
-                <div key={name} className="flex items-center gap-2.5">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: color }}
-                  />
-                  <span className="text-[12px] text-gray-600 flex-1">
-                    {name}
-                  </span>
-                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${value}%`, background: color }}
-                    />
-                  </div>
-                  <span className="text-[12px] font-bold text-gray-800 w-8 text-right">
-                    {value}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* ── LIVE FEED ── */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <SectionHeader icon="history" title="Real-time System Audit Feed">
-          <div
-            onClick={() => setLiveSync((v) => !v)}
-            className="flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full cursor-pointer select-none"
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${liveSync ? "bg-green-500 pulse-dot" : "bg-gray-400"}`}
-            />
-            <span className="text-[10px] text-green-700 font-bold uppercase tracking-wider">
-              {liveSync ? "Live Sync Active" : "Paused"}
-            </span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* ── 3. WALLET & CLEARING MANAGEMENT DATATABLE (Col: 7) ── */}
+        <div className="lg:col-span-7 bg-slate-900/40 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-2xl text-left">
+          <div>
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+              <div>
+                <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase">Provider Wallet & Clearings</h2>
+                <p className="text-xs text-slate-500 mt-1">Monitors provider balances. Red alerts indicate critical clearing limits.</p>
+              </div>
+              <div className="relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1">
+                <Search size={14} className="text-slate-500 mr-2" />
+                <input
+                  type="text"
+                  placeholder="Filter fleet..."
+                  value={searchProvider}
+                  onChange={(e) => setSearchProvider(e.target.value)}
+                  className="bg-transparent border-none outline-none text-xs text-slate-300 w-[120px] font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-850 text-slate-400 font-mono text-[10px] tracking-wider uppercase">
+                    <th className="py-2.5 px-3">Provider</th>
+                    <th className="py-2.5 px-3">Fleet Size</th>
+                    <th className="py-2.5 px-3">Wallet Balance</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredWallets.map((p) => {
+                    const isLowBalance = p.balance < 1000;
+                    return (
+                      <tr 
+                        key={p.id} 
+                        className={`border-b border-slate-850 transition-colors ${
+                          isLowBalance 
+                            ? "bg-red-950/20 border-l-2 border-l-red-500 hover:bg-red-950/30" 
+                            : "hover:bg-slate-900/50"
+                        }`}
+                      >
+                        <td className="py-3.5 px-3 font-semibold text-slate-200">{p.name}</td>
+                        <td className="py-3.5 px-3 font-mono text-slate-400">{p.fleetSize} units</td>
+                        <td className="py-3.5 px-3 font-mono">
+                          <span className={isLowBalance ? "text-red-400 font-bold" : "text-emerald-400 font-bold"}>
+                            ${p.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${
+                            p.status === "Active" 
+                              ? "bg-emerald-950 text-emerald-400 border border-emerald-900" 
+                              : "bg-red-950 text-red-400 border border-red-900"
+                          }`}>
+                            {p.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-right">
+                          {isLowBalance ? (
+                            <button
+                              onClick={() => handleTriggerTopUp(p.id, p.name)}
+                              className="bg-red-600 hover:bg-red-700 text-white font-mono text-[9px] font-bold px-2 py-1.5 rounded transition-all active:scale-95 shadow-md flex items-center gap-1 ml-auto"
+                            >
+                              <ArrowUpRight size={10} />
+                              INTENSE TOP-UP
+                            </button>
+                          ) : (
+                            <span className="text-slate-600 font-mono text-[10px] pr-2">Clear</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </SectionHeader>
-        <div className="space-y-1 max-h-[280px] overflow-y-auto scrollbar-thin pr-1">
+          <div className="mt-4 pt-3 border-t border-slate-850 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+            <span>Minimum Clearing Limit: $1,000.00</span>
+            <span>All deposits integrated via Stripe & Plaid API</span>
+          </div>
+        </div>
+
+        {/* ── 4. REVIEWS & DISPUTES MODERATION FEED (Col: 5) ── */}
+        <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-2xl text-left">
+          <div>
+            <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase mb-1">Reviews & Dispute Moderation</h2>
+            <p className="text-xs text-slate-500 mb-4">Real-time moderation. Actions adjust provider warning indices.</p>
+
+            <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
+              {reviews.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-500 bg-slate-950 border border-slate-850 rounded-xl font-mono">
+                  All user reviews moderated. Queue clean.
+                </div>
+              ) : (
+                reviews.map((rev) => {
+                  const isGold = rev.tier === 'Gold';
+                  const isSilver = rev.tier === 'Silver';
+                  return (
+                    <div key={rev.id} className="p-3.5 bg-slate-950 border border-slate-850 rounded-xl space-y-3 hover:border-slate-750 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-slate-200">{rev.user}</span>
+                            <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-full uppercase ${
+                              isGold 
+                                ? "bg-yellow-950 text-yellow-400 border border-yellow-800/80" 
+                                : isSilver 
+                                  ? "bg-slate-800 text-slate-300 border border-slate-650"
+                                  : "bg-orange-950 text-orange-400 border border-orange-900"
+                            }`}>
+                              {rev.tier} Member
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono mt-0.5 block">
+                            Target: <span className="text-slate-350">{rev.provider}</span>
+                          </span>
+                        </div>
+                        <span className="text-yellow-400 font-mono text-xs">★ {rev.rating}</span>
+                      </div>
+
+                      <p className="text-xs text-slate-400 italic font-mono leading-relaxed">
+                        "{rev.comment}"
+                      </p>
+
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleApproveReview(rev.id, rev.user)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 hover:text-emerald-300 font-mono text-[9px] font-bold py-1.5 rounded transition-all active:scale-95"
+                        >
+                          <UserCheck size={11} />
+                          APPROVE
+                        </button>
+                        <button
+                          onClick={() => handleHideReview(rev.id, rev.user)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white font-mono text-[9px] font-bold py-1.5 rounded transition-all active:scale-95"
+                        >
+                          <EyeOff size={11} />
+                          HIDE
+                        </button>
+                        <button
+                          onClick={() => handleFlagProvider(rev.id, rev.provider)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-red-950/40 hover:bg-red-950/60 border border-red-900 text-red-400 font-mono text-[9px] font-bold py-1.5 rounded transition-all active:scale-95"
+                        >
+                          <Flag size={11} />
+                          FLAG FLEET
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+          <div className="text-[9px] text-slate-500 font-mono text-right pt-2 select-none">
+            Reviews feed dynamically linked to User Mobile App
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── 5. SYSTEM AUDIT FEED ── */}
+      <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl shadow-2xl text-left">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Database className="text-blue-500" size={18} />
+            <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase">Platform Audit & Anti-Fraud Logs</h2>
+          </div>
+          <span className="text-[9px] bg-slate-950 border border-slate-850 text-slate-500 font-mono px-2.5 py-1 rounded-full uppercase tracking-wider">
+            GPS Outlier Scan: Operational
+          </span>
+        </div>
+
+        <div className="space-y-1.5 max-h-[180px] overflow-y-auto scrollbar-thin">
           {feedItems.map((item) => (
             <div
               key={item.id}
-              className="flex gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg border-l-2 border-transparent hover:border-blue-500 transition-all"
+              className="flex gap-3 px-3 py-2 bg-slate-950/45 hover:bg-slate-950 border border-slate-870 hover:border-slate-800 rounded-lg transition-all"
             >
-              <span className="text-[11px] font-mono text-gray-400 w-20 flex-shrink-0 pt-0.5 uppercase">
+              <span className="text-[10px] font-mono text-slate-500 w-16 shrink-0 pt-0.5">
                 {item.time}
               </span>
-              <span
-                className={`inline-block px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider h-fit flex-shrink-0 mt-0.5 ${TAG_STYLES[item.tag] || TAG_STYLES.SYSTEM}`}
-              >
+              <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-bold font-mono shrink-0 h-fit ${TAG_STYLES[item.tag] || TAG_STYLES.SYSTEM}`}>
                 {item.tag}
               </span>
-              <p className="text-[13px] text-gray-700 leading-snug">
+              <p className="text-xs text-slate-300 font-mono leading-relaxed">
                 {item.msg}
               </p>
             </div>
           ))}
         </div>
-        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-          <span className="text-[11px] text-gray-400">
-            {feedItems.length} events recorded
-          </span>
-          <button className="text-[12px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest transition-colors">
-            View Full Audit Log →
-          </button>
-        </div>
       </div>
+
     </div>
   );
 };
