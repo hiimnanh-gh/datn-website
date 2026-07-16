@@ -1,20 +1,69 @@
 import React, { useState, useEffect, useRef } from "react";
 import useTopbarStore from "../../../store/useTopbarStore";
-import { MOCK_PROVIDERS, INITIAL_INCIDENTS } from "./data";
+import { dispatcherService } from "../../../services/dispatcherService";
 import ManualSOSEntryForm from "../components/ManualSOSEntryForm";
 import "./DispatchHub.css";
 import { Lock } from 'lucide-react';
 
 const maskPhone = (phone) => {
   if (!phone) return "";
-  // Keeps the country code and first digits, masks the middle, leaves the last two
   return phone.replace(/(\+?\d{2,3}\s?\d{2})\d+(\d{2})/, "$1****$2");
 };
 
+// Hàm helper để mock thêm dữ liệu cho sinh động vì Backend chưa trả về đủ
+const mapResource = (r) => {
+  // Random rating từ 4.2 đến 5.0
+  const randomRating = (Math.random() * 0.8 + 4.2).toFixed(1);
+  // Random fare từ 800k đến 3000k
+  const randomFare = Math.floor(Math.random() * 22 + 8) * 100000;
+  // Random ETA
+  const randomEta = Math.floor(Math.random() * 10 + 5) + " mins";
+  const randomDist = (Math.random() * 5 + 1).toFixed(1) + " km";
+  // Random balance (đảm bảo ít nhất 1 cái bị insufficient funds)
+  const isBroke = Math.random() > 0.8;
+  
+  return {
+    id: r.id, // resourceId
+    name: `${r.resourceCode} (${r.providerName})`, // Tên xe + Tên trung tâm
+    fare: randomFare,
+    commissionRate: 0.1, // 10%
+    eta: randomEta,
+    distance: randomDist,
+    rating: randomRating,
+    walletBalance: isBroke ? 0 : randomFare * 10,
+    raw: r
+  };
+};
+
+const mapIncident = (req) => {
+  return {
+    id: `EMS-${req.id}`,
+    rawId: req.id, // ID thật để gọi API
+    priority: req.urgencyLevel || "STANDARD",
+    category: req.extendedRequirements?.category || "Medical Emergency",
+    type: "Đặt qua App (Cloud)",
+    timeAgo: "Vừa xong", // Thực tế có thể tính từ req.createdAt
+    status: req.status === "PENDING" ? "Awaiting Dispatch" : req.status,
+    callerName: req.call?.callerName || "Unknown Caller",
+    callerPhone: req.call?.callerPhoneNumber || "+84...",
+    victimName: req.call?.victimName || "Unknown Victim",
+    victimPhone: req.call?.victimPhoneNumber || "+84...",
+    victimAddress: req.extendedRequirements?.victimAddress || "Tọa độ GPS: " + (req.latitude && req.longitude ? `${req.latitude}, ${req.longitude}` : "Không rõ"),
+    victimConditions: req.extendedRequirements?.medicalNotes || "Không có thông tin y tế",
+    genderAge: "UNKNOWN",
+    providerSelected: null,
+    userTier: "STANDARD MEMBER",
+    transcription: [
+      { time: "00:00", sender: "System", text: `Đã tiếp nhận yêu cầu từ hệ thống mây. ID Cuộc gọi: ${req.call?.id || 'N/A'}` },
+      { time: "00:01", sender: "System", text: `Tọa độ vị trí: ${req.latitude}, ${req.longitude}` },
+    ]
+  };
+};
+
 const DispatchHub = () => {
-  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS);
-  const [selectedId, setSelectedId] = useState(INITIAL_INCIDENTS[0].id);
-  const [providers] = useState(MOCK_PROVIDERS);
+  const [incidents, setIncidents] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [providers, setProviders] = useState([]);
   
   // Transcription states
   const [transcripts, setTranscripts] = useState({});
@@ -24,19 +73,57 @@ const DispatchHub = () => {
   // Modal / Confirm States
   const [dispatchSuccess, setDispatchSuccess] = useState(null);
   const [isManualFormOpen, setIsManualFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   const { setSlot, clearSlot } = useTopbarStore();
   const transcriptEndRef = useRef(null);
 
-  const activeIncident = incidents.find((i) => i.id === selectedId) || incidents[0];
-  const selectedProviderObj = activeIncident.providerSelected 
+  // Load real data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        // Load Resources (Xe cứu thương)
+        const resRes = await dispatcherService.getDispatchResources();
+        if (resRes && resRes.data) {
+           setProviders(resRes.data.map(mapResource));
+        }
+
+        // Load Incidents
+        const incRes = await dispatcherService.getDispatchRequests();
+        if (incRes && incRes.data) {
+           const mappedIncidents = incRes.data.map(mapIncident);
+           setIncidents(mappedIncidents);
+           if (mappedIncidents.length > 0) {
+              setSelectedId(mappedIncidents[0].id);
+              
+              const initialTranscripts = {};
+              mappedIncidents.forEach((inc) => {
+                initialTranscripts[inc.id] = inc.transcription;
+              });
+              setTranscripts(initialTranscripts);
+           }
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const activeIncident = incidents.find((i) => i.id === selectedId) || null;
+  const selectedProviderObj = activeIncident?.providerSelected 
     ? providers.find(p => p.id === activeIncident.providerSelected) 
     : null;
 
   const handleCreateManualSOS = (payload) => {
-    const newId = `EMS-${incidents.length + 102}`;
+    // Để nguyên logic cũ chạy manual ticket ở frontend vì Backend chưa có API tạo call đầy đủ
+    const newId = `MANUAL-${Date.now()}`;
     const newIncident = {
       id: newId,
+      rawId: null, // manual local incident
       priority: payload.priority,
       category: 'Manual Entry',
       type: 'Đặt khẩn cấp (Manual)',
@@ -69,15 +156,6 @@ const DispatchHub = () => {
     setIsManualFormOpen(false);
   };
 
-  // Initialize transcripts for each incident
-  useEffect(() => {
-    const initialTranscripts = {};
-    incidents.forEach((inc) => {
-      initialTranscripts[inc.id] = inc.transcription.slice(0, 2);
-    });
-    setTranscripts(initialTranscripts);
-  }, []);
-
   // Update topbar details
   useEffect(() => {
     const activeCount = incidents.filter(i => i.status === "Awaiting Dispatch").length;
@@ -95,7 +173,7 @@ const DispatchHub = () => {
       </div>
     );
     return () => clearSlot();
-  }, [incidents]);
+  }, [incidents, setSlot, clearSlot]);
 
   // Scroll to bottom of chat log
   useEffect(() => {
@@ -104,37 +182,15 @@ const DispatchHub = () => {
 
   // Handle Speech-to-Text Simulation
   const startVoiceAnalysis = () => {
-    if (isTranscribing) return;
+    if (isTranscribing || !activeIncident) return;
     
-    const totalLines = activeIncident.transcription.length;
-    const currentLines = transcripts[activeIncident.id]?.length || 0;
-    
-    if (currentLines >= totalLines) {
-      alert("Cuộc gọi đã được ghi âm phân tích hoàn tất!");
-      return;
-    }
-
-    setIsTranscribing(true);
-    let index = currentLines;
-
-    const interval = setInterval(() => {
-      if (index < totalLines) {
-        setTranscripts((prev) => ({
-          ...prev,
-          [activeIncident.id]: [...(prev[activeIncident.id] || []), activeIncident.transcription[index]]
-        }));
-        index++;
-      } else {
-        clearInterval(interval);
-        setIsTranscribing(false);
-      }
-    }, 2000);
+    alert("API AI Voice chưa được kết nối backend. Chức năng mô phỏng đang tắt.");
   };
 
   // Dispatcher sends manual message
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!typingInput.trim()) return;
+    if (!typingInput.trim() || !activeIncident) return;
 
     const newMessage = {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -151,6 +207,7 @@ const DispatchHub = () => {
 
   // Direct selection of provider
   const selectProvider = (provId) => {
+    if (!activeIncident) return;
     setIncidents((prev) =>
       prev.map((inc) =>
         inc.id === activeIncident.id
@@ -173,25 +230,40 @@ const DispatchHub = () => {
   };
 
   // Trigger Transfer to Provider & Hospital
-  const confirmAndTriggerDispatch = () => {
-    if (!activeIncident.providerSelected) return;
+  const confirmAndTriggerDispatch = async () => {
+    if (!activeIncident || !activeIncident.providerSelected) return;
 
-    setIncidents((prev) =>
-      prev.map((inc) =>
-        inc.id === activeIncident.id
-          ? { ...inc, status: "Driver En Route" }
-          : inc
-      )
-    );
+    try {
+        // GỌI API BACKEND: POST /api/v1/dispatch-missions
+        if (activeIncident.rawId) {
+            await dispatcherService.createDispatchMission({
+                requestId: activeIncident.rawId,
+                resourceId: activeIncident.providerSelected,
+                destinationName: "Bệnh viện tuyến đầu",
+                notes: "Điều phối tự động qua AI System"
+            });
+        }
 
-    setDispatchSuccess({
-      incidentId: activeIncident.id,
-      providerName: selectedProviderObj.name,
-      fare: selectedProviderObj.fare,
-      commission: selectedProviderObj.fare * selectedProviderObj.commissionRate,
-      address: activeIncident.victimAddress,
-      victim: activeIncident.victimName
-    });
+        setIncidents((prev) =>
+          prev.map((inc) =>
+            inc.id === activeIncident.id
+              ? { ...inc, status: "Driver En Route" }
+              : inc
+          )
+        );
+
+        setDispatchSuccess({
+          incidentId: activeIncident.id,
+          providerName: selectedProviderObj.name,
+          fare: selectedProviderObj.fare,
+          commission: selectedProviderObj.fare * selectedProviderObj.commissionRate,
+          address: activeIncident.victimAddress,
+          victim: activeIncident.victimName
+        });
+    } catch (err) {
+        console.error("Lỗi khi điều phối:", err);
+        alert("Lỗi khi điều phối: " + (err.response?.data?.message || err.message));
+    }
   };
 
   // Helper to highlight emergency words
@@ -234,7 +306,7 @@ const DispatchHub = () => {
       </header>
 
       {/* Main Grid Workspace */}
-      <div className="flex-1 grid grid-cols-12 gap-5 p-5 overflow-hidden">
+      <div className="flex-1 grid grid-cols-12 gap-5 p-5 overflow-hidden relative">
         
         {/* LEFT COLUMN: MATCHING ENGINE UI */}
         <section className="col-span-4 flex flex-col h-full bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden shadow-2xl">
@@ -248,8 +320,10 @@ const DispatchHub = () => {
           </div>
 
           <div className="p-4 flex-1 overflow-y-auto space-y-3 scrollbar-thin">
-            {providers.map((p) => {
-              const isSelected = activeIncident.providerSelected === p.id;
+            {providers.length === 0 && !isLoading ? (
+                <div className="text-center text-slate-500 font-mono text-xs mt-10">Không có đơn vị cấp cứu nào.</div>
+            ) : providers.map((p) => {
+              const isSelected = activeIncident?.providerSelected === p.id;
               const isEligible = p.walletBalance > 0;
               
               const fareVND = p.fare;
@@ -287,12 +361,13 @@ const DispatchHub = () => {
                     </div>
 
                     <button
-                      disabled={!isEligible}
+                      disabled={!isEligible || !activeIncident}
                       onClick={() => selectProvider(p.id)}
                       className={`text-[10px] font-bold px-3 py-1.5 rounded transition-all active:scale-95 z-0
                         ${isSelected 
                           ? "bg-blue-600 text-white font-mono" 
-                          : "bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-700"}`}
+                          : "bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-700"}
+                        ${!activeIncident && "opacity-50 cursor-not-allowed"}`}
                     >
                       {isSelected ? "ĐÃ CHỌN" : "CHỌN ĐƠN VỊ"}
                     </button>
@@ -323,8 +398,29 @@ const DispatchHub = () => {
           </div>
         </section>
 
+        {/* EMPTY STATE OVERLAY (If no incidents) */}
+        {!activeIncident && !isLoading && (
+           <div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] flex items-center justify-center p-5 ml-[33.333333%]">
+               <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 flex flex-col items-center justify-center max-w-md w-full shadow-2xl">
+                   <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center border border-slate-700 mb-4">
+                       <span className="material-symbols-outlined text-slate-500 text-[32px]">cell_tower</span>
+                   </div>
+                   <h3 className="text-white font-mono font-bold text-lg mb-2">KHÔNG CÓ YÊU CẦU ĐIỀU PHỐI</h3>
+                   <p className="text-slate-400 text-center text-xs mb-6 leading-relaxed">
+                       Hệ thống hiện tại không ghi nhận bất kỳ cuộc gọi khẩn cấp (SOS) nào từ phía người dùng. Đang liên tục lắng nghe...
+                   </p>
+                   <button
+                        onClick={() => setIsManualFormOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold font-mono px-5 py-2.5 rounded uppercase tracking-wider shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+                   >
+                       Mô phỏng tạo SOS Thủ Công
+                   </button>
+               </div>
+           </div>
+        )}
+
         {/* CENTER COLUMN: SMART RADAR MAP & CONFIRMATION */}
-        <section className="col-span-4 flex flex-col h-full bg-slate-900/30 border border-slate-800/50 rounded-xl overflow-hidden relative shadow-2xl">
+        <section className={`col-span-4 flex flex-col h-full bg-slate-900/30 border border-slate-800/50 rounded-xl overflow-hidden relative shadow-2xl ${!activeIncident && !isLoading ? "opacity-50 blur-[2px] pointer-events-none" : ""}`}>
           
           <div className="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between shrink-0">
             <span className="text-xs font-bold font-mono text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -340,9 +436,9 @@ const DispatchHub = () => {
             {/* Grid street layout simulation */}
             <div className="absolute inset-0 opacity-15" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 19px, #475569 19px, #475569 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, #475569 19px, #475569 20px)" }}></div>
             <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
-              <path d="M 0,35% 100%,35%" stroke="#cbd5e1" strokeWidth="2" />
-              <path d="M 45%,0 45%,100%" stroke="#cbd5e1" strokeWidth="2" />
-              <path d="M 0,70% 100%,70%" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="0" y1="35%" x2="100%" y2="35%" stroke="#cbd5e1" strokeWidth="2" />
+              <line x1="45%" y1="0" x2="45%" y2="100%" stroke="#cbd5e1" strokeWidth="2" />
+              <line x1="0" y1="70%" x2="100%" y2="70%" stroke="#cbd5e1" strokeWidth="1.5" />
             </svg>
 
             {/* Radar sweep animation */}
@@ -358,53 +454,57 @@ const DispatchHub = () => {
             </div>
             
             {/* Top HUD Overlay for Tier Display */}
-            <div className="absolute top-4 w-[90%] left-1/2 -translate-x-1/2 bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-2xl backdrop-blur-md z-20 text-center">
-              <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-1">
-                Active Incident SOS
-              </div>
-              
-              {/* GAMIFIED USER TIER */}
-              <div className={`font-black tracking-tight text-lg uppercase bg-clip-text text-transparent mb-1
-                ${activeIncident.userTier.includes("GOLD") 
-                  ? "bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-600" 
-                  : activeIncident.userTier.includes("SILVER")
-                    ? "bg-gradient-to-r from-slate-300 via-slate-400 to-slate-500"
-                    : "bg-gradient-to-r from-orange-400 via-orange-500 to-orange-700"}`}>
-                {activeIncident.userTier}
-              </div>
-              <div className="text-xs font-mono font-bold text-white">
-                {activeIncident.victimAddress}
-              </div>
-            </div>
+            {activeIncident && (
+                <div className="absolute top-4 w-[90%] left-1/2 -translate-x-1/2 bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-2xl backdrop-blur-md z-20 text-center">
+                <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-1">
+                    Active Incident SOS
+                </div>
+                
+                {/* GAMIFIED USER TIER */}
+                <div className={`font-black tracking-tight text-lg uppercase bg-clip-text text-transparent mb-1
+                    ${activeIncident.userTier.includes("GOLD") 
+                    ? "bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-600" 
+                    : activeIncident.userTier.includes("SILVER")
+                        ? "bg-gradient-to-r from-slate-300 via-slate-400 to-slate-500"
+                        : "bg-gradient-to-r from-orange-400 via-orange-500 to-orange-700"}`}>
+                    {activeIncident.userTier}
+                </div>
+                <div className="text-xs font-mono font-bold text-white">
+                    {activeIncident.victimAddress}
+                </div>
+                </div>
+            )}
 
             {/* Bottom HUD Overlay for Provider Status */}
-            <div className="absolute bottom-4 w-[90%] left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700 rounded-xl p-3 shadow-2xl backdrop-blur-md z-20 text-center">
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">
-                Provider Status
-              </div>
-              {selectedProviderObj ? (
-                <>
-                  <div className="font-bold text-blue-400 text-sm">{selectedProviderObj.name}</div>
-                  <div className="text-xs text-slate-300 mt-1">{activeIncident.status}</div>
-                </>
-              ) : (
-                <div className="font-bold text-slate-400 text-sm">NO PROVIDER ASSIGNED YET</div>
-              )}
-            </div>
+            {activeIncident && (
+                <div className="absolute bottom-4 w-[90%] left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700 rounded-xl p-3 shadow-2xl backdrop-blur-md z-20 text-center">
+                <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">
+                    Provider Status
+                </div>
+                {selectedProviderObj ? (
+                    <>
+                    <div className="font-bold text-blue-400 text-sm">{selectedProviderObj.name}</div>
+                    <div className="text-xs text-slate-300 mt-1">{activeIncident.status}</div>
+                    </>
+                ) : (
+                    <div className="font-bold text-slate-400 text-sm">NO PROVIDER ASSIGNED YET</div>
+                )}
+                </div>
+            )}
           </div>
 
           {/* Confirm Transfer Dispatch Button */}
           <div className="p-4 bg-slate-900/90 border-t border-slate-800 shrink-0">
             <button
               onClick={confirmAndTriggerDispatch}
-              disabled={!activeIncident.providerSelected}
+              disabled={!activeIncident || !activeIncident.providerSelected}
               className={`w-full font-bold py-4 rounded-xl shadow-lg transition-all transform flex items-center justify-center gap-2 text-xs uppercase
-                ${activeIncident.providerSelected 
+                ${activeIncident?.providerSelected 
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.01] active:scale-[0.99] cursor-pointer" 
                   : "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-850"}`}
             >
               <span className="material-symbols-outlined text-[18px]">verified_user</span>
-              {activeIncident.providerSelected 
+              {activeIncident?.providerSelected 
                 ? "DISPATCH TO DRIVER APP" 
                 : "AWAITING PROVIDER SELECTION"}
             </button>
@@ -413,7 +513,7 @@ const DispatchHub = () => {
         </section>
 
         {/* RIGHT COLUMN: SOS QUEUE & CHAT WORKSPACE */}
-        <section className="col-span-4 flex flex-col h-full bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden shadow-2xl">
+        <section className={`col-span-4 flex flex-col h-full bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden shadow-2xl ${!activeIncident && !isLoading ? "opacity-50 blur-[2px] pointer-events-none" : ""}`}>
           
           {/* Top Half: SOS Queue */}
           <div className="h-1/3 flex flex-col border-b border-slate-800">
@@ -457,20 +557,22 @@ const DispatchHub = () => {
           {/* Bottom Half: Incident Info & Chat */}
           <div className="flex-1 flex flex-col min-h-0 bg-slate-900/10">
             {/* Caller Info Header */}
-            <div className="bg-slate-900/90 text-white p-3 flex items-center gap-3 border-b border-slate-800 shrink-0">
-              <div className="w-8 h-8 rounded-full bg-red-600/15 border border-red-500/30 flex items-center justify-center">
-                <span className="material-symbols-outlined text-red-500 animate-pulse text-sm">call</span>
-              </div>
-              <div>
-                <div className="text-[9px] font-mono font-bold text-slate-400 tracking-wider uppercase">
-                  {activeIncident.type}
+            {activeIncident && (
+                <div className="bg-slate-900/90 text-white p-3 flex items-center gap-3 border-b border-slate-800 shrink-0">
+                <div className="w-8 h-8 rounded-full bg-red-600/15 border border-red-500/30 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-red-500 animate-pulse text-sm">call</span>
                 </div>
-                <div className="text-sm font-bold font-mono tracking-tight text-red-400">
-                  {/* Mask Caller Phone for Security */}
-                  {maskPhone(activeIncident.callerPhone)}
+                <div>
+                    <div className="text-[9px] font-mono font-bold text-slate-400 tracking-wider uppercase">
+                    {activeIncident.type}
+                    </div>
+                    <div className="text-sm font-bold font-mono tracking-tight text-red-400">
+                    {/* Mask Caller Phone for Security */}
+                    {maskPhone(activeIncident.callerPhone)}
+                    </div>
                 </div>
-              </div>
-            </div>
+                </div>
+            )}
 
             {/* AI Transcription Panel */}
             <div className="px-3 py-2 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between shrink-0">
@@ -480,7 +582,7 @@ const DispatchHub = () => {
               </span>
               <button
                 onClick={startVoiceAnalysis}
-                disabled={isTranscribing}
+                disabled={isTranscribing || !activeIncident}
                 className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded transition-all
                   ${isTranscribing 
                     ? "bg-purple-950/40 text-purple-400 border border-purple-800" 
@@ -497,7 +599,7 @@ const DispatchHub = () => {
                 Direct Contact Disabled until Driver Confirms
               </div>
               
-              {transcripts[activeIncident.id]?.map((msg, idx) => {
+              {activeIncident && transcripts[activeIncident.id]?.map((msg, idx) => {
                 const isUser = msg.sender === "Caller";
                 const isSystem = msg.sender === "System";
                 return (
@@ -539,11 +641,13 @@ const DispatchHub = () => {
                 value={typingInput}
                 onChange={(e) => setTypingInput(e.target.value)}
                 placeholder="Type manual response..."
-                className="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-[11px] text-slate-200 outline-none focus:border-blue-600"
+                disabled={!activeIncident}
+                className="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-[11px] text-slate-200 outline-none focus:border-blue-600 disabled:opacity-50"
               />
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-[10px] font-bold transition-all active:scale-95"
+                disabled={!activeIncident}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 disabled:text-slate-500 text-white px-3 py-1.5 rounded text-[10px] font-bold transition-all active:scale-95"
               >
                 Send
               </button>

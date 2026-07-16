@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { to: '/admin/dispatch',  icon: 'emergency',    label: 'Live Dispatch'  },
   { to: '/admin/tracking',  icon: 'location_on',  label: 'Unit Tracking'  },
   { to: '/admin/incidents', icon: 'assignment',   label: 'Incident Logs'  },
-  { to: '/admin/personnel', icon: 'groups',       label: 'Personnel'      },
+  { to: '/admin/users',     icon: 'groups',       label: 'User Management'},
   { to: '/admin/analytics', icon: 'monitoring',   label: 'Analytics'      },
 ];
 

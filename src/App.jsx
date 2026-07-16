@@ -3,6 +3,8 @@ import useAuthStore from './store/useAuthStore';
 
 // ── Auth feature ──────────────────────────────────────────
 import Login from './features/auth/Login';
+import Register from './features/auth/Register';
+import ForgotPassword from './features/auth/ForgotPassword';
 
 // ── Admin feature ─────────────────────────────────────────
 import AdminLayout      from './features/admin/AdminLayout';
@@ -10,7 +12,7 @@ import Dashboard        from './features/admin/pages/Dashboard/Dashboard';
 import LiveDispatch     from './features/admin/pages/LiveDispatch/LiveDispatch';
 import UnitTracking     from './features/admin/pages/UnitTracking/UnitTracking';
 import IncidentLogs     from './features/admin/pages/IncidentLogs/IncidentLogs';
-import Personnel        from './features/admin/pages/Personnel/Personnel';
+import UserManagement    from './features/admin/pages/UserManagement/UserManagement';
 import Analytics        from './features/admin/pages/Analytics/Analytics';
 import Settings         from './features/admin/pages/Settings/Settings';
 import Support          from './features/admin/pages/Support/Support';
@@ -52,6 +54,8 @@ function App() {
         <Route path="/" element={<RootRedirect />} />
         
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Admin Portal Routes */}
         <Route path="/admin" element={<AdminLayout />}>
@@ -60,7 +64,7 @@ function App() {
           <Route path="dispatch"        element={<LiveDispatch />} />
           <Route path="tracking"        element={<UnitTracking />} />
           <Route path="incidents"       element={<IncidentLogs />} />
-          <Route path="personnel"       element={<Personnel />} />
+          <Route path="users"           element={<UserManagement />} />
           <Route path="analytics"       element={<Analytics />} />
           <Route path="settings"        element={<Settings />} />
           <Route path="support"         element={<Support />} />
