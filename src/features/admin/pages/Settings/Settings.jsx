@@ -38,15 +38,13 @@ const Settings = () => {
             onClick={() => setActiveTab(t.id)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
               t.id === activeTab
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-gray-500 hover:bg-gray-100"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:bg-slate-800"
             }`}
           >
             <span
               className="material-symbols-outlined text-[12px]"
-              style={
-                t.id === activeTab ? { fontVariationSettings: "'FILL' 1" } : {}
-              }
+              style={t.id === activeTab ? { fontVariationSettings: "'FILL' 1" } : {}}
             >
               {t.icon}
             </span>
@@ -59,21 +57,14 @@ const Settings = () => {
   }, [activeTab]);
 
   return (
-    <div className="max-w-[1100px] mx-auto pb-12 space-y-6">
+    <div className="min-h-screen bg-slate-950 p-6 pb-12 space-y-6 max-w-[1100px] mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-[26px] font-bold text-gray-900 flex items-center gap-2">
-          <span
-            className="material-symbols-outlined text-blue-600 text-[28px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            settings
-          </span>
+        <h1 className="text-[26px] font-bold text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-indigo-400 text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>settings</span>
           Settings
         </h1>
-        <p className="text-[13px] text-gray-500 mt-0.5">
-          System configuration and preferences
-        </p>
+        <p className="text-[13px] text-slate-400 mt-0.5">System configuration and preferences</p>
       </div>
 
       <div className="flex gap-6">
@@ -85,17 +76,13 @@ const Settings = () => {
               onClick={() => setActiveTab(t.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all text-left ${
                 activeTab === t.id
-                  ? "bg-[#2563eb] text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`}
             >
               <span
                 className="material-symbols-outlined text-[18px]"
-                style={
-                  activeTab === t.id
-                    ? { fontVariationSettings: "'FILL' 1" }
-                    : {}
-                }
+                style={activeTab === t.id ? { fontVariationSettings: "'FILL' 1" } : {}}
               >
                 {t.icon}
               </span>

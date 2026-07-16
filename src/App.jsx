@@ -16,6 +16,7 @@ import UserManagement    from './features/admin/pages/UserManagement/UserManagem
 import Analytics        from './features/admin/pages/Analytics/Analytics';
 import Settings         from './features/admin/pages/Settings/Settings';
 import Support          from './features/admin/pages/Support/Support';
+import Profile          from './features/admin/pages/Profile/Profile';
 
 // ── Dispatcher feature ────────────────────────────────────
 import DispatcherLayout from './features/dispatcher/DispatcherLayout';
@@ -68,6 +69,7 @@ function App() {
           <Route path="analytics"       element={<Analytics />} />
           <Route path="settings"        element={<Settings />} />
           <Route path="support"         element={<Support />} />
+          <Route path="profile"         element={<Profile />} />
         </Route>
 
         {/* Dispatcher Portal Routes */}

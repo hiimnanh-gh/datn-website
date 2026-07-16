@@ -18,10 +18,10 @@ export const SystemTab = () => {
           ].map((r) => (
             <div
               key={r.label}
-              className="flex justify-between items-center px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100"
+              className="flex justify-between items-center px-4 py-2.5 bg-slate-800/20 border border-slate-800 rounded-xl"
             >
-              <span className="text-[12px] text-gray-500">{r.label}</span>
-              <span className="text-[12px] font-bold font-mono text-gray-900">
+              <span className="text-[12px] text-slate-400">{r.label}</span>
+              <span className="text-[12px] font-bold font-mono text-white">
                 {r.value}
               </span>
             </div>
@@ -36,34 +36,34 @@ export const SystemTab = () => {
               label: "Clear Cache",
               desc: "Flush Redis cache — system will re-warm automatically",
               icon: "cached",
-              color: "text-blue-600 bg-blue-50 hover:bg-blue-100",
+              color: "text-indigo-400 bg-indigo-950/30 border border-indigo-900/50 hover:bg-indigo-900/30",
               btn: "Run",
             },
             {
               label: "Rebuild Search Index",
               desc: "Re-index all incident and personnel records",
               icon: "manage_search",
-              color: "text-purple-600 bg-purple-50 hover:bg-purple-100",
+              color: "text-purple-400 bg-purple-950/30 border border-purple-900/50 hover:bg-purple-900/30",
               btn: "Run",
             },
             {
               label: "Force Database Backup",
               desc: "Trigger an immediate off-schedule backup",
               icon: "backup",
-              color: "text-green-600 bg-green-50 hover:bg-green-100",
+              color: "text-emerald-400 bg-emerald-950/30 border border-emerald-900/50 hover:bg-emerald-950/30",
               btn: "Run",
             },
             {
               label: "Restart Worker Nodes",
               desc: "Gracefully restart background job workers",
               icon: "restart_alt",
-              color: "text-amber-600 bg-amber-50 hover:bg-amber-100",
+              color: "text-amber-400 bg-amber-950/30 border border-amber-900/50 hover:bg-amber-900/30",
               btn: "Restart",
             },
           ].map((a) => (
             <div
               key={a.label}
-              className="flex items-center justify-between px-4 py-3.5 bg-gray-50 rounded-xl border border-gray-100"
+              className="flex items-center justify-between px-4 py-3.5 bg-slate-800/20 border border-slate-800 rounded-xl"
             >
               <div className="flex items-center gap-3">
                 <span
@@ -72,10 +72,10 @@ export const SystemTab = () => {
                   {a.icon}
                 </span>
                 <div>
-                  <p className="text-[13px] font-bold text-gray-900">
+                  <p className="text-[13px] font-bold text-white">
                     {a.label}
                   </p>
-                  <p className="text-[11px] text-gray-500">{a.desc}</p>
+                  <p className="text-[11px] text-slate-500">{a.desc}</p>
                 </div>
               </div>
               <button
@@ -105,13 +105,13 @@ export const SystemTab = () => {
           ].map((d) => (
             <div
               key={d.label}
-              className="flex items-center justify-between px-4 py-3.5 bg-red-50 rounded-xl border border-red-100"
+              className="flex items-center justify-between px-4 py-3.5 bg-red-950/20 border border-red-900/40 rounded-xl"
             >
               <div>
-                <p className="text-[13px] font-bold text-red-900">{d.label}</p>
-                <p className="text-[11px] text-red-500">{d.desc}</p>
+                <p className="text-[13px] font-bold text-red-400">{d.label}</p>
+                <p className="text-[11px] text-red-500/80">{d.desc}</p>
               </div>
-              <button className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-red-700 bg-red-100 hover:bg-red-200 transition-colors">
+              <button className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-red-400 bg-red-950/40 border border-red-900 hover:bg-red-900/30 transition-all">
                 Proceed
               </button>
             </div>

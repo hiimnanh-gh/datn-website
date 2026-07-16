@@ -31,7 +31,7 @@ export const SecurityTab = () => {
           <select
             value={sessionTimeout}
             onChange={(e) => setSessionTimeout(e.target.value)}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+            className="px-3 py-1.5 border border-slate-700 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white"
           >
             {["15", "30", "60", "120"].map((v) => (
               <option key={v} value={v}>
@@ -52,7 +52,7 @@ export const SecurityTab = () => {
             type="number"
             min="6"
             max="32"
-            className="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-blue-300 text-center"
+            className="w-16 px-2 py-1.5 border border-slate-700 bg-slate-950 text-white rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-indigo-500/50 text-center"
           />
         </SettingRow>
         <SettingRow label="Require uppercase & numbers" description="">
@@ -62,7 +62,7 @@ export const SecurityTab = () => {
           <input
             defaultValue="90"
             type="number"
-            className="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-blue-300 text-center"
+            className="w-16 px-2 py-1.5 border border-slate-700 bg-slate-950 text-white rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-indigo-500/50 text-center"
           />
         </SettingRow>
       </SectionCard>
@@ -91,21 +91,21 @@ export const SecurityTab = () => {
           ].map((r, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800/40 transition-colors"
             >
               <span
-                className={`w-2 h-2 rounded-full flex-shrink-0 ${r.event.includes("Failed") ? "bg-red-500" : "bg-green-500"}`}
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${r.event.includes("Failed") ? "bg-red-500" : "bg-emerald-500"}`}
               />
-              <span className="text-[11px] text-gray-400 font-mono w-12">
+              <span className="text-[11px] text-slate-500 font-mono w-12">
                 {r.time}
               </span>
-              <span className="text-[13px] text-gray-700 flex-1">
+              <span className="text-[13px] text-slate-200 flex-1">
                 {r.event}
               </span>
-              <span className="text-[11px] font-semibold text-gray-600">
+              <span className="text-[11px] font-semibold text-slate-300">
                 {r.user}
               </span>
-              <span className="text-[10px] text-gray-400 font-mono">
+              <span className="text-[10px] text-slate-500 font-mono">
                 {r.ip}
               </span>
             </div>

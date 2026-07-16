@@ -49,8 +49,8 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await userService.getUsers();
-      setUsers(data);
+      const res = await userService.getUsers();
+      setUsers(res?.data || []);
     } catch (err) {
       showToast('Lỗi khi tải danh sách người dùng', 'error');
     } finally {

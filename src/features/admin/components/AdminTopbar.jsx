@@ -13,6 +13,7 @@ const PAGE_META = {
   '/admin/analytics': { title: 'Analytics',      icon: 'monitoring',   desc: 'Performance insights' },
   '/admin/settings':  { title: 'Settings',       icon: 'settings',     desc: 'System configuration' },
   '/admin/support':   { title: 'Help & Support', icon: 'help',         desc: 'Documentation & tickets' },
+  '/admin/profile':   { title: 'My Profile',     icon: 'person',       desc: 'View & manage your profile' },
 };
 
 /* ── Search index (navigable shortcuts) ─────────────────── */
@@ -25,6 +26,7 @@ const SEARCH_INDEX = [
   { label: 'Analytics',     desc: 'Charts & reports',         icon: 'monitoring',   to: '/admin/analytics' },
   { label: 'Settings',      desc: 'System configuration',     icon: 'settings',     to: '/admin/settings' },
   { label: 'Support',       desc: 'Help & tickets',           icon: 'help',         to: '/admin/support' },
+  { label: 'My Profile',    desc: 'Admin profile info',       icon: 'person',       to: '/admin/profile' },
   { label: 'Add Personnel', desc: 'Create a new staff member',icon: 'person_add',   to: '/admin/personnel' },
   { label: 'Export Report', desc: 'Download incident report', icon: 'download',     to: '/admin/incidents' },
 ];
@@ -141,7 +143,7 @@ const UserMenuDropdown = ({ user, onLogout, onClose }) => {
     : 'AD';
 
   const items = [
-    { icon: 'person', label: 'My Profile', action: () => { navigate('/admin/personnel'); onClose(); } },
+    { icon: 'person', label: 'My Profile', action: () => { navigate('/admin/profile'); onClose(); } },
     { icon: 'settings', label: 'Settings', action: () => { navigate('/admin/settings'); onClose(); } },
     { icon: 'help', label: 'Help & Support', action: () => { navigate('/admin/support'); onClose(); } },
   ];

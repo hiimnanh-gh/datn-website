@@ -53,38 +53,41 @@ export const IntegrationsTab = () => {
         subtitle="Third-party integrations and APIs"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {integrations.map((int) => (
-            <div
-              key={int.name}
-              className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50 hover:border-gray-200 transition-all"
-            >
-              <div className={`p-2.5 rounded-xl ${int.color}`}>
-                <span
-                  className="material-symbols-outlined text-[20px]"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  {int.icon}
-                </span>
+          {integrations.map((int) => {
+            const isConn = int.status === "Connected";
+            return (
+              <div
+                key={int.name}
+                className="flex items-center gap-4 p-4 rounded-xl border border-slate-800 bg-slate-800/20 hover:border-slate-700 transition-all"
+              >
+                <div className={`p-2.5 rounded-xl ${isConn ? "text-emerald-400 bg-emerald-950/30" : "text-slate-400 bg-slate-800"}`}>
+                  <span
+                    className="material-symbols-outlined text-[20px]"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    {int.icon}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-white truncate">
+                    {int.name}
+                  </p>
+                  <p className="text-[11px] text-slate-500">{int.provider}</p>
+                </div>
+                <div>
+                  <span
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                      isConn
+                        ? "bg-emerald-950/40 text-emerald-400 border border-emerald-900/50"
+                        : "bg-slate-800 text-slate-400 border border-slate-700"
+                    }`}
+                  >
+                    {int.status}
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-gray-900 truncate">
-                  {int.name}
-                </p>
-                <p className="text-[11px] text-gray-500">{int.provider}</p>
-              </div>
-              <div>
-                <span
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                    int.status === "Connected"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  {int.status}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </SectionCard>
 
@@ -94,15 +97,15 @@ export const IntegrationsTab = () => {
             (k) => (
               <div
                 key={k}
-                className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100"
+                className="flex items-center justify-between px-4 py-3 bg-slate-800/20 rounded-xl border border-slate-800"
               >
                 <div>
-                  <p className="text-[13px] font-semibold text-gray-800">{k}</p>
-                  <p className="text-[11px] font-mono text-gray-400">
+                  <p className="text-[13px] font-semibold text-slate-200">{k}</p>
+                  <p className="text-[11px] font-mono text-slate-500">
                     sk_••••••••••••••••••••••••••••XXXX
                   </p>
                 </div>
-                <button className="text-[12px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+                <button className="text-[12px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors">
                   <span className="material-symbols-outlined text-[14px]">
                     refresh
                   </span>

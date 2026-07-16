@@ -22,24 +22,24 @@ export const GeneralTab = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider block mb-1.5">
+            <label className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
               Organization Name
             </label>
             <input
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+              className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider block mb-1.5">
+              <label className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                 Timezone
               </label>
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white"
               >
                 <option value="Asia/Ho_Chi_Minh">
                   Asia/Ho Chi Minh (UTC+7)
@@ -49,13 +49,13 @@ export const GeneralTab = () => {
               </select>
             </div>
             <div>
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider block mb-1.5">
+              <label className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                 Language
               </label>
               <select
                 value={lang}
                 onChange={(e) => setLang(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white"
               >
                 <option value="vi">Tiếng Việt</option>
                 <option value="en">English</option>
@@ -63,19 +63,19 @@ export const GeneralTab = () => {
             </div>
           </div>
           <div>
-            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider block mb-1.5">
+            <label className="text-[12px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
               Emergency Hotline
             </label>
             <input
               defaultValue="115"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+              className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white"
             />
           </div>
         </div>
         <div className="mt-5 flex justify-end">
           <button
             onClick={handleSave}
-            className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all ${saved ? "bg-green-600" : "bg-[#2563eb] hover:bg-blue-700"} text-white flex items-center gap-2`}
+            className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all ${saved ? "bg-emerald-600" : "bg-indigo-600 hover:bg-indigo-700"} text-white flex items-center gap-2`}
           >
             <span className="material-symbols-outlined text-[16px]">
               {saved ? "check" : "save"}
