@@ -60,31 +60,13 @@ const DispatchMap = () => {
   const fetchMapData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [reqData, resData, provData, callsData] = await Promise.all([
+      const [reqData, resData, provData] = await Promise.all([
         dispatchRequestService.getAll().catch(() => []),
         dispatchResourceService.getAll().catch(() => []),
         providerService.getAll().catch(() => []),
-        dispatchRequestService.getEmergencyCalls().catch(() => []),
       ]);
 
-      // Combine dispatch requests and emergency calls with lat/long
-      const reqList = Array.isArray(reqData) ? reqData : [];
-      const callsList = Array.isArray(callsData) ? callsData : [];
-      
-      const combinedRequests = [
-        ...reqList,
-        ...callsList.map(c => ({
-          id: `Call-${c.id}`,
-          serviceTypeName: 'Emergency Call SOS',
-          urgencyLevel: c.aiUrgencyPrediction || 'HIGH',
-          status: c.status || 'PENDING',
-          latitude: c.latitude,
-          longitude: c.longitude,
-          edgeNodeName: 'N/A'
-        }))
-      ];
-
-      setRequests(combinedRequests);
+      setRequests(Array.isArray(reqData) ? reqData : []);
       setResources(Array.isArray(resData) ? resData : []);
       setProviders(Array.isArray(provData) ? provData : []);
     } catch (err) {

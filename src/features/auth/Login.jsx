@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import { authService } from '../../services/authService';
@@ -123,6 +123,13 @@ const Login = () => {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('sessionExpired') === 'true') {
+      setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
@@ -142,7 +149,7 @@ const Login = () => {
       }
 
       const authData = resData.data;
-      const { accessToken, fullName, roles } = authData;
+      const { accessToken, refreshToken, fullName, roles } = authData;
 
       // Extract array of role names
       const roleNames = (roles || []).map(r => (typeof r === 'object' ? (r.name || r.authority || '') : String(r)));
@@ -164,6 +171,7 @@ const Login = () => {
       login(
         { role: mappedRole, name: fullName || username, ...authData },
         accessToken,
+        refreshToken
       );
 
       if (mappedRole === 'ADMIN') {
@@ -262,7 +270,7 @@ const Login = () => {
 
             {/* Error message */}
             {error && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-medium">
                 <span className="material-symbols-outlined text-[18px]">error</span>
                 {error}
               </div>

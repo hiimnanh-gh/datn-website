@@ -133,7 +133,11 @@ const EmergencyIntakeDispatch = () => {
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Error fetching requests:', err);
-      setApiError('Không thể kết nối API Dispatch Requests. Vui lòng kiểm tra Server.');
+      if (err.response?.status === 401) {
+        setApiError('Phiên đăng nhập đã hết hạn');
+      } else {
+        setApiError('Không thể kết nối API Dispatch Requests. Vui lòng kiểm tra Server.');
+      }
     } finally {
       setIsLoadingRequests(false);
     }

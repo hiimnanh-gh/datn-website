@@ -18,12 +18,6 @@ export const dispatchRequestService = {
   getById: async (id) => {
     const response = await api.get(`/v1/dispatch-requests/${id}`);
     return unwrapBaseResponse(response);
-  },
-
-  // GET /api/v1/emergency-calls
-  getEmergencyCalls: async () => {
-    const response = await api.get('/v1/emergency-calls');
-    return unwrapBaseResponse(response);
   }
 };
 

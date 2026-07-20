@@ -7,9 +7,10 @@ const useAuthStore = create(
     (set) => ({
       user: null,
       token: null,
+      refreshToken: null,
       isAuthenticated: false,
 
-      login: (userData, token) => {
+      login: (userData, accessToken, refreshToken) => {
         const allowedRoles = ['ADMIN', 'PROVIDER', 'PROVIDER_ADMIN', 'DISPATCHER', 'DRIVER', 'REPORTER'];
         const roleStr = userData?.role?.toUpperCase() || '';
         
@@ -19,16 +20,29 @@ const useAuthStore = create(
           return;
         }
 
+        const activeRefreshToken = refreshToken || userData?.refreshToken || null;
+
         set({
-          user: userData,
-          token,
+          user: { ...userData, refreshToken: activeRefreshToken },
+          token: accessToken,
+          refreshToken: activeRefreshToken,
           isAuthenticated: true,
         });
+      },
+
+      updateTokens: (newAccessToken, newRefreshToken) => {
+        set((state) => ({
+          token: newAccessToken,
+          refreshToken: newRefreshToken || state.refreshToken,
+          user: state.user ? { ...state.user, refreshToken: newRefreshToken || state.user.refreshToken } : null,
+          isAuthenticated: true,
+        }));
       },
 
       logout: () => set({
         user: null,
         token: null,
+        refreshToken: null,
         isAuthenticated: false,
       }),
     }),
