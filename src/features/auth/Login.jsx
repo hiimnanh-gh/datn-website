@@ -144,12 +144,22 @@ const Login = () => {
       const authData = resData.data;
       const { accessToken, fullName, roles } = authData;
 
-      const userRoles = roles || [];
+      // Extract array of role names
+      const roleNames = (roles || []).map(r => (typeof r === 'object' ? (r.name || r.authority || '') : String(r)));
+
+      // CRITICAL FIX: Check PROVIDER before ADMIN because PROVIDER_ADMIN contains the string 'ADMIN'!
       let mappedRole = 'REPORTER';
-      if (userRoles.some(r => r.includes('ADMIN'))) mappedRole = 'ADMIN';
-      else if (userRoles.some(r => r.includes('PROVIDER'))) mappedRole = 'PROVIDER';
-      else if (userRoles.some(r => r.includes('DISPATCHER'))) mappedRole = 'DISPATCHER';
-      else if (userRoles.some(r => r.includes('DRIVER'))) mappedRole = 'DRIVER';
+      if (roleNames.some(r => r.includes('PROVIDER'))) {
+        mappedRole = 'PROVIDER';
+      } else if (roleNames.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN' || r === 'SYSTEM_ADMIN')) {
+        mappedRole = 'ADMIN';
+      } else if (roleNames.some(r => r.includes('DISPATCHER'))) {
+        mappedRole = 'DISPATCHER';
+      } else if (roleNames.some(r => r.includes('DRIVER'))) {
+        mappedRole = 'DRIVER';
+      } else if (roleNames.some(r => r.includes('ADMIN'))) {
+        mappedRole = 'ADMIN';
+      }
 
       login(
         { role: mappedRole, name: fullName || username, ...authData },
@@ -157,11 +167,11 @@ const Login = () => {
       );
 
       if (mappedRole === 'ADMIN') {
-        navigate('/admin/dashboard');
+        navigate('/admin/dispatch-requests');
       } else if (mappedRole === 'PROVIDER') {
-        navigate('/provider/dashboard');
+        navigate('/provider/fleet');
       } else if (mappedRole === 'DISPATCHER') {
-        navigate('/dispatcher/hub');
+        navigate('/dispatcher/dispatch-requests');
       } else if (mappedRole === 'DRIVER') {
         navigate('/driver/mission');
       } else {
@@ -213,8 +223,6 @@ const Login = () => {
               Secure access for authorised personnel only
             </p>
           </div>
-
-
 
           {/* ── Form ── */}
           <form onSubmit={handleLogin} className="space-y-4 px-8 pb-4 pt-6">

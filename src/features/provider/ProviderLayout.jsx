@@ -6,7 +6,6 @@ import {
   LogOut,
   UserCircle2,
   Ambulance,
-  DollarSign
 } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import './ProviderLayout.css';
@@ -15,15 +14,14 @@ const ProviderLayout = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
 
-  if (!isAuthenticated || user?.role !== 'PROVIDER') {
+  if (!isAuthenticated || (user?.role !== 'PROVIDER' && user?.role !== 'ADMIN')) {
     return <Navigate to="/login" replace />;
   }
 
   const links = [
-    { to: '/provider/dashboard', icon: <LayoutDashboard size={20} />, label: 'Analytics Dashboard' },
-    { to: '/provider/fleet', icon: <Truck size={20} />, label: 'Fleet Management' },
-    { to: '/provider/drivers', icon: <UserCircle2 size={20} />, label: 'Driver Accounts' },
-    { to: '/provider/commission', icon: <DollarSign size={20} />, label: 'Commission Settlement' },
+    { to: '/provider/fleet', icon: <Truck size={20} />, label: 'Quản lý Đội xe (Fleet)' },
+    { to: '/provider/drivers', icon: <UserCircle2 size={20} />, label: 'Tài khoản Tài xế' },
+    { to: '/provider/dashboard', icon: <LayoutDashboard size={20} />, label: 'Tổng quan Vận hành' },
   ];
 
   const handleLogout = () => {
@@ -36,9 +34,9 @@ const ProviderLayout = () => {
       {/* Sidebar */}
       <aside className="provider-sidebar">
         <div className="sidebar-header">
-          <Ambulance className="sidebar-logo" />
+          <Ambulance className="sidebar-logo text-blue-500" />
           <div className="sidebar-brand">
-            <span className="brand-name">{user?.name || 'City EMS'}</span>
+            <span className="brand-name">{user?.fullName || user?.username || 'Provider Center'}</span>
             <span className="brand-role">Provider Portal</span>
           </div>
         </div>
@@ -60,13 +58,13 @@ const ProviderLayout = () => {
           <div className="user-info">
             <UserCircle2 size={24} className="user-avatar" />
             <div className="user-details">
-              <span className="user-name">{user?.name}</span>
+              <span className="user-name">{user?.fullName || user?.username}</span>
               <span className="user-role-badge">PROVIDER</span>
             </div>
           </div>
           <button className="logout-btn" onClick={handleLogout}>
             <LogOut size={18} />
-            <span>Logout</span>
+            <span>Đăng xuất</span>
           </button>
         </div>
       </aside>

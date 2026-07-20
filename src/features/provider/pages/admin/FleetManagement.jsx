@@ -1,375 +1,243 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Plus, 
-  Trash2, 
-  Truck, 
-  Search, 
-  ShieldCheck, 
-  Settings, 
-  DollarSign, 
-  Star, 
-  MessageSquare,
-  UploadCloud,
-  CheckCircle2
+  Truck, RefreshCw, Search, Edit3, X, MapPin
 } from 'lucide-react';
-import './FleetManagement.css';
+import { dispatchResourceService } from '../../../../services/dispatchResourceService';
 
-// Initial Fleet data
-const INITIAL_FLEET = [
-  { id: 'AMB-101', type: 'Advanced Life Support (ALS)', plate: '29A-987.65', status: 'Available', crew: 'John D., Sarah M.' },
-  { id: 'AMB-102', type: 'Basic Life Support (BLS)', plate: '51F-123.45', status: 'Dispatched', crew: 'Mike R., Tom B.' },
-  { id: 'AMB-104', type: 'Bariatric Unit', plate: '30H-443.21', status: 'Available', crew: 'Emily W., David L.' },
-  { id: 'AMB-105', type: 'Neonatal Unit', plate: '51G-887.11', status: 'Available', crew: 'Dr. Smith, Nurse Kelly' },
-];
-
-// Initial Public Reviews
-const MOCK_REVIEWS = [
-  { id: 'R-1', unit: 'AMB-101', user: 'Lê Minh Hùng', rating: 5, comment: 'Đội ngũ y tế xử lý tai nạn nhanh chóng, nhân viên tận tình.', date: 'Today' },
-  { id: 'R-2', unit: 'AMB-102', user: 'Trần Thị Thảo', rating: 4, comment: 'Xe sạch sẽ, tuy nhiên tài xế đi đường hơi dằn xóc.', date: 'Yesterday' },
-  { id: 'R-3', unit: 'AMB-104', user: 'Phan Văn Đạt', rating: 5, comment: 'Hỗ trợ nâng chuyển bệnh nhân nặng rất tốt. Đầy đủ trang bị.', date: '3 days ago' },
-];
+const getStatusBadge = (status) => {
+  switch (status?.toUpperCase()) {
+    case 'AVAILABLE':
+      return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
+    case 'BUSY':
+      return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
+    case 'OFFLINE':
+      return 'bg-slate-500/20 text-slate-400 border-slate-500/40';
+    case 'MAINTENANCE':
+      return 'bg-rose-500/20 text-rose-400 border-rose-500/40';
+    default:
+      return 'bg-slate-500/20 text-slate-400 border-slate-500/40';
+  }
+};
 
 const FleetManagement = () => {
-  const [fleet, setFleet] = useState(INITIAL_FLEET);
+  const [resources, setResources] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Registration Form States
-  const [newPlate, setNewPlate] = useState('');
-  const [newType, setNewType] = useState('Advanced Life Support (ALS)');
-  const [newCrew, setNewCrew] = useState('');
-  const [fileName, setFileName] = useState('');
-  const [onboardSuccess, setOnboardSuccess] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Storefront Config States
-  const [alsBase, setAlsBase] = useState(300.00);
-  const [blsBase, setBlsBase] = useState(150.00);
-  const [mileagePremium, setMileagePremium] = useState(4.50);
-  const [configSuccess, setConfigSuccess] = useState(false);
+  const [editModal, setEditModal] = useState(null);
+  const [newStatus, setNewStatus] = useState('AVAILABLE');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Handle doc upload simulation
-  const handleDocChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFileName(e.target.files[0].name);
+  const fetchFleet = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await dispatchResourceService.getAll();
+      setResources(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching fleet resources:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFleet();
+  }, [fetchFleet]);
+
+  const handleUpdateStatus = async () => {
+    if (!editModal) return;
+    setIsUpdating(true);
+    try {
+      await dispatchResourceService.updateStatus(editModal.id, newStatus);
+      setEditModal(null);
+      fetchFleet();
+    } catch (err) {
+      console.error('Error updating resource status:', err);
+      alert('Cập nhật trạng thái xe thất bại!');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  // Register New Ambulance Unit
-  const handleRegisterAmbulance = (e) => {
-    e.preventDefault();
-    if (!newPlate.trim()) return;
-
-    const newId = `AMB-${100 + fleet.length + 2}`;
-    const newUnit = {
-      id: newId,
-      type: newType,
-      plate: newPlate,
-      status: 'Available',
-      crew: newCrew || 'Unassigned'
-    };
-
-    setFleet([...fleet, newUnit]);
-    setOnboardSuccess(`Ambulance unit ${newId} (${newPlate}) registered successfully!`);
-    setNewPlate('');
-    setNewCrew('');
-    setFileName('');
-
-    setTimeout(() => setOnboardSuccess(''), 4000);
-  };
-
-  // Remove Ambulance Unit
-  const handleRemoveUnit = (id) => {
-    setFleet(fleet.filter(unit => unit.id !== id));
-  };
-
-  // Save Storefront Fares configuration
-  const handleSaveConfig = (e) => {
-    e.preventDefault();
-    setConfigSuccess(true);
-    setTimeout(() => setConfigSuccess(false), 3000);
-  };
-
-  const filteredFleet = fleet.filter(unit => 
-    unit.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    unit.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    unit.plate.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredFleet = resources.filter(res => {
+    const codeMatch = searchTerm ? res.resourceCode?.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+    const statusMatch = statusFilter === 'ALL' || res.status === statusFilter;
+    return codeMatch && statusMatch;
+  });
 
   return (
-    <div className="fleet-management-v2 text-slate-100 p-6 space-y-6 font-sans">
+    <div className="text-slate-100 p-6 space-y-6 font-sans bg-slate-950 min-h-screen">
       
-      {/* ── Page Header ── */}
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-5 text-left">
+      {/* Header */}
+      <div className="flex justify-between items-center border-b border-slate-800 pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-wider font-mono text-white uppercase flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-wider font-mono text-white uppercase flex items-center gap-2">
             <Truck className="text-blue-500" size={24} />
-            Fleet & Storefront Registry
+            Quản lý Đội xe (Fleet Management)
           </h1>
-          <p className="text-xs text-slate-500 mt-1 uppercase font-mono tracking-widest">
-            Onboard Ambulances · Configure Service Fare Models
+          <p className="text-xs text-slate-400 mt-1">
+            Quản lý danh sách phương tiện cấp cứu và trạng thái vận hành của đơn vị.
           </p>
         </div>
+
+        <button
+          onClick={fetchFleet}
+          className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors font-mono"
+        >
+          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          Làm mới Đội xe
+        </button>
       </div>
 
-      {/* ── Top Workspace: Register Form & Storefront Config ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
-        
-        {/* Ambulance Onboarding Form (Col: 7) */}
-        <div className="lg:col-span-7 bg-slate-900/40 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-2xl">
-          <div>
-            <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase flex items-center gap-1.5 mb-2">
-              <Plus className="text-blue-400" size={18} />
-              Register New Ambulance
-            </h2>
-            <p className="text-xs text-slate-500 mb-4">Onboard emergency units by filling credentials and certificates.</p>
-            
-            {onboardSuccess && (
-              <div className="mb-4 p-3 bg-emerald-950/60 border border-emerald-900 text-emerald-400 text-xs rounded-lg flex items-center gap-2">
-                <CheckCircle2 size={16} />
-                <span>{onboardSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleRegisterAmbulance} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* License Plate */}
-                <div>
-                  <label className="text-[9px] font-bold font-mono text-slate-500 uppercase tracking-wider block mb-1">License Plate</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 51F-123.45"
-                    value={newPlate}
-                    onChange={(e) => setNewPlate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 transition-all font-mono"
-                  />
-                </div>
-
-                {/* Vehicle type */}
-                <div>
-                  <label className="text-[9px] font-bold font-mono text-slate-500 uppercase tracking-wider block mb-1">Ambulance Class Type</label>
-                  <select
-                    value={newType}
-                    onChange={(e) => setNewType(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 transition-all font-mono"
-                  >
-                    <option value="Advanced Life Support (ALS)">Advanced Life Support (ALS)</option>
-                    <option value="Basic Life Support (BLS)">Basic Life Support (BLS)</option>
-                    <option value="Bariatric Unit">Bariatric Rescue Unit</option>
-                    <option value="Neonatal Unit">Neonatal Care Unit</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Crew assignment */}
-              <div>
-                <label className="text-[9px] font-bold font-mono text-slate-500 uppercase tracking-wider block mb-1">Crew Assignments</label>
-                <input
-                  type="text"
-                  placeholder="e.g. John Doe (ALS), Sarah Smith (BLS)"
-                  value={newCrew}
-                  onChange={(e) => setNewCrew(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-lg px-3 py-2.5 outline-none focus:border-blue-500 transition-all font-mono"
-                />
-              </div>
-
-              {/* Upload Registration Docs */}
-              <div>
-                <label className="text-[9px] font-bold font-mono text-slate-500 uppercase tracking-wider block mb-1">Registration & Medical License Docs</label>
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 hover:border-slate-700 bg-slate-950 rounded-xl p-4 cursor-pointer transition-all">
-                  <UploadCloud className="text-slate-500 mb-2" size={24} />
-                  <span className="text-xs text-slate-400 font-semibold">
-                    {fileName ? fileName : 'Upload registration certificate.pdf'}
-                  </span>
-                  <span className="text-[9px] text-slate-600 font-mono mt-1">PDF or image file · Max 5MB</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={handleDocChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-mono text-xs font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-98"
-              >
-                ONBOARD VEHICLE UNIT
-              </button>
-            </form>
-          </div>
+      {/* Toolbar */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-3 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Tìm theo Mã xe (Resource Code)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+          />
         </div>
 
-        {/* Storefront Fare Configuration (Col: 5) */}
-        <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-2xl">
-          <div>
-            <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase flex items-center gap-1.5 mb-2">
-              <Settings className="text-blue-400" size={18} />
-              Storefront Base Fares
-            </h2>
-            <p className="text-xs text-slate-500 mb-4">Set pricing rules visible to dispatch operators on matching feeds.</p>
-
-            {configSuccess && (
-              <div className="mb-4 p-3 bg-emerald-950/60 border border-emerald-900 text-emerald-400 text-xs rounded-lg flex items-center gap-2">
-                <CheckCircle2 size={16} />
-                <span>Base fares and mileage configuration updated successfully!</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSaveConfig} className="space-y-4">
-              {/* ALS Base */}
-              <div>
-                <div className="flex justify-between items-center mb-1 font-mono text-[10px]">
-                  <span className="text-slate-500 uppercase font-bold">ALS Base Rate</span>
-                  <span className="text-white font-bold">${alsBase.toLocaleString()}</span>
-                </div>
-                <input
-                  type="range"
-                  min={100}
-                  max={1000}
-                  step={50}
-                  value={alsBase}
-                  onChange={(e) => setAlsBase(parseInt(e.target.value))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-              </div>
-
-              {/* BLS Base */}
-              <div>
-                <div className="flex justify-between items-center mb-1 font-mono text-[10px]">
-                  <span className="text-slate-500 uppercase font-bold">BLS Base Rate</span>
-                  <span className="text-white font-bold">${blsBase.toLocaleString()}</span>
-                </div>
-                <input
-                  type="range"
-                  min={50}
-                  max={500}
-                  step={25}
-                  value={blsBase}
-                  onChange={(e) => setBlsBase(parseInt(e.target.value))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-              </div>
-
-              {/* Mileage Rate */}
-              <div>
-                <div className="flex justify-between items-center mb-1 font-mono text-[10px]">
-                  <span className="text-slate-500 uppercase font-bold">Mileage Premium (per km)</span>
-                  <span className="text-white font-bold">${mileagePremium.toFixed(2)}</span>
-                </div>
-                <input
-                  type="range"
-                  min={1.00}
-                  max={15.00}
-                  step={0.50}
-                  value={mileagePremium}
-                  onChange={(e) => setMileagePremium(parseFloat(e.target.value))}
-                  className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-98"
-              >
-                SAVE PRICING CONFIG
-              </button>
-            </form>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-850 text-[10px] text-slate-500 font-mono flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-blue-400" />
-            <span>Fares undergo compliance review by super admin</span>
-          </div>
-        </div>
-
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none"
+        >
+          <option value="ALL">Trạng thái: Tất cả</option>
+          <option value="AVAILABLE">AVAILABLE (Có sẵn)</option>
+          <option value="BUSY">BUSY (Đang bận)</option>
+          <option value="OFFLINE">OFFLINE (Tắt máy)</option>
+          <option value="MAINTENANCE">MAINTENANCE (Bảo trì)</option>
+        </select>
       </div>
 
-      {/* ── Active Fleet List and Public Reviews Feed ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
-        
-        {/* Fleet Datatable (Col: 7) */}
-        <div className="lg:col-span-7 bg-slate-900/40 border border-slate-800 p-5 rounded-2xl shadow-2xl flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase">Active Fleet Registry</h2>
-              <div className="relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1">
-                <Search size={14} className="text-slate-500 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Filter fleet..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-transparent border-none outline-none text-xs text-slate-350 w-[120px] font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-850 text-slate-400 font-mono text-[10px] tracking-wider uppercase">
-                    <th className="py-2.5 px-3">Unit ID</th>
-                    <th className="py-2.5 px-3">License Plate</th>
-                    <th className="py-2.5 px-3">Class Class</th>
-                    <th className="py-2.5 px-3">Assigned Crew</th>
-                    <th className="py-2.5 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredFleet.map((unit) => (
-                    <tr key={unit.id} className="border-b border-slate-850 hover:bg-slate-900/50 transition-colors">
-                      <td className="py-3.5 px-3 font-mono font-bold text-blue-400">{unit.id}</td>
-                      <td className="py-3.5 px-3 font-mono text-slate-200">{unit.plate}</td>
-                      <td className="py-3.5 px-3 text-slate-300">{unit.type}</td>
-                      <td className="py-3.5 px-3 text-slate-400">{unit.crew}</td>
-                      <td className="py-3.5 px-3 text-right">
-                        <button 
-                          onClick={() => handleRemoveUnit(unit.id)}
-                          className="text-red-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 transition-all ml-auto block"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Public Feedback Ratings Feed (Col: 5) */}
-        <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 p-5 rounded-2xl shadow-2xl">
-          <h2 className="text-sm font-bold font-mono tracking-wider text-white uppercase mb-1">Public Ratings & Feedback</h2>
-          <p className="text-xs text-slate-500 mb-4">Live feedback posted by dispatch operators and clients.</p>
-
-          <div className="space-y-4 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
-            {MOCK_REVIEWS.map((rev) => (
-              <div key={rev.id} className="p-3.5 bg-slate-950 border border-slate-850 rounded-xl space-y-2 hover:border-slate-850 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="font-bold text-xs text-slate-200">{rev.user}</span>
-                    <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
-                      Vehicle: <span className="text-blue-400 font-semibold">{rev.unit}</span>
+      {/* Table */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <table className="w-full text-left text-xs text-slate-300">
+          <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
+            <tr>
+              <th className="py-3.5 px-4">Mã tài nguyên</th>
+              <th className="py-3.5 px-4">Loại dịch vụ</th>
+              <th className="py-3.5 px-4">Đơn vị (Provider)</th>
+              <th className="py-3.5 px-4">Tài xế hiện tại</th>
+              <th className="py-3.5 px-4">Vùng (Edge Node)</th>
+              <th className="py-3.5 px-4">Trạng thái</th>
+              <th className="py-3.5 px-4 text-right">Đổi trạng thái</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60 font-mono">
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
+                  Đang tải thông tin Đội xe...
+                </td>
+              </tr>
+            ) : filteredFleet.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
+                  Không tìm thấy phương tiện phù hợp.
+                </td>
+              </tr>
+            ) : (
+              filteredFleet.map(res => (
+                <tr key={res.id} className="hover:bg-slate-800/40 transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-blue-400 flex items-center gap-2">
+                    <Truck size={14} className="text-blue-500" />
+                    {res.resourceCode}
+                  </td>
+                  <td className="py-3.5 px-4 text-slate-200 font-sans">
+                    {res.resourceTypeName || `Type #${res.resourceTypeId}`}
+                  </td>
+                  <td className="py-3.5 px-4 text-slate-300 font-sans">
+                    {res.providerName || `Provider #${res.providerId}`}
+                  </td>
+                  <td className="py-3.5 px-4 text-slate-300 font-sans">
+                    {res.currentDriverName || <span className="text-slate-500 italic">Chưa gán</span>}
+                  </td>
+                  <td className="py-3.5 px-4 text-slate-400 font-sans">
+                    {res.edgeNodeName || `Node #${res.edgeNodeId}`}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusBadge(res.status)}`}>
+                      {res.status}
                     </span>
-                  </div>
-                  <div className="flex gap-0.5 text-yellow-400 text-xs">
-                    {Array.from({ length: rev.rating }).map((_, i) => (
-                      <Star key={i} size={12} fill="currentColor" />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-slate-400 italic font-mono leading-relaxed">
-                  "{rev.comment}"
-                </p>
-                <div className="text-[9px] text-slate-500 font-mono text-right">{rev.date}</div>
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-sans">
+                    <button
+                      onClick={() => {
+                        setEditModal(res);
+                        setNewStatus(res.status);
+                      }}
+                      className="p-1.5 bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300 rounded transition-colors"
+                      title="Cập nhật trạng thái"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EDIT MODAL */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-slate-100 flex items-center gap-2 font-mono">
+                <Edit3 className="text-blue-400" size={18} />
+                Cập nhật Trạng thái Xe: {editModal.resourceCode}
+              </h3>
+              <button onClick={() => setEditModal(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono space-y-1">
+                <div>Đơn vị: <span className="text-slate-300">{editModal.providerName}</span></div>
+                <div>Trạng thái hiện tại: <span className="text-blue-400 font-bold">{editModal.status}</span></div>
               </div>
-            ))}
+
+              <div>
+                <label className="text-[10px] text-slate-500 block mb-1 uppercase font-semibold">Trạng thái mới</label>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                >
+                  <option value="AVAILABLE">AVAILABLE - Sẵn sàng điều xe</option>
+                  <option value="OFFLINE">OFFLINE - Tắt máy / Nghỉ ca</option>
+                  <option value="MAINTENANCE">MAINTENANCE - Bảo dưỡng kỹ thuật</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-800 pt-3">
+              <button
+                onClick={() => setEditModal(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleUpdateStatus}
+                disabled={isUpdating}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors font-mono"
+              >
+                {isUpdating ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </button>
+            </div>
           </div>
         </div>
-
-      </div>
+      )}
 
     </div>
   );

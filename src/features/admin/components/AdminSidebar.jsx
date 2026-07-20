@@ -1,116 +1,127 @@
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { 
+  ShieldAlert, 
+  Truck, 
+  Map, 
+  History, 
+  LayoutDashboard, 
+  Users, 
+  Radio, 
+  X,
+  RadioTower
+} from 'lucide-react';
 import AppLogo from '../../../components/AppLogo';
 
 const NAV_ITEMS = [
-  { to: '/admin/dashboard', icon: 'dashboard',    label: 'Dashboard',    fillActive: true },
-  { to: '/admin/dispatch',  icon: 'emergency',    label: 'Live Dispatch'  },
-  { to: '/admin/tracking',  icon: 'location_on',  label: 'Unit Tracking'  },
-  { to: '/admin/incidents', icon: 'assignment',   label: 'Incident Logs'  },
-  { to: '/admin/users',     icon: 'groups',       label: 'User Management'},
-  { to: '/admin/analytics', icon: 'monitoring',   label: 'Analytics'      },
-];
-
-const BOTTOM_LINKS = [
-  { to: '/admin/settings', icon: 'settings', label: 'Settings' },
-  { to: '/admin/support',  icon: 'help',     label: 'Support'  },
+  { to: '/admin/dispatch-requests', icon: ShieldAlert,     label: 'Tiếp nhận & Điều phối', badge: 'SOS' },
+  { to: '/admin/dispatch-resources',icon: Truck,           label: 'Tài nguyên điều phối' },
+  { to: '/admin/dispatch-map',       icon: Map,             label: 'Bản đồ điều phối' },
+  { to: '/admin/incidents',          icon: History,         label: 'Lịch sử điều phối' },
+  { to: '/admin/dashboard',          icon: LayoutDashboard, label: 'Tổng quan vận hành' },
+  { to: '/admin/users',              icon: Users,           label: 'Quản lý người dùng' },
 ];
 
 const AdminSidebar = ({ open, onClose }) => {
   const navigate = useNavigate();
-  const handleDispatchNow = () => navigate('/admin/dispatch');
 
   return (
     <>
-      {/* ── Mobile Backdrop ── */}
+      {/* Mobile Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* ── Sidebar Panel ── */}
+      {/* Sidebar Panel */}
       <aside
         id="mobile-sidebar"
         className={`
           fixed left-0 top-0 h-screen w-[260px] z-50 
-          bg-slate-900 border-r border-slate-800 shadow-xl 
-          flex flex-col py-6
+          bg-slate-900 border-r border-slate-800/80 shadow-2xl 
+          flex flex-col py-5 px-3
           transition-transform duration-300 ease-in-out
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
         `}
       >
-        {/* ── Brand header ── */}
-        <div className="px-5 mb-8 flex items-center justify-between">
-          <AppLogo size={40} showText textLight />
-          <button
-            onClick={onClose}
-            className="md:hidden text-slate-400 hover:text-white"
+        {/* Brand Logo Header */}
+        <div className="px-3 mb-6 flex items-center justify-between">
+          <AppLogo size={36} showText textLight />
+          <button 
+            onClick={onClose} 
+            className="md:hidden p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
-            <span className="material-symbols-outlined">close</span>
+            <X size={20} />
           </button>
         </div>
 
-        {/* ── Navigation ── */}
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map(({ to, icon, label, fillActive }) => (
+        {/* System Active Status Pill */}
+        <div className="mx-2 mb-5 px-3 py-2 bg-slate-950/70 border border-slate-800/80 rounded-xl flex items-center justify-between text-xs font-sans">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-slate-300 font-medium text-[11px]">System Active</span>
+          </div>
+          <span className="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/50">
+            v2.4
+          </span>
+        </div>
+
+        {/* Navigation List */}
+        <nav className="flex-1 space-y-1 overflow-y-auto font-sans">
+          {NAV_ITEMS.map(({ to, icon: IconComponent, label, badge }) => (
             <NavLink
               key={to}
               to={to}
+              onClick={onClose}
               className={({ isActive }) =>
-                isActive
-                  ? 'flex items-center gap-3 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-sm transition-transform active:scale-95'
-                  : 'flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors duration-200 rounded-lg font-medium active:scale-95'
+                `group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all duration-200 ${
+                  isActive
+                    ? 'bg-indigo-600/90 text-white font-semibold shadow-lg shadow-indigo-600/25 border border-indigo-500/30'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+                }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span
-                    className="material-symbols-outlined text-[20px]"
-                    style={isActive && fillActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                  >
-                    {icon}
-                  </span>
-                  <span className="text-[14px]">
-                    {label}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <IconComponent 
+                      size={18} 
+                      className={`transition-colors ${
+                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                      }`} 
+                    />
+                    <span className="text-[13px] tracking-wide">{label}</span>
+                  </div>
+
+                  {badge && (
+                    <span className="text-[10px] font-mono font-bold bg-red-500/20 text-red-400 border border-red-500/40 px-1.5 py-0.2 rounded">
+                      {badge}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
           ))}
         </nav>
 
-        {/* ── Bottom actions ── */}
-        <div className="px-4 mt-auto pt-6 border-t border-slate-800">
+        {/* Bottom CTA Button */}
+        <div className="mt-auto pt-4 border-t border-slate-800/80 px-1">
           <button
-            onClick={handleDispatchNow}
-            className="w-full bg-[#ba1a1a] text-white font-medium text-[14px] py-2.5 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 mb-6 shadow-md flex items-center justify-center gap-2 active:scale-95"
+            onClick={() => {
+              navigate('/admin/dispatch-requests');
+              if (onClose) onClose();
+            }}
+            className="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-[13px] py-2.5 px-4 rounded-xl shadow-lg shadow-red-950/40 flex items-center justify-center gap-2 transition-all active:scale-95 border border-red-500/30"
           >
-            <span className="material-symbols-outlined text-[18px]">campaign</span>
-            Dispatch Now
+            <RadioTower size={17} className="animate-pulse" />
+            <span>Điều phối Khẩn cấp</span>
           </button>
-          
-          <div className="space-y-1">
-            {BOTTOM_LINKS.map(({ to, icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'flex items-center gap-3 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium'
-                    : 'flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors duration-200 rounded-lg font-medium'
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span className="material-symbols-outlined text-[20px]">{icon}</span>
-                    <span className="text-[14px]">{label}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
         </div>
       </aside>
     </>

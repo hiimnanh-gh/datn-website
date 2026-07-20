@@ -1,0 +1,2979 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Edge Nodes",
+      "description": "Quản lý vùng quản lý điều phối địa lý (Edge Nodes)"
+    },
+    {
+      "name": "Health Check",
+      "description": "Kiểm tra hệ thống"
+    },
+    {
+      "name": "Dispatch Resources",
+      "description": "Quản lý xe cứu thương / tài nguyên điều phối"
+    },
+    {
+      "name": "File Storage",
+      "description": "Quản lý lưu trữ file trên MinIO"
+    },
+    {
+      "name": "Dispatch Mission",
+      "description": "Quản lý lệnh điều xe"
+    },
+    {
+      "name": "Emergency Call",
+      "description": "API yêu cầu cấp cứu"
+    },
+    {
+      "name": "Dispatch Requests",
+      "description": "Quản lý yêu cầu điều phối cấp cứu"
+    },
+    {
+      "name": "Authentication",
+      "description": "API xác thực người dùng (Đăng nhập, Đăng xuất, Làm mới token)"
+    },
+    {
+      "name": "Service Types",
+      "description": "Quản lý danh mục loại dịch vụ / loại xe cấp cứu"
+    },
+    {
+      "name": "Users",
+      "description": "Quản lý danh sách người dùng (nhân viên điều phối, tài xế, chủ xe...)"
+    },
+    {
+      "name": "Providers",
+      "description": "Quản lý đơn vị cung cấp xe cứu thương / phòng khám (Providers)"
+    }
+  ],
+  "paths": {
+    "/api/v1/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Lấy người dùng theo ID",
+        "description": "Lấy chi tiết tài khoản người dùng theo ID",
+        "operationId": "getUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseUserDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Cập nhật người dùng",
+        "description": "Cập nhật thông tin chi tiết của người dùng theo ID",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseUserDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Xóa người dùng",
+        "description": "Xóa tài khoản người dùng khỏi hệ thống theo ID",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/service-types/{id}": {
+      "get": {
+        "tags": [
+          "Service Types"
+        ],
+        "summary": "Lấy loại dịch vụ theo ID",
+        "description": "Lấy chi tiết loại dịch vụ theo ID",
+        "operationId": "getServiceTypeById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseServiceTypeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Service Types"
+        ],
+        "summary": "Cập nhật loại dịch vụ",
+        "description": "Cập nhật thông tin chi tiết loại dịch vụ theo ID",
+        "operationId": "updateServiceType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseServiceTypeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Service Types"
+        ],
+        "summary": "Xóa loại dịch vụ",
+        "description": "Xóa loại dịch vụ ra khỏi hệ thống theo ID",
+        "operationId": "deleteServiceType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/providers/{id}": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Lấy đơn vị cung cấp theo ID",
+        "description": "Chi tiết một đơn vị cung cấp theo ID",
+        "operationId": "getProviderById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Cập nhật thông tin đơn vị cung cấp",
+        "description": "Cập nhật thông tin chi tiết của đơn vị cung cấp theo ID",
+        "operationId": "updateProvider",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Xóa đơn vị cung cấp",
+        "description": "Xóa một đơn vị cung cấp khỏi hệ thống theo ID",
+        "operationId": "deleteProvider",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/edge-nodes/{id}": {
+      "get": {
+        "tags": [
+          "Edge Nodes"
+        ],
+        "summary": "Lấy vùng quản lý theo ID",
+        "description": "Lấy thông tin chi tiết một vùng quản lý theo ID",
+        "operationId": "getEdgeNodeById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseEdgeNodeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Edge Nodes"
+        ],
+        "summary": "Cập nhật vùng quản lý",
+        "description": "Cập nhật thông tin chi tiết (tên, vùng đa giác phủ sóng) của vùng quản lý theo ID",
+        "operationId": "updateEdgeNode",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdgeNodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseEdgeNodeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Edge Nodes"
+        ],
+        "summary": "Xóa vùng quản lý",
+        "description": "Xóa một vùng quản lý ra khỏi hệ thống theo ID",
+        "operationId": "deleteEdgeNode",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-resources/{id}": {
+      "get": {
+        "tags": [
+          "Dispatch Resources"
+        ],
+        "summary": "Lấy thông tin chi tiết xe cứu thương",
+        "description": "Lấy chi tiết thông tin xe cứu thương theo ID",
+        "operationId": "getResourceById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseDispatchResourceDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Dispatch Resources"
+        ],
+        "summary": "Cập nhật thông tin xe cứu thương",
+        "description": "Cập nhật thông tin chi tiết xe cứu thương theo ID",
+        "operationId": "updateResource",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchResourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseDispatchResourceDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Dispatch Resources"
+        ],
+        "summary": "Xóa xe cứu thương",
+        "description": "Xóa xe cứu thương khỏi hệ thống theo ID",
+        "operationId": "deleteResource",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Lấy danh sách tất cả người dùng",
+        "description": "Trả về danh sách toàn bộ người dùng trong hệ thống",
+        "operationId": "getAllUsers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListUserDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Tạo mới người dùng",
+        "description": "Tạo mới tài khoản người dùng với các thông tin chi tiết và vai trò",
+        "operationId": "createUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseUserDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/service-types": {
+      "get": {
+        "tags": [
+          "Service Types"
+        ],
+        "summary": "Lấy danh sách tất cả loại dịch vụ",
+        "description": "Trả về danh sách toàn bộ các loại dịch vụ",
+        "operationId": "getAllServiceTypes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListServiceTypeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Service Types"
+        ],
+        "summary": "Tạo mới loại dịch vụ",
+        "description": "Tạo danh mục loại dịch vụ/xe cấp cứu mới",
+        "operationId": "createServiceType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseServiceTypeDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/providers": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Lấy tất cả các đơn vị cung cấp",
+        "description": "Trả về danh sách toàn bộ các nhà cung cấp hoạt động trong hệ thống",
+        "operationId": "getAllProviders",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListProviderDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Tạo mới đơn vị xe/phòng khám",
+        "description": "Đăng ký một đơn vị cung cấp tài nguyên mới liên kết với một người dùng (Owner)",
+        "operationId": "createProvider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseProviderDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/upload": {
+      "post": {
+        "tags": [
+          "File Storage"
+        ],
+        "summary": "Upload file",
+        "description": "Upload file âm thanh hoặc ảnh lên MinIO",
+        "operationId": "upload",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/edge-nodes": {
+      "get": {
+        "tags": [
+          "Edge Nodes"
+        ],
+        "summary": "Lấy toàn bộ vùng quản lý",
+        "description": "Lấy danh sách toàn bộ các vùng quản lý hoạt động trong hệ thống",
+        "operationId": "getAllEdgeNodes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListEdgeNodeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Edge Nodes"
+        ],
+        "summary": "Tạo mới vùng quản lý",
+        "description": "Tạo mới một vùng quản lý với danh sách các tọa độ của Polygon phủ sóng",
+        "operationId": "createEdgeNode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdgeNodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseEdgeNodeDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-resources": {
+      "get": {
+        "tags": [
+          "Dispatch Resources"
+        ],
+        "summary": "Lấy danh sách tất cả xe cứu thương",
+        "description": "Trả về danh sách toàn bộ các xe cứu thương đang quản lý",
+        "operationId": "getAllResources",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListDispatchResourceDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Dispatch Resources"
+        ],
+        "summary": "Thêm mới xe cứu thương",
+        "description": "Tạo mới tài nguyên xe cứu thương / đội ngũ y tế",
+        "operationId": "createResource",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchResourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseDispatchResourceDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-missions": {
+      "post": {
+        "tags": [
+          "Dispatch Mission"
+        ],
+        "summary": "Tạo lệnh điều xe mới",
+        "description": "Tạo mission + tự động gửi thông báo WebSocket cho Dispatcher",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDispatchMissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchMissionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calls/voice": {
+      "post": {
+        "tags": [
+          "Emergency Call"
+        ],
+        "summary": "Gọi cấp cứu",
+        "description": "Tải lên ghi âm cuộc gọi cấp cứu kèm định vị",
+        "operationId": "createVoiceCall",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceCallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calls/sos": {
+      "post": {
+        "tags": [
+          "Emergency Call"
+        ],
+        "summary": "Gửi định vị",
+        "description": "Tải lên định vị",
+        "operationId": "createSosCall",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SosRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calls/callback": {
+      "post": {
+        "tags": [
+          "Emergency Call"
+        ],
+        "operationId": "receiveAICallback",
+        "parameters": [
+          {
+            "name": "X-Callback-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AICallbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/send-otp": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Gửi mã OTP xác thực số điện thoại",
+        "description": "Mô phỏng gửi mã OTP SMS qua nhà mạng viễn thông. Trả về mã OTP được sinh (để dễ test).",
+        "operationId": "sendOtp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Đặt lại mật khẩu",
+        "description": "Sử dụng OTP nhận được để xác nhận đặt lại mật khẩu mới.",
+        "operationId": "resetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Đăng ký tài khoản tự do",
+        "description": "Đăng ký tài khoản mới cho người dùng với vai trò mặc định REPORTER.",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Làm mới Access Token",
+        "description": "Sử dụng Refresh Token hợp lệ để tạo cặp Access Token và Refresh Token mới (Token Rotation)",
+        "operationId": "refresh",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseAuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Đăng xuất",
+        "description": "Thu hồi Refresh Token trên hệ thống Redis",
+        "operationId": "logout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Đăng nhập hệ thống",
+        "description": "Xác thực người dùng bằng username và password, trả về Access Token và Refresh Token",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseAuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Quên mật khẩu",
+        "description": "Yêu cầu khôi phục mật khẩu qua Email hoặc Số điện thoại. Hệ thống sẽ sinh và gửi OTP mô phỏng.",
+        "operationId": "forgotPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/change-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Đổi mật khẩu",
+        "description": "Đổi mật khẩu của người dùng hiện đang đăng nhập (yêu cầu token JWT).",
+        "operationId": "changePassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-resources/{id}/status": {
+      "patch": {
+        "tags": [
+          "Dispatch Resources"
+        ],
+        "summary": "Thay đổi trạng thái hoạt động của xe",
+        "description": "Cập nhật nhanh trạng thái hoạt động (ví dụ: AVAILABLE, BUSY, MAINTENANCE...)",
+        "operationId": "updateResourceStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResourceStatusUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseDispatchResourceDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Lấy thông tin tài khoản hiện tại",
+        "description": "Trả về thông tin chi tiết của tài khoản đang đăng nhập dựa trên token",
+        "operationId": "getCurrentUser",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseUserDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/hello": {
+      "get": {
+        "tags": [
+          "Health Check"
+        ],
+        "summary": "Hello World",
+        "description": "API kiểm tra server đang chạy",
+        "operationId": "hello",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files": {
+      "get": {
+        "tags": [
+          "File Storage"
+        ],
+        "summary": "Liệt kê tệp tin trên MinIO",
+        "description": "Liệt kê toàn bộ các đối tượng trong bucket khớp với prefix (Yêu cầu quyền ADMIN)",
+        "operationId": "listFiles",
+        "parameters": [
+          {
+            "name": "prefix",
+            "in": "query",
+            "description": "Prefix thư mục lọc file",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "emergency-calls/",
+                ""
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListMinioObjectDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/metadata/{objectKey}": {
+      "get": {
+        "tags": [
+          "File Storage"
+        ],
+        "summary": "Lấy siêu dữ liệu của file",
+        "description": "Lấy metadata (kích thước, loại, thời gian sửa đổi) của một object trên MinIO (Yêu cầu quyền ADMIN)",
+        "operationId": "getMetadata",
+        "parameters": [
+          {
+            "name": "objectKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseMinioObjectDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/download/{objectKey}": {
+      "get": {
+        "tags": [
+          "File Storage"
+        ],
+        "summary": "Tải file từ MinIO",
+        "description": "Tải xuống tệp tin từ MinIO (Yêu cầu sở hữu cuộc gọi hoặc quyền admin/điều phối)",
+        "operationId": "downloadFile",
+        "parameters": [
+          {
+            "name": "objectKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-requests": {
+      "get": {
+        "tags": [
+          "Dispatch Requests"
+        ],
+        "summary": "Lấy danh sách tất cả yêu cầu điều phối",
+        "description": "Trả về danh sách toàn bộ các yêu cầu điều phối sắp xếp theo thời gian tạo giảm dần",
+        "operationId": "getAllRequests",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListDispatchRequestDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-requests/{id}": {
+      "get": {
+        "tags": [
+          "Dispatch Requests"
+        ],
+        "summary": "Lấy chi tiết yêu cầu điều phối",
+        "description": "Lấy thông tin chi tiết của một yêu cầu điều phối theo ID",
+        "operationId": "getRequestById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseDispatchRequestDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calls/{id}": {
+      "get": {
+        "tags": [
+          "Emergency Call"
+        ],
+        "summary": "Lấy chi tiết cuộc gọi",
+        "description": "Lấy thông tin chi tiết một cuộc gọi khẩn cấp theo ID (yêu cầu sở hữu hoặc quyền điều phối/admin)",
+        "operationId": "getCallDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseEmergencyCall"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calls/my-calls": {
+      "get": {
+        "tags": [
+          "Emergency Call"
+        ],
+        "summary": "Lấy danh sách cuộc gọi của tôi",
+        "description": "Lấy toàn bộ danh sách cuộc gọi khẩn cấp do chính tài khoản này tạo ra",
+        "operationId": "getMyCalls",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseListEmergencyCall"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/admin/{objectKey}": {
+      "delete": {
+        "tags": [
+          "File Storage"
+        ],
+        "summary": "Xóa file trên MinIO",
+        "description": "Xóa vĩnh viễn một tệp tin trên MinIO (Yêu cầu quyền ADMIN)",
+        "operationId": "deleteFile",
+        "parameters": [
+          {
+            "name": "objectKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "fullName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "phoneNumber": {
+            "type": "string",
+            "maxLength": 15,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fullName",
+          "phoneNumber",
+          "roles",
+          "username"
+        ]
+      },
+      "BaseResponseUserDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "Metadata": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ServiceTypeRequest": {
+        "type": "object",
+        "properties": {
+          "typeCode": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "priorityWeight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "displayName",
+          "priorityWeight",
+          "typeCode"
+        ]
+      },
+      "BaseResponseServiceTypeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ServiceTypeDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "ServiceTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "priorityWeight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProviderRequest": {
+        "type": "object",
+        "properties": {
+          "ownerUserId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "providerName": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "providerType": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "businessLicense": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "contactPhone": {
+            "type": "string",
+            "maxLength": 15,
+            "minLength": 0
+          },
+          "contactAddress": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 0
+          },
+          "commissionRate": {
+            "type": "number"
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ownerUserId",
+          "providerName",
+          "providerType"
+        ]
+      },
+      "BaseResponseProviderDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProviderDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "ProviderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ownerUserId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ownerUsername": {
+            "type": "string"
+          },
+          "ownerFullName": {
+            "type": "string"
+          },
+          "providerName": {
+            "type": "string"
+          },
+          "providerType": {
+            "type": "string"
+          },
+          "businessLicense": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "contactAddress": {
+            "type": "string"
+          },
+          "commissionRate": {
+            "type": "number"
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CoordinateDto": {
+        "type": "object",
+        "properties": {
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "EdgeNodeRequest": {
+        "type": "object",
+        "properties": {
+          "nodeName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "coverageArea": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoordinateDto"
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "nodeName"
+        ]
+      },
+      "BaseResponseEdgeNodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/EdgeNodeDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "EdgeNodeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nodeName": {
+            "type": "string"
+          },
+          "coverageArea": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoordinateDto"
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DispatchResourceRequest": {
+        "type": "object",
+        "properties": {
+          "resourceCode": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "resourceTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "edgeNodeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "providerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentDriverId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "extendedAttributes": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "resourceCode",
+          "status"
+        ]
+      },
+      "BaseResponseDispatchResourceDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DispatchResourceDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "DispatchResourceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourceCode": {
+            "type": "string"
+          },
+          "resourceTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourceTypeName": {
+            "type": "string"
+          },
+          "edgeNodeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "edgeNodeName": {
+            "type": "string"
+          },
+          "providerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "providerName": {
+            "type": "string"
+          },
+          "currentDriverId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentDriverName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "extendedAttributes": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FileUploadResponse": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CreateDispatchMissionRequest": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourceId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "resourceId"
+        ]
+      },
+      "DispatchMissionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requestId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourceId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "dispatchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "LocationDto": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "VoiceCallRequest": {
+        "type": "object",
+        "properties": {
+          "audioObjectKey": {
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationDto"
+          }
+        }
+      },
+      "BaseResponseVoid": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {},
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "SosRequest": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "AICallbackRequest": {
+        "type": "object",
+        "properties": {
+          "call_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "transcript": {
+            "type": "string"
+          },
+          "urgency": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number",
+            "format": "double"
+          },
+          "symptoms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SendOtpRequest": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "description": "Số điện thoại nhận mã OTP",
+            "example": "0987654321",
+            "maxLength": 15,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "phoneNumber"
+        ]
+      },
+      "BaseResponseString": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "description": "Email hoặc Số điện thoại",
+            "example": "reporter01@gmail.com",
+            "minLength": 1
+          },
+          "otpCode": {
+            "type": "string",
+            "description": "Mã xác thực OTP đã nhận",
+            "example": "123456",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Mật khẩu mới (chỉ bao gồm chữ số)",
+            "example": "654321",
+            "maxLength": 100,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "identity",
+          "newPassword",
+          "otpCode"
+        ]
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Tên đăng nhập",
+            "example": "reporter01",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "password": {
+            "type": "string",
+            "description": "Mật khẩu (chỉ bao gồm chữ số)",
+            "example": "123456",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "fullName": {
+            "type": "string",
+            "description": "Họ và tên",
+            "example": "Nguyen Van A",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "phoneNumber": {
+            "type": "string",
+            "description": "Số điện thoại",
+            "example": "0987654321",
+            "maxLength": 15,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Địa chỉ email",
+            "example": "reporter01@gmail.com",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "otpCode": {
+            "type": "string",
+            "description": "Mã xác thực OTP",
+            "example": "123456",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "fullName",
+          "otpCode",
+          "password",
+          "phoneNumber",
+          "username"
+        ]
+      },
+      "TokenRefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "BaseResponseAuthResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AuthResponse"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Tên đăng nhập của tài khoản",
+            "example": "huy",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "description": "Mật khẩu của tài khoản (chỉ bao gồm chữ số)",
+            "example": "123456",
+            "minLength": 1,
+            "pattern": "^\\d+$"
+          }
+        },
+        "required": [
+          "password",
+          "username"
+        ]
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "description": "Email hoặc Số điện thoại để khôi phục mật khẩu",
+            "example": "reporter01@gmail.com",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "identity"
+        ]
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "oldPassword": {
+            "type": "string",
+            "description": "Mật khẩu hiện tại",
+            "example": "123456",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Mật khẩu mới",
+            "example": "654321",
+            "maxLength": 100,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "newPassword",
+          "oldPassword"
+        ]
+      },
+      "ResourceStatusUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "BaseResponseListUserDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "BaseResponseListServiceTypeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceTypeDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "BaseResponseListProviderDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "BaseResponseListMinioObjectDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinioObjectDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "MinioObjectDto": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BaseResponseMinioObjectDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MinioObjectDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "BaseResponseListEdgeNodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EdgeNodeDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "BaseResponseListDispatchResourceDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchResourceDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "BaseResponseListDispatchRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchRequestDto"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "DispatchRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "callId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serviceTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serviceTypeName": {
+            "type": "string"
+          },
+          "edgeNodeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "edgeNodeName": {
+            "type": "string"
+          },
+          "createdByDispatcherId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdByDispatcherName": {
+            "type": "string"
+          },
+          "urgencyLevel": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string"
+          },
+          "extendedRequirements": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "isSyncedToCloud": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BaseResponseDispatchRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DispatchRequestDto"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "BaseResponseEmergencyCall": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/EmergencyCall"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      },
+      "EmergencyCall": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dispatcher": {
+            "$ref": "#/components/schemas/User"
+          },
+          "reporterPhone": {
+            "type": "string"
+          },
+          "reporterName": {
+            "type": "string"
+          },
+          "callStartTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "callEndTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "audioUrl": {
+            "type": "string"
+          },
+          "aiTranscript": {
+            "type": "string"
+          },
+          "aiUrgencyPrediction": {
+            "type": "string"
+          },
+          "aiConfidenceScore": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "passwordHash": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "uniqueItems": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BaseResponseListEmergencyCall": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmergencyCall"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "name": "bearerAuth",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
