@@ -18,32 +18,47 @@ const Profile = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const userRoleDisplay = (
+    profile?.roles?.[0]?.name ||
+    profile?.role ||
+    authUser?.role ||
+    "DISPATCHER"
+  ).toUpperCase();
+
+  const isAdmin = userRoleDisplay === "ADMIN";
+
   // Breadcrumbs/header slot
   useEffect(() => {
     setSlot(
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-900/40 border border-indigo-800 text-indigo-300">
-          Admin Account
+          {userRoleDisplay} Account
         </span>
       </div>,
     );
     return () => clearSlot();
-  }, []);
+  }, [userRoleDisplay]);
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       setError("");
-      // API response is wrapped in BaseResponse or data
       const res = await userService.getMe();
       const userData = res.data || res;
       setProfile(userData);
-      setFullName(userData.fullName || "");
-      setEmail(userData.email || "");
-      setPhone(userData.phone || "");
+      setFullName(userData.fullName || authUser?.fullName || authUser?.name || "");
+      setEmail(userData.email || authUser?.email || "");
+      setPhone(userData.phoneNumber || userData.phone || authUser?.phoneNumber || authUser?.phone || "");
     } catch (err) {
       console.error("Failed to fetch profile", err);
-      setError("Failed to load profile data from server.");
+      if (authUser) {
+        setProfile(authUser);
+        setFullName(authUser.fullName || authUser.name || "");
+        setEmail(authUser.email || "");
+        setPhone(authUser.phoneNumber || authUser.phone || "");
+      } else {
+        setError("Failed to load profile data from server.");
+      }
     } finally {
       setLoading(false);
     }
@@ -58,27 +73,32 @@ const Profile = () => {
     setError("");
     setSuccess("");
 
-    if (!profile?.id) return;
+    if (!profile?.id && !authUser?.userId && !authUser?.id) return;
+    const targetUserId = profile?.id || authUser?.userId || authUser?.id;
 
     if (password && password !== confirmPassword) {
       setError("Mật khẩu xác nhận không khớp!");
       return;
     }
 
+    const effectivePhone = phone.trim() || profile?.phoneNumber || profile?.phone || authUser?.phoneNumber || authUser?.phone || "";
+
     try {
       const updateData = {
-        username: profile.username,
-        fullName,
-        email,
-        phone,
-        role: "ADMIN",
+        username: profile?.username || authUser?.username,
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phoneNumber: effectivePhone,
+        phone: effectivePhone,
+        role: userRoleDisplay,
+        roles: profile?.roles || authUser?.roles || [{ name: userRoleDisplay }],
       };
 
       if (password) {
         updateData.password = password;
       }
 
-      const res = await userService.updateUser(profile.id, updateData);
+      const res = await userService.updateUser(targetUserId, updateData);
       const updatedUser = res.data || res;
 
       setProfile(updatedUser);
@@ -86,13 +106,21 @@ const Profile = () => {
       setPassword("");
       setConfirmPassword("");
 
-      // Update auth store if name changed
       if (authUser) {
-        login({ ...authUser, name: fullName }, useAuthStore.getState().token);
+        login(
+          { ...authUser, fullName: fullName.trim(), phoneNumber: effectivePhone, phone: effectivePhone },
+          useAuthStore.getState().token,
+          useAuthStore.getState().refreshToken
+        );
       }
     } catch (err) {
       console.error("Failed to update profile", err);
-      setError(err.response?.data?.message || "Lỗi khi cập nhật thông tin.");
+      if (err.response?.status === 403) {
+        setError("Phân quyền Backend (Spring Security): Chỉ tài khoản ADMIN mới có quyền chỉnh sửa thông tin người dùng qua API PUT /api/v1/users/{id}.");
+      } else {
+        const errorMsg = err.response?.data?.message || "Lỗi khi cập nhật thông tin.";
+        setError(errorMsg);
+      }
     }
   };
 
@@ -111,7 +139,7 @@ const Profile = () => {
 
   const initials = fullName
     ? fullName.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()
-    : "AD";
+    : "US";
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 pb-12 space-y-6">
@@ -148,11 +176,11 @@ const Profile = () => {
 
           <h2 className="text-[18px] font-bold text-white mt-4">{fullName}</h2>
           <p className="text-[12px] text-slate-400 font-mono mt-0.5">
-            @{profile?.username}
+            @{profile?.username || authUser?.username}
           </p>
 
           <div className="inline-block mt-2 text-[10px] font-bold px-3 py-1 rounded-full bg-indigo-950/50 border border-indigo-900/50 text-indigo-300">
-            {profile?.role || "ADMIN"}
+            {userRoleDisplay}
           </div>
 
           <div className="w-full border-t border-slate-800 my-5 pt-4 space-y-3 text-left text-[13px]">
@@ -174,9 +202,25 @@ const Profile = () => {
 
         {/* Right Card: Form Edit */}
         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h3 className="text-[16px] font-bold text-white mb-4">
-            Account Settings
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[16px] font-bold text-white">
+              Account Settings
+            </h3>
+            {!isAdmin && (
+              <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-amber-950/40 border border-amber-800/50 text-amber-300">
+                View Only (Admin Permission Required)
+              </span>
+            )}
+          </div>
+
+          {!isAdmin && (
+            <div className="mb-4 p-3 bg-amber-950/30 border border-amber-900/50 text-amber-300 text-[12px] rounded-xl flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px]">
+                info
+              </span>
+              Tài khoản của bạn thuộc vai trò {userRoleDisplay}. Phân quyền Backend (Spring Security) chỉ cho phép tài khoản ADMIN thực thi API cập nhật thông tin người dùng (`PUT /api/v1/users/{'{id}'}`).
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-950/40 border border-red-900 text-red-400 text-[13px] rounded-xl flex items-center gap-2">
@@ -203,7 +247,7 @@ const Profile = () => {
                 Username
               </label>
               <input
-                value={profile?.username || ""}
+                value={profile?.username || authUser?.username || ""}
                 disabled
                 className="w-full px-4 py-2.5 border border-slate-800 rounded-xl text-[14px] outline-none bg-slate-950 text-slate-500 cursor-not-allowed"
               />
@@ -218,9 +262,10 @@ const Profile = () => {
                 <input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  disabled={!isAdmin}
                   required
                   placeholder="Enter full name"
-                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
+                  className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
                 />
               </div>
               <div>
@@ -230,9 +275,10 @@ const Profile = () => {
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={!isAdmin}
                   type="email"
                   placeholder="Enter email address"
-                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
+                  className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -244,8 +290,9 @@ const Profile = () => {
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="Enter phone number"
-                className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
+                className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
               />
             </div>
 
@@ -266,9 +313,10 @@ const Profile = () => {
                   <input
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={!isAdmin}
                     type="password"
                     placeholder="Min 6 characters"
-                    className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
+                    className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 <div>
@@ -278,9 +326,10 @@ const Profile = () => {
                   <input
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={!isAdmin}
                     type="password"
                     placeholder="Verify new password"
-                    className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
+                    className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
                   />
                 </div>
               </div>
@@ -290,7 +339,12 @@ const Profile = () => {
             <div className="mt-6 flex justify-end">
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
+                disabled={!isAdmin}
+                className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all flex items-center gap-2 ${
+                  isAdmin
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-60'
+                }`}
               >
                 <span className="material-symbols-outlined text-[16px]">
                   save

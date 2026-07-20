@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle2, ShieldAlert, 
-  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck
+  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -157,28 +157,30 @@ const EmergencyIntakeDispatch = () => {
   }, []);
 
   // 3. Fetch Single Request Detail when selectedReqId changes
-  useEffect(() => {
-    if (!selectedReqId) {
+  const fetchReqDetail = useCallback(async (reqId) => {
+    const idToFetch = reqId || selectedReqId;
+    if (!idToFetch) {
       setSelectedRequest(null);
       return;
     }
-    const fetchReqDetail = async () => {
-      setIsLoadingReqDetail(true);
-      try {
-        const detail = await dispatchRequestService.getById(selectedReqId);
-        setSelectedRequest(detail);
-        setDestinationName(`Hiện trường yêu cầu REQ-${detail.id}`);
-      } catch (err) {
-        console.error('Error fetching request detail:', err);
-        // Fallback to item in request list
-        const fallback = requests.find(r => r.id === selectedReqId);
-        setSelectedRequest(fallback || null);
-      } finally {
-        setIsLoadingReqDetail(false);
-      }
-    };
-    fetchReqDetail();
+    setIsLoadingReqDetail(true);
+    try {
+      const detail = await dispatchRequestService.getById(idToFetch);
+      setSelectedRequest(detail);
+      setDestinationName(`Hiện trường yêu cầu REQ-${detail.id}`);
+    } catch (err) {
+      console.error('Error fetching request detail:', err);
+      // Fallback to item in request list
+      const fallback = requests.find(r => r.id === idToFetch);
+      setSelectedRequest(fallback || null);
+    } finally {
+      setIsLoadingReqDetail(false);
+    }
   }, [selectedReqId, requests]);
+
+  useEffect(() => {
+    fetchReqDetail(selectedReqId);
+  }, [selectedReqId, fetchReqDetail]);
 
   // Initial Load & Polling setup
   useEffect(() => {
@@ -500,373 +502,570 @@ const EmergencyIntakeDispatch = () => {
         </section>
 
         {/* ── CỘT GIỮA (VÙNG C): CHI TIẾT DISPATCH REQUEST (38%) ── */}
-        <section className="w-[38%] border-r border-slate-800 flex flex-col bg-slate-950 overflow-y-auto">
-          {isLoadingReqDetail ? (
-            <div className="p-8 text-center text-slate-500 text-xs animate-pulse">
-              Đang tải chi tiết Yêu cầu điều phối...
-            </div>
-          ) : !selectedRequest ? (
-            <div className="p-12 text-center text-slate-500 text-xs">
-              Vui lòng chọn một Yêu cầu từ cột Hàng đợi để xem chi tiết.
-            </div>
-          ) : (
-            <div className="p-4 space-y-4 text-xs">
-              
-              {/* Request Main Header */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div>
-                    <h2 className="text-base font-bold text-slate-100 font-mono flex items-center gap-2">
-                      REQ-{selectedRequest.id}
-                      <span className="text-xs font-normal text-slate-400">Call ID: #{selectedRequest.callId || 'N/A'}</span>
-                    </h2>
-                    <p className="text-slate-400 text-[11px] mt-0.5">
-                      Tạo lúc: {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}
-                    </p>
+        <section className="w-[38%] border-r border-slate-800 flex flex-col bg-slate-950">
+          {/* Detail Request Header Bar */}
+          <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
+            <h2 className="font-bold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              Chi tiết Dispatch Request
+              {selectedRequest && (
+                <span className="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50">
+                  REQ-{selectedRequest.id}
+                </span>
+              )}
+            </h2>
+            {selectedRequest && (
+              <button
+                onClick={fetchReqDetail}
+                className="text-[11px] font-mono text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded transition-colors"
+              >
+                <RefreshCw size={11} className={isLoadingReqDetail ? 'animate-spin' : ''} />
+                Làm mới
+              </button>
+            )}
+          </div>
+
+          {/* Detail Panel Scroll-Free Content */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 font-sans">
+            {isLoadingReqDetail ? (
+              <div className="p-6 text-center text-slate-400 space-y-2">
+                <RefreshCw className="animate-spin text-indigo-500 mx-auto" size={24} />
+                <p className="text-xs font-mono">Đang tải chi tiết request...</p>
+              </div>
+            ) : !selectedRequest ? (
+              <div className="p-8 text-center text-slate-500 text-xs">
+                Vui lòng chọn một Request từ danh sách bên trái để xem chi tiết.
+              </div>
+            ) : (
+              <>
+                {/* 1. Request Primary Info Card */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <div className="flex items-center gap-2 font-mono">
+                      <span className="font-bold text-slate-100 text-sm">REQ-{selectedRequest.id}</span>
+                      <span className="text-[10px] text-slate-400">Call ID: #{selectedRequest.callId || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${getStatusBadge(selectedRequest.status)}`}>
+                        {selectedRequest.status}
+                      </span>
+                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${getUrgencyBadge(selectedRequest.urgencyLevel).bg}`}>
+                        {selectedRequest.urgencyLevel}
+                      </span>
+                    </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded border text-xs font-bold ${getUrgencyBadge(selectedRequest.urgencyLevel).bg}`}>
-                    {selectedRequest.urgencyLevel}
-                  </span>
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-300 font-sans">
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Loại dịch vụ</span>
+                      <span className="font-semibold text-indigo-300 text-[12px]">{selectedRequest.serviceTypeName || `ID: ${selectedRequest.serviceTypeId}`}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Vùng quản lý (Node)</span>
+                      <span className="font-semibold text-slate-200 text-[12px]">{selectedRequest.edgeNodeName || `Node #${selectedRequest.edgeNodeId}`}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Điều phối viên</span>
+                      <span className="font-medium text-slate-300 text-[11px]">{selectedRequest.createdByDispatcherName || 'Hệ thống kịch bản'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Đồng bộ Cloud</span>
+                      <span className="font-medium text-slate-300 text-[11px]">{selectedRequest.isSyncedToCloud ? 'Đã đồng bộ' : 'Chưa đồng bộ'}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-slate-300">
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase">Loại dịch vụ</span>
-                    <span className="font-medium text-indigo-300">{selectedRequest.serviceTypeName || `ID: ${selectedRequest.serviceTypeId}`}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase">Vùng quản lý (Edge Node)</span>
-                    <span className="font-medium text-slate-200">{selectedRequest.edgeNodeName || `Node #${selectedRequest.edgeNodeId}`}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase">Điều phối viên khởi tạo</span>
-                    <span className="font-medium text-slate-200">{selectedRequest.createdByDispatcherName || 'Chưa gán'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase">Đồng bộ Cloud</span>
-                    <span className="font-medium text-slate-200">{selectedRequest.isSyncedToCloud ? 'Đã đồng bộ' : 'Chưa đồng bộ'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Extended Requirements Section */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-                <h3 className="font-semibold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-2">
-                  <FileText size={14} className="text-indigo-400" />
-                  Yêu cầu mở rộng (Extended Requirements)
-                </h3>
-                {selectedRequest.extendedRequirements ? (
-                  <div className="space-y-2 pt-1">
-                    {selectedRequest.extendedRequirements.symptoms && (
-                      <div>
-                        <span className="text-slate-400 text-[11px] block">Triệu chứng lâm sàng:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {Array.isArray(selectedRequest.extendedRequirements.symptoms) ? (
-                            selectedRequest.extendedRequirements.symptoms.map((symptom, idx) => (
-                              <span key={idx} className="bg-red-950/60 text-red-300 border border-red-800/60 px-2 py-0.5 rounded text-[11px]">
-                                {symptom}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-slate-300">{selectedRequest.extendedRequirements.symptoms}</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedRequest.extendedRequirements.equipment && (
-                      <div>
-                        <span className="text-slate-400 text-[11px] block">Trang thiết bị yêu cầu:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {Array.isArray(selectedRequest.extendedRequirements.equipment) ? (
-                            selectedRequest.extendedRequirements.equipment.map((eq, idx) => (
-                              <span key={idx} className="bg-blue-950/60 text-blue-300 border border-blue-800/60 px-2 py-0.5 rounded text-[11px]">
-                                {eq}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-slate-300">{selectedRequest.extendedRequirements.equipment}</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedRequest.extendedRequirements.notes && (
-                      <div>
-                        <span className="text-slate-400 text-[11px] block">Ghi chú bổ sung:</span>
-                        <p className="bg-slate-950 p-2 rounded border border-slate-800 text-slate-300 mt-1 italic">
-                          "{selectedRequest.extendedRequirements.notes}"
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-[11px] italic">Không có thông tin yêu cầu mở rộng.</p>
-                )}
-              </div>
-
-              {/* Location & Map Section */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-                <h3 className="font-semibold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="flex items-center gap-2">
-                    <MapPin size={14} className="text-emerald-400" />
-                    Vị trí Sự cố Khẩn cấp
-                  </span>
-                  <span className="font-mono text-[11px] text-slate-400">
-                    {selectedRequest.latitude && selectedRequest.longitude ? `${selectedRequest.latitude}, ${selectedRequest.longitude}` : 'N/A'}
-                  </span>
-                </h3>
-
-                {selectedRequest.latitude != null && selectedRequest.longitude != null ? (
-                  <div className="h-44 w-full rounded-lg overflow-hidden border border-slate-800 relative z-0">
-                    <MapContainer
-                      center={[selectedRequest.latitude, selectedRequest.longitude]}
-                      zoom={14}
-                      className="w-full h-full"
-                      zoomControl={false}
-                    >
-                      <TileLayer
-                        attribution='&copy; OpenStreetMap'
-                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                      />
-                      <Marker
-                        position={[selectedRequest.latitude, selectedRequest.longitude]}
-                        icon={reqMarkerIcon}
-                      >
-                        <Popup>
-                          <div className="text-xs font-sans text-slate-900">
-                            <strong>REQ-{selectedRequest.id}</strong>
-                            <div>{selectedRequest.serviceTypeName}</div>
+                {/* 2. Extended Requirements Section */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+                  <h3 className="font-bold text-xs text-slate-200 flex items-center gap-1.5 border-b border-slate-800/80 pb-1.5 uppercase tracking-wider">
+                    <FileText size={13} className="text-indigo-400" />
+                    Yêu cầu mở rộng (Extended Requirements)
+                  </h3>
+                  {selectedRequest.extendedRequirements ? (
+                    <div className="space-y-1.5 pt-0.5">
+                      {selectedRequest.extendedRequirements.symptoms && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400 text-[10px] shrink-0 font-mono">Triệu chứng:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {Array.isArray(selectedRequest.extendedRequirements.symptoms) ? (
+                              selectedRequest.extendedRequirements.symptoms.map((symptom, idx) => (
+                                <span key={idx} className="bg-red-950/60 text-red-300 border border-red-800/60 px-1.5 py-0.2 rounded text-[10px] font-mono">
+                                  {symptom}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-slate-300 text-[11px]">{selectedRequest.extendedRequirements.symptoms}</span>
+                            )}
                           </div>
-                        </Popup>
-                      </Marker>
-                    </MapContainer>
-                  </div>
-                ) : (
-                  <div className="p-6 bg-slate-950 rounded-lg border border-slate-800 text-center text-slate-500">
-                    <AlertTriangle size={24} className="mx-auto mb-2 text-amber-500/60" />
-                    Chưa có dữ liệu vị trí GPS cho yêu cầu này.
-                  </div>
-                )}
-              </div>
+                        </div>
+                      )}
 
-              {/* Emergency Call Placeholder */}
-              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-slate-400 flex items-center gap-3">
-                <Info size={18} className="text-slate-500 shrink-0" />
-                <div className="text-[11px]">
-                  <strong>Thông tin Cuộc gọi (Call ID: #{selectedRequest.callId || 'N/A'}):</strong>
-                  <p className="text-slate-500 mt-0.5">Chi tiết cuộc gọi sẽ được bổ sung tự động khi tích hợp API Emergency Call.</p>
+                      {selectedRequest.extendedRequirements.equipment && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400 text-[10px] shrink-0 font-mono">Thiết bị:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {Array.isArray(selectedRequest.extendedRequirements.equipment) ? (
+                              selectedRequest.extendedRequirements.equipment.map((eq, idx) => (
+                                <span key={idx} className="bg-blue-950/60 text-blue-300 border border-blue-800/60 px-1.5 py-0.2 rounded text-[10px] font-mono">
+                                  {eq}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-slate-300 text-[11px]">{selectedRequest.extendedRequirements.equipment}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedRequest.extendedRequirements.notes && (
+                        <div className="text-[11px] text-slate-300 italic bg-slate-950 px-2 py-1 rounded border border-slate-800">
+                          "{selectedRequest.extendedRequirements.notes}"
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 text-[10px] italic">Không có thông tin yêu cầu mở rộng.</p>
+                  )}
                 </div>
-              </div>
 
-              {/* AI Support Suggestions */}
-              <div className="bg-indigo-950/20 border border-indigo-900/40 rounded-xl p-3 text-indigo-300 flex items-start gap-2.5">
-                <span className="material-symbols-outlined text-indigo-400 text-base">auto_awesome</span>
-                <div className="text-[11px]">
-                  <strong className="text-indigo-200">Gợi ý hỗ trợ từ AI:</strong>
-                  <p className="text-indigo-300/80 mt-0.5">
-                    Ưu tiên lựa chọn xe thuộc vùng <strong>{selectedRequest.edgeNodeName || 'Đống Đa'}</strong> có cung cấp dịch vụ <strong>{selectedRequest.serviceTypeName || 'ALS'}</strong> và trạng thái AVAILABLE.
-                  </p>
+                {/* 3. Location & Tactical Map Section */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                    <span className="flex items-center gap-1.5 font-bold text-xs text-slate-200 uppercase tracking-wider">
+                      <MapPin size={13} className="text-emerald-400" />
+                      Vị trí Sự cố Khẩn cấp
+                    </span>
+                    <span className="font-mono text-[10px] text-slate-400">
+                      {selectedRequest.latitude && selectedRequest.longitude ? `${selectedRequest.latitude}, ${selectedRequest.longitude}` : 'N/A'}
+                    </span>
+                  </div>
+
+                  {selectedRequest.latitude != null && selectedRequest.longitude != null ? (
+                    <div className="h-32 w-full rounded-lg overflow-hidden border border-slate-800 relative z-0">
+                      <MapContainer
+                        key={selectedRequest.id}
+                        center={[selectedRequest.latitude, selectedRequest.longitude]}
+                        zoom={14}
+                        className="w-full h-full"
+                        zoomControl={false}
+                      >
+                        <TileLayer
+                          attribution='&copy; OpenStreetMap'
+                          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                        />
+                        <Marker
+                          position={[selectedRequest.latitude, selectedRequest.longitude]}
+                          icon={reqMarkerIcon}
+                        >
+                          <Popup>
+                            <div className="text-xs font-sans text-slate-900">
+                              <strong>REQ-{selectedRequest.id}</strong>
+                              <div>{selectedRequest.serviceTypeName}</div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center text-slate-500 text-[11px]">
+                      <AlertTriangle size={18} className="mx-auto mb-1 text-amber-500/60" />
+                      Chưa có dữ liệu vị trí GPS cho yêu cầu này.
+                    </div>
+                  )}
                 </div>
-              </div>
 
-            </div>
-          )}
+                {/* 4. Streamlined Call & AI Info Footer Row */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2 text-slate-400 flex items-center gap-2">
+                    <Info size={14} className="text-slate-500 shrink-0" />
+                    <div className="text-[10px] leading-tight">
+                      <strong className="text-slate-300">Call ID #{selectedRequest.callId || 'N/A'}:</strong>
+                      <p className="text-slate-500 text-[9px] mt-0.5">Tích hợp API Emergency Call.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-indigo-950/30 border border-indigo-900/50 rounded-xl p-2 text-indigo-300 flex items-center gap-2">
+                    <Sparkles size={14} className="text-indigo-400 shrink-0" />
+                    <div className="text-[10px] leading-tight">
+                      <strong className="text-indigo-200">Gợi ý hỗ trợ từ AI:</strong>
+                      <p className="text-indigo-300/80 text-[9px] mt-0.5">
+                        Ưu tiên vùng <strong>{selectedRequest.edgeNodeName || 'Đống Đa'}</strong> • {selectedRequest.serviceTypeName || 'ALS'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+              </>
+            )}
+          </div>
         </section>
 
         {/* ── CỘT PHẢI (VÙNG D): TÀI NGUYÊN & PHÁT LỆNH (32%) ── */}
-        <section className="w-[32%] flex flex-col bg-slate-900/30">
+        <section className="w-[32%] flex flex-col bg-slate-900/30 font-sans">
           
-          {/* Resource Filter Toolbar */}
-          <div className="p-3 border-b border-slate-800 space-y-2 bg-slate-900">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Truck size={14} className="text-indigo-400" />
-                Tài nguyên điều phối
-                <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-[11px] font-mono">
-                  {filteredResources.filter(r => r.status === 'AVAILABLE').length} AVAILABLE
-                </span>
-              </span>
-            </div>
+          {selectedRequest && (selectedRequest.status === 'DISPATCHED' || selectedRequest.status === 'COMPLETED') ? (
+            /* ── VIEW DÀNH CHO YÊU CẦU ĐÃ ĐƯỢC GIAO XE (DISPATCHED) ── */
+            <div className="flex-1 flex flex-col p-4 bg-slate-900 border-l border-slate-800 justify-between overflow-y-auto space-y-4 font-sans">
+              <div className="space-y-4">
+                {/* Header Badge */}
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wider">
+                      Trạng thái Điều xe
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-800/60 px-2.5 py-1 rounded-full">
+                    DISPATCHED
+                  </span>
+                </div>
 
-            <div className="text-[10px] text-slate-400 italic">
-              Lọc phù hợp phía giao diện
-            </div>
+                {/* Main Dispatched Mission Banner */}
+                <div className="bg-slate-950/90 border border-emerald-500/40 p-4 rounded-2xl space-y-3 shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
-            {/* Filter Controls */}
-            <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-              <select
-                value={resStatusFilter}
-                onChange={(e) => setResStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none"
-              >
-                <option value="ALL">Status: Tất cả</option>
-                <option value="AVAILABLE">AVAILABLE (Có sẵn)</option>
-                <option value="BUSY">BUSY (Bận)</option>
-                <option value="OFFLINE">OFFLINE (Tắt máy)</option>
-                <option value="MAINTENANCE">MAINTENANCE (Bảo trì)</option>
-              </select>
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                    <CheckCircle2 size={18} />
+                    <span>YÊU CẦU REQ-{selectedRequest.id} ĐÃ ĐƯỢC GIAO XE</span>
+                  </div>
 
-              <select
-                value={resProviderFilter}
-                onChange={(e) => setResProviderFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none"
-              >
-                <option value="ALL">Đơn vị: Tất cả</option>
-                {providers.map(p => (
-                  <option key={p.id} value={p.id}>{p.providerName}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+                  <p className="text-xs text-slate-300">
+                    Lệnh điều động cấp cứu đã được khởi tạo thành công trên hệ thống và chuyển sang trạng thái chờ phản hồi.
+                  </p>
 
-          {/* Resources Selection List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {isLoadingResources ? (
-              <div className="space-y-2 p-2">
-                {[1, 2, 3].map(n => (
-                  <div key={n} className="h-16 bg-slate-800/40 rounded animate-pulse" />
-                ))}
-              </div>
-            ) : filteredResources.length === 0 ? (
-              <div className="p-6 text-center text-slate-500 text-xs">
-                Không tìm thấy xe điều phối phù hợp.
-              </div>
-            ) : (
-              filteredResources.map(res => {
-                const isAvailable = res.status === 'AVAILABLE';
-                const isSelected = selectedResource?.id === res.id;
-
-                return (
-                  <div
-                    key={res.id}
-                    onClick={() => {
-                      if (isAvailable) setSelectedResource(res);
-                    }}
-                    className={`p-2.5 rounded-lg border transition-all ${
-                      !isAvailable
-                        ? 'bg-slate-950/40 border-slate-900 opacity-60 cursor-not-allowed'
-                        : isSelected
-                        ? 'bg-emerald-950/40 border-emerald-500 shadow-md cursor-pointer'
-                        : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 cursor-pointer'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-mono font-bold text-xs text-slate-200 flex items-center gap-1.5">
-                        <Truck size={13} className={isAvailable ? 'text-emerald-400' : 'text-slate-500'} />
-                        {res.resourceCode}
-                      </span>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                        res.status === 'AVAILABLE' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' :
-                        res.status === 'BUSY' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
-                        'bg-slate-500/20 text-slate-400 border-slate-500/40'
-                      }`}>
-                        {res.status}
-                      </span>
+                  {/* Info Table */}
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-[10px] text-slate-500 block uppercase">Mã Yêu cầu</span>
+                      <strong className="text-red-400 text-sm font-bold">REQ-{selectedRequest.id}</strong>
                     </div>
-
-                    <div className="text-[11px] text-slate-300 flex items-center justify-between">
-                      <span>{res.providerName || 'Đơn vị Cấp cứu'}</span>
-                      <span className="font-mono text-indigo-300">{res.resourceTypeName}</span>
+                    <div>
+                      <span className="text-[9px] text-slate-500 block uppercase">Mức độ Khẩn cấp</span>
+                      <span className="text-amber-400 font-bold">{selectedRequest.urgencyLevel}</span>
                     </div>
-
-                    <div className="mt-1.5 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                      <span>Tài xế: {res.currentDriverName || 'Chưa gán'}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setResourceDetailModal(res);
-                        }}
-                        className="text-indigo-400 hover:underline"
-                      >
-                        Chi tiết
-                      </button>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block uppercase">Loại Dịch vụ</span>
+                      <span className="text-indigo-300">{selectedRequest.serviceTypeName}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block uppercase">Khu vực (Node)</span>
+                      <span className="text-slate-300">{selectedRequest.edgeNodeName}</span>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
 
-          {/* ── DISPATCH FORM & ACTION PANEL ── */}
-          <div className="p-3 bg-slate-900 border-t border-slate-800 space-y-3 shrink-0">
-            <h3 className="font-semibold text-xs text-slate-200 uppercase tracking-wider">
-              Phát lệnh Điều xe (Dispatch Action)
-            </h3>
-
-            <div className="space-y-2 text-xs">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-500 block">Yêu cầu (Request)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={selectedRequest ? `REQ-${selectedRequest.id}` : 'Chưa chọn'}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-400 font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 block">Tài nguyên (Resource)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={selectedResource ? selectedResource.resourceCode : 'Chưa chọn'}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-emerald-400 font-mono text-xs"
-                  />
+                  {/* Driver Waiting Wave Banner */}
+                  <div className="text-xs bg-amber-950/40 border border-amber-800/50 p-3 rounded-xl text-amber-200 flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                    <div>
+                      <div className="font-bold text-amber-300">Đã gửi thông báo tới ứng dụng tài xế</div>
+                      <div className="text-[11px] text-amber-400/80 mt-0.5">Đang chờ tài xế tiếp nhận lệnh và di chuyển tới hiện trường...</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] text-slate-500 block">Điểm đến (Destination Name)</label>
-                <input
-                  type="text"
-                  value={destinationName}
-                  onChange={(e) => setDestinationName(e.target.value)}
-                  placeholder="Nhập tên điểm đến / địa chỉ..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-indigo-500"
-                />
+              {/* Bottom Instruction Card */}
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 text-xs space-y-1.5 text-slate-400">
+                <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
+                  <Info size={14} className="text-indigo-400" />
+                  <span>Hướng dẫn điều phối:</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Yêu cầu này đã hoàn tất giao xe. Để chọn xe và phát lệnh cho một yêu cầu mới, vui lòng click chọn một Yêu cầu ở trạng thái <strong className="text-amber-400">PENDING</strong> trong danh sách bên trái.
+                </p>
               </div>
-
-              <div>
-                <label className="text-[10px] text-slate-500 block">Ghi chú lệnh điều xe (Notes)</label>
-                <textarea
-                  rows={2}
-                  value={dispatchNotes}
-                  onChange={(e) => setDispatchNotes(e.target.value)}
-                  placeholder="Ghi chú cho tài xế..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-indigo-500 text-xs"
-                />
-              </div>
-
-              <button
-                onClick={handlePreDispatchCheck}
-                disabled={!selectedRequest || !selectedResource || selectedResource.status !== 'AVAILABLE'}
-                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95 shadow-lg"
-              >
-                <Send size={15} />
-                Phát lệnh Điều xe
-              </button>
             </div>
+          ) : (
+            /* ── VIEW DÀNH CHO YÊU CẦU CHƯA GIAO XE (PENDING / READY) ── */
+            <>
+              {/* Resource Filter Toolbar */}
+              <div className="p-3 border-b border-slate-800 space-y-2 bg-slate-900">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Truck size={14} className="text-indigo-400" />
+                    Tài nguyên điều phối
+                    <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-[11px] font-mono">
+                      {filteredResources.filter(r => r.status === 'AVAILABLE').length} AVAILABLE
+                    </span>
+                  </span>
+                </div>
 
-            {/* Mission Created Result Notification Panel */}
-            {createdMission && (
-              <div className="bg-emerald-950/60 border border-emerald-700 p-3 rounded-lg text-xs space-y-1.5 animate-fadeIn">
-                <div className="flex items-center gap-2 font-bold text-emerald-400">
-                  <CheckCircle2 size={16} />
-                  <span>Đã phát lệnh thành công!</span>
+                <div className="text-[10px] text-slate-400 italic">
+                  Lọc phù hợp phía giao diện
                 </div>
-                <div className="text-[11px] text-slate-300 font-mono space-y-0.5">
-                  <div>Mã nhiệm vụ: <strong className="text-white">#Mission-{createdMission.id}</strong></div>
-                  <div>Trạng thái: <span className="bg-indigo-900 text-indigo-200 px-1.5 py-0.2 rounded">{createdMission.status}</span></div>
-                  <div>Thời gian: {createdMission.dispatchedAt ? new Date(createdMission.dispatchedAt).toLocaleTimeString() : ''}</div>
-                </div>
-                <div className="text-[11px] text-amber-300 bg-amber-950/40 p-1.5 rounded border border-amber-800/40 mt-1">
-                  Đã phát lệnh, đang chờ tài xế phản hồi.
+
+                {/* Filter Controls */}
+                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                  <select
+                    value={resStatusFilter}
+                    onChange={(e) => setResStatusFilter(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none"
+                  >
+                    <option value="ALL">Status: Tất cả</option>
+                    <option value="AVAILABLE">AVAILABLE (Có sẵn)</option>
+                    <option value="BUSY">BUSY (Bận)</option>
+                    <option value="OFFLINE">OFFLINE (Tắt máy)</option>
+                    <option value="MAINTENANCE">MAINTENANCE (Bảo trì)</option>
+                  </select>
+
+                  <select
+                    value={resProviderFilter}
+                    onChange={(e) => setResProviderFilter(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none"
+                  >
+                    <option value="ALL">Đơn vị: Tất cả</option>
+                    {providers.map(p => (
+                      <option key={p.id} value={p.id}>{p.providerName}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            )}
 
-          </div>
+              {/* Resources Selection List */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                {isLoadingResources ? (
+                  <div className="space-y-2 p-2">
+                    {[1, 2, 3].map(n => (
+                      <div key={n} className="h-16 bg-slate-800/40 rounded animate-pulse" />
+                    ))}
+                  </div>
+                ) : filteredResources.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 text-xs">
+                    Không tìm thấy xe điều phối phù hợp.
+                  </div>
+                ) : (
+                  filteredResources.map(res => {
+                    const isAvailable = res.status === 'AVAILABLE';
+                    const isSelected = selectedResource?.id === res.id;
+
+                    return (
+                      <div
+                        key={res.id}
+                        onClick={() => {
+                          if (isAvailable) setSelectedResource(res);
+                        }}
+                        className={`p-2.5 rounded-lg border transition-all ${
+                          !isAvailable
+                            ? 'bg-slate-950/40 border-slate-900 opacity-60 cursor-not-allowed'
+                            : isSelected
+                            ? 'bg-emerald-950/40 border-emerald-500 shadow-md cursor-pointer'
+                            : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-mono font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                            <Truck size={13} className={isAvailable ? 'text-emerald-400' : 'text-slate-500'} />
+                            {res.resourceCode}
+                          </span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                            res.status === 'AVAILABLE' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' :
+                            res.status === 'BUSY' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
+                            'bg-slate-500/20 text-slate-400 border-slate-500/40'
+                          }`}>
+                            {res.status}
+                          </span>
+                        </div>
+
+                        <div className="text-[11px] text-slate-300 flex items-center justify-between">
+                          <span>{res.providerName || 'Đơn vị Cấp cứu'}</span>
+                          <span className="font-mono text-indigo-300">{res.resourceTypeName}</span>
+                        </div>
+
+                        <div className="mt-1.5 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                          <span>Tài xế: {res.currentDriverName || 'Chưa gán'}</span>
+                          <div className="flex items-center gap-2">
+                            {!isAvailable && (
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await dispatchResourceService.updateStatus(res.id, 'AVAILABLE');
+                                    fetchResources();
+                                  } catch (err) {
+                                    console.error('Failed to update status:', err);
+                                  }
+                                }}
+                                className="text-[9px] font-mono text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                                title="Đặt lại trạng thái AVAILABLE để có thể điều xe"
+                              >
+                                <RefreshCw size={10} />
+                                + AVAILABLE
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setResourceDetailModal(res);
+                              }}
+                              className="text-indigo-400 hover:underline cursor-pointer"
+                            >
+                              Chi tiết
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* ── DISPATCH FORM & ACTION PANEL ── */}
+              <div className="p-3.5 bg-slate-900/95 border-t border-slate-800 space-y-3 shrink-0 font-sans">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-xs text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                    Phát lệnh Điều xe (Dispatch Action)
+                  </h3>
+                  {selectedRequest && selectedResource && (
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+                      Sẵn sàng phát lệnh
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2.5 text-xs">
+                  {/* Request & Resource Pills */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/80">
+                      <span className="text-[10px] text-slate-500 font-mono block uppercase mb-0.5">Yêu cầu (Request)</span>
+                      {selectedRequest ? (
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-red-400 text-xs">REQ-{selectedRequest.id}</span>
+                          <span className="text-[9px] font-mono bg-red-500/20 text-red-300 px-1.5 py-0.2 rounded border border-red-500/30">
+                            {selectedRequest.urgencyLevel}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-600 italic text-[11px]">Chưa chọn yêu cầu</span>
+                      )}
+                    </div>
+
+                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/80">
+                      <span className="text-[10px] text-slate-500 font-mono block uppercase mb-0.5">Tài nguyên (Resource)</span>
+                      {selectedResource ? (
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-emerald-400 text-xs flex items-center gap-1">
+                            <Truck size={12} />
+                            {selectedResource.resourceCode}
+                          </span>
+                          <span className="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                            {selectedResource.status}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-600 italic text-[11px]">Chưa chọn tài nguyên</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Destination Input */}
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-mono block mb-1">Điểm đến (Destination Name)</label>
+                    <div className="relative">
+                      <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="text"
+                        value={destinationName}
+                        onChange={(e) => setDestinationName(e.target.value)}
+                        placeholder="Nhập tên điểm đến / địa chỉ hiện trường..."
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 rounded-xl pl-8 pr-3 py-1.5 text-slate-100 text-xs transition-all outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notes Input & Quick Tags */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-slate-400 font-mono block">Ghi chú lệnh điều xe (Notes)</label>
+                      <div className="flex items-center gap-1 text-[9px] text-slate-500">
+                        <span>Thêm nhanh:</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setDispatchNotes(prev => prev ? `${prev}, Khẩn cấp 115` : 'Khẩn cấp 115')}
+                          className="text-indigo-400 hover:underline"
+                        >
+                          +115
+                        </button>
+                        <span>•</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setDispatchNotes(prev => prev ? `${prev}, Cần Oxy` : 'Cần Oxy')}
+                          className="text-indigo-400 hover:underline"
+                        >
+                          +Oxy
+                        </button>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <FileText size={14} className="absolute left-2.5 top-2.5 text-slate-500" />
+                      <textarea
+                        rows={2}
+                        value={dispatchNotes}
+                        onChange={(e) => setDispatchNotes(e.target.value)}
+                        placeholder="Ghi chú thêm cho tài xế..."
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 rounded-xl pl-8 pr-3 py-1.5 text-slate-100 text-xs transition-all outline-none resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Submit Dispatch Action Button */}
+                  <button
+                    onClick={handlePreDispatchCheck}
+                    disabled={!selectedRequest || !selectedResource || selectedResource.status !== 'AVAILABLE'}
+                    className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 text-white font-bold py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-red-950/40 border border-red-500/30 font-sans"
+                  >
+                    <Send size={15} className="animate-bounce" />
+                    <span>Phát lệnh Điều xe</span>
+                  </button>
+                </div>
+
+                {/* Mission Created High-Tech Result Panel */}
+                {createdMission && (
+                  <div className="bg-slate-950/90 border border-emerald-500/40 p-3.5 rounded-xl text-xs space-y-2.5 shadow-xl shadow-emerald-950/30 relative overflow-hidden animate-fadeIn font-sans">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                      <div className="flex items-center gap-2 font-bold text-emerald-400 tracking-wide text-xs">
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <span>ĐÃ PHÁT LỆNH THÀNH CÔNG!</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {createdMission.dispatchedAt ? new Date(createdMission.dispatchedAt).toLocaleTimeString() : ''}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                      <div>
+                        <span className="text-[9px] text-slate-500 block uppercase">Mã Nhiệm vụ</span>
+                        <strong className="text-emerald-400 text-sm font-bold">#MISSION-{createdMission.id}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-500 block uppercase">Trạng thái</span>
+                        <span className="inline-block mt-0.5 bg-indigo-950 text-indigo-300 border border-indigo-800/60 px-2 py-0.5 rounded font-bold text-[10px]">
+                          {createdMission.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] bg-amber-950/30 border border-amber-800/40 p-2.5 rounded-xl text-amber-200 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                      <div className="flex-1">
+                        <div className="font-semibold text-amber-300 text-[11px]">Đã truyền tin tới thiết bị tài xế</div>
+                        <div className="text-[10px] text-amber-400/80">Đang chờ tài xế xác nhận nhiệm vụ...</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </>
+          )}
+
         </section>
 
       </div>
