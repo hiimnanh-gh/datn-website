@@ -9,7 +9,8 @@ import {
   Users, 
   Radio, 
   X,
-  RadioTower
+  RadioTower,
+  Building2
 } from 'lucide-react';
 import AppLogo from '../../../components/AppLogo';
 
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { to: '/admin/incidents',          icon: History,         label: 'Lịch sử điều phối' },
   { to: '/admin/dashboard',          icon: LayoutDashboard, label: 'Tổng quan vận hành' },
   { to: '/admin/users',              icon: Users,           label: 'Quản lý người dùng' },
+  { to: '/admin/providers',          icon: Building2,       label: 'Quản lý Đơn vị' },
 ];
 
 const AdminSidebar = ({ open, onClose }) => {

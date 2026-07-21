@@ -16,6 +16,7 @@ import AdminLayout from './features/admin/AdminLayout';
 import OperationsOverview from './features/admin/pages/OperationsOverview/OperationsOverview';
 import DispatchHistory from './features/admin/pages/DispatchHistory/DispatchHistory';
 import UserManagement from './features/admin/pages/UserManagement/UserManagement';
+import ProviderManagement from './features/admin/pages/ProviderManagement/ProviderManagement';
 import Profile from './features/admin/pages/Profile/Profile';
 
 // ── Dispatcher Layout ────────────────────────────────────
@@ -75,6 +76,7 @@ function App() {
           <Route path="incidents" element={<DispatchHistory />} />
           <Route path="dashboard" element={<OperationsOverview />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="providers" element={<ProviderManagement />} />
           <Route path="profile" element={<Profile />} />
 
           {/* Legacy route fallbacks */}
