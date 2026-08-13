@@ -35,5 +35,11 @@ export const userService = {
   deleteUser: async (id) => {
     const response = await api.delete(`/v1/users/${id}`);
     return response.data;
+  },
+
+  // Tạo tài khoản nội bộ (Admin user)
+  createAdminUser: async (data) => {
+    const response = await api.post('/v1/admin/users', data);
+    return response.data;
   }
 };

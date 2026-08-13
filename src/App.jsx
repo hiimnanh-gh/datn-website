@@ -17,6 +17,10 @@ import OperationsOverview from './features/admin/pages/OperationsOverview/Operat
 import DispatchHistory from './features/admin/pages/DispatchHistory/DispatchHistory';
 import UserManagement from './features/admin/pages/UserManagement/UserManagement';
 import ProviderManagement from './features/admin/pages/ProviderManagement/ProviderManagement';
+import HospitalManagement from './features/admin/pages/HospitalManagement/HospitalManagement';
+import OperationZoneManagement from './features/admin/pages/OperationZoneManagement/OperationZoneManagement';
+import ServiceTypeManagement from './features/admin/pages/ServiceTypeManagement/ServiceTypeManagement';
+import FileStorageManagement from './features/admin/pages/FileStorageManagement/FileStorageManagement';
 import Profile from './features/admin/pages/Profile/Profile';
 
 // ── Dispatcher Layout ────────────────────────────────────
@@ -29,10 +33,6 @@ import FleetManagement from './features/provider/pages/admin/FleetManagement';
 import DriverAccounts from './features/provider/pages/admin/DriverAccounts';
 import CommissionSettlement from './features/provider/pages/admin/CommissionSettlement';
 
-// ── Driver Portal ─────────────────────────────────────────
-import DriverLayout from './features/driver/DriverLayout';
-import DriverMission from './features/driver/pages/DriverMission';
-
 // ── Root redirect based on auth state + role ─────────────
 const RootRedirect = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -43,7 +43,6 @@ const RootRedirect = () => {
   if (userRole.includes('PROVIDER')) return <Navigate to="/provider/fleet" replace />;
   if (userRole === 'ADMIN') return <Navigate to="/admin/dispatch-requests" replace />;
   if (userRole === 'DISPATCHER') return <Navigate to="/dispatcher/dispatch-requests" replace />;
-  if (userRole === 'DRIVER') return <Navigate to="/driver/mission" replace />;
 
   return <Navigate to="/login" replace />;
 };
@@ -77,6 +76,10 @@ function App() {
           <Route path="dashboard" element={<OperationsOverview />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="providers" element={<ProviderManagement />} />
+          <Route path="hospitals" element={<HospitalManagement />} />
+          <Route path="operation-zones" element={<OperationZoneManagement />} />
+          <Route path="service-types" element={<ServiceTypeManagement />} />
+          <Route path="files" element={<FileStorageManagement />} />
           <Route path="profile" element={<Profile />} />
 
           {/* Legacy route fallbacks */}
@@ -105,12 +108,6 @@ function App() {
           <Route path="fleet" element={<FleetManagement />} />
           <Route path="drivers" element={<DriverAccounts />} />
           <Route path="commission" element={<CommissionSettlement />} />
-        </Route>
-
-        {/* Driver Portal Routes */}
-        <Route path="/driver" element={<DriverLayout />}>
-          <Route index element={<Navigate to="mission" replace />} />
-          <Route path="mission" element={<DriverMission />} />
         </Route>
 
         {/* Catch-all */}

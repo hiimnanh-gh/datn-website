@@ -7,6 +7,7 @@ import { RefreshCw, MapPin, Truck, Building2, AlertTriangle, Layers } from 'luci
 import { dispatchRequestService } from '../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../services/dispatchResourceService';
 import { providerService } from '../../../services/providerService';
+import useAmbulanceTracking from '../../../hooks/useAmbulanceTracking';
 
 // Fix leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -35,6 +36,15 @@ const ambulanceMarkerIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const activeSimulationMarkerIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [30, 48],
+  iconAnchor: [15, 48],
+  popupAnchor: [1, -40],
+  shadowSize: [41, 41]
+});
+
 const providerMarkerIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -51,6 +61,9 @@ const DispatchMap = () => {
   const [resources, setResources] = useState([]);
   const [providers, setProviders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Subscribe to real-time OSRM WebSocket tracking
+  const { ambulancesMap } = useAmbulanceTracking(null, { isDispatcher: true });
 
   // Layers visibility toggles
   const [showRequests, setShowRequests] = useState(true);
@@ -197,23 +210,49 @@ const DispatchMap = () => {
         ))}
 
         {/* 2. Dispatch Resources Markers */}
-        {showResources && validResources.map((res) => (
-          <Marker
-            key={`res-${res.id}`}
-            position={[res.latitude, res.longitude]}
-            icon={ambulanceMarkerIcon}
-          >
-            <Popup>
-              <div className="space-y-1 font-sans text-xs text-slate-900">
-                <div className="font-bold text-blue-600 font-mono">{res.resourceCode}</div>
-                <div className="font-semibold text-slate-800">{res.providerName}</div>
-                <div>Type: <strong>{res.resourceTypeName}</strong></div>
-                <div>Status: <strong className="text-emerald-700">{res.status}</strong></div>
-                <div>Tài xế: {res.currentDriverName || 'Chưa gán'}</div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {showResources && validResources.map((res) => {
+          // Check if there is live OSRM simulation tracking data for this resource
+          const liveTrack = ambulancesMap[res.id] || ambulancesMap[res.resourceCode] || 
+            Object.values(ambulancesMap).find(t => t.resourceId === res.id);
+
+          const isSimulating = Boolean(liveTrack && liveTrack.latitude && liveTrack.longitude);
+          const currentLat = isSimulating ? liveTrack.latitude : res.latitude;
+          const currentLng = isSimulating ? liveTrack.longitude : res.longitude;
+
+          return (
+            <Marker
+              key={`res-${res.id}`}
+              position={[currentLat, currentLng]}
+              icon={isSimulating ? activeSimulationMarkerIcon : ambulanceMarkerIcon}
+            >
+              <Popup>
+                <div className="space-y-1 font-sans text-xs text-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-blue-600 font-mono">{res.resourceCode}</span>
+                    {isSimulating && (
+                      <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">
+                        ⚡ OSRM Live
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-semibold text-slate-800">{res.providerName}</div>
+                  <div>Type: <strong>{res.resourceTypeName}</strong></div>
+                  <div>Status: <strong className="text-emerald-700">{isSimulating ? liveTrack.status : res.status}</strong></div>
+                  <div>Tài xế: {res.currentDriverName || 'Chưa gán'}</div>
+
+                  {isSimulating && (
+                    <div className="pt-2 mt-1 border-t border-slate-200 text-[11px] font-mono space-y-1 bg-amber-50 p-2 rounded">
+                      <div>Chặng: <strong>{liveTrack.phase}</strong></div>
+                      <div>Tiến độ: <strong>{liveTrack.progressPercent?.toFixed(1)}%</strong></div>
+                      <div>ETA: <strong>{Math.round(liveTrack.etaSeconds ?? 0)}s</strong></div>
+                      <div>Còn lại: <strong>{Math.round(liveTrack.remainingDistanceMeters ?? 0)}m</strong></div>
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {/* 3. Providers / Hospitals Markers */}
         {showProviders && resolvedProviders.map((prov) => (

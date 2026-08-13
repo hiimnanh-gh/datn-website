@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle2, ShieldAlert, 
-  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles
+  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles, Zap
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -15,6 +15,7 @@ import { providerService } from '../../../services/providerService';
 import { serviceTypeService } from '../../../services/serviceTypeService';
 import { edgeNodeService } from '../../../services/edgeNodeService';
 import wsService from '../../../services/websocket';
+import SimulationControlModal from '../components/SimulationControlModal';
 
 // Leaflet default icon fix
 delete L.Icon.Default.prototype._getIconUrl;
@@ -107,6 +108,89 @@ const EmergencyIntakeDispatch = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [createdMission, setCreatedMission] = useState(null);
   const [resourceDetailModal, setResourceDetailModal] = useState(null);
+  const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
+  const [simulatingMission, setSimulatingMission] = useState(null);
+
+  // New Request Action States
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [timelineModal, setTimelineModal] = useState(null);
+  const [recsModal, setRecsModal] = useState(null);
+
+  const handleVerifyRequest = async () => {
+    if (!selectedRequest) return;
+    try {
+      await dispatchRequestService.verify(selectedRequest.id);
+      alert(`Đã xác minh thành công yêu cầu REQ-${selectedRequest.id}`);
+      fetchReqDetail(selectedRequest.id);
+      fetchRequestsAndCatalogs();
+    } catch (err) {
+      alert('Lỗi xác minh: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!selectedRequest) return;
+    const reason = prompt('Nhập lý do từ chối (báo động giả / trùng lặp):');
+    if (reason === null) return;
+    try {
+      await dispatchRequestService.reject(selectedRequest.id, reason);
+      alert(`Đã từ chối yêu cầu REQ-${selectedRequest.id}`);
+      fetchReqDetail(selectedRequest.id);
+      fetchRequestsAndCatalogs();
+    } catch (err) {
+      alert('Lỗi từ chối ca: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleAnalyzeAI = async () => {
+    if (!selectedRequest) return;
+    setIsAnalyzing(true);
+    try {
+      const res = await dispatchRequestService.analyze(selectedRequest.id);
+      alert('Phân tích AI hoàn tất! Mức độ nghiêm trọng gợi ý: ' + (res?.urgencyLevel || res?.severity || 'HIGH'));
+      fetchReqDetail(selectedRequest.id);
+    } catch (err) {
+      alert('Lỗi phân tích AI: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleUpdateSeverity = async (newLevel) => {
+    if (!selectedRequest || !newLevel) return;
+    try {
+      await dispatchRequestService.updateSeverity(selectedRequest.id, newLevel);
+      fetchReqDetail(selectedRequest.id);
+      fetchRequestsAndCatalogs();
+    } catch (err) {
+      alert('Lỗi cập nhật mức độ khẩn cấp: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleFetchTimeline = async () => {
+    if (!selectedRequest) return;
+    try {
+      const data = await dispatchRequestService.getTimeline(selectedRequest.id);
+      setTimelineModal({ requestId: selectedRequest.id, items: Array.isArray(data) ? data : [] });
+    } catch (err) {
+      alert('Lỗi tải timeline: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleFetchRecommendations = async () => {
+    if (!selectedRequest) return;
+    try {
+      const recs = await dispatchRequestService.getRecommendations(selectedRequest.id);
+      setRecsModal({ requestId: selectedRequest.id, items: Array.isArray(recs) ? recs : [] });
+    } catch (err) {
+      alert('Lỗi tải gợi ý xe: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleOpenSimulation = (mission) => {
+    setSimulatingMission(mission);
+    setIsSimulationModalOpen(true);
+  };
 
   // 1. Fetch Request List & Supporting Catalogs
   const fetchRequestsAndCatalogs = useCallback(async () => {
@@ -572,6 +656,67 @@ const EmergencyIntakeDispatch = () => {
                       <span className="font-medium text-slate-300 text-[11px]">{selectedRequest.isSyncedToCloud ? 'Đã đồng bộ' : 'Chưa đồng bộ'}</span>
                     </div>
                   </div>
+
+                  {/* Operational Action Bar for Dispatcher */}
+                  <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <button
+                      onClick={handleVerifyRequest}
+                      className="px-2 py-1 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 rounded font-medium flex items-center gap-1"
+                      title="Xác minh yêu cầu cấp cứu"
+                    >
+                      <CheckCircle2 size={12} />
+                      Xác minh
+                    </button>
+
+                    <button
+                      onClick={handleRejectRequest}
+                      className="px-2 py-1 bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 rounded font-medium flex items-center gap-1"
+                      title="Từ chối / Báo động giả"
+                    >
+                      <X size={12} />
+                      Từ chối
+                    </button>
+
+                    <button
+                      onClick={handleAnalyzeAI}
+                      disabled={isAnalyzing}
+                      className="px-2 py-1 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-800/60 rounded font-medium flex items-center gap-1"
+                      title="Chạy phân tích AI"
+                    >
+                      <Sparkles size={12} className={isAnalyzing ? 'animate-spin' : ''} />
+                      {isAnalyzing ? 'Analyzing...' : 'AI Analyze'}
+                    </button>
+
+                    <button
+                      onClick={handleFetchRecommendations}
+                      className="px-2 py-1 bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-800/60 rounded font-medium flex items-center gap-1"
+                      title="Top 3 xe đề xuất tốt nhất"
+                    >
+                      <Truck size={12} />
+                      Top 3 Xe
+                    </button>
+
+                    <button
+                      onClick={handleFetchTimeline}
+                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium flex items-center gap-1"
+                      title="Xem lịch sử xử lý"
+                    >
+                      <FileText size={12} />
+                      Timeline
+                    </button>
+
+                    <select
+                      value={selectedRequest.urgencyLevel || 'LOW'}
+                      onChange={(e) => handleUpdateSeverity(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-slate-300 focus:outline-none ml-auto text-[10px]"
+                      title="Thay đổi mức độ nghiêm trọng"
+                    >
+                      <option value="CRITICAL">Urgency: CRITICAL</option>
+                      <option value="HIGH">Urgency: HIGH</option>
+                      <option value="MEDIUM">Urgency: MEDIUM</option>
+                      <option value="LOW">Urgency: LOW</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* 2. Extended Requirements Section */}
@@ -763,6 +908,20 @@ const EmergencyIntakeDispatch = () => {
                       <div className="text-[11px] text-amber-400/80 mt-0.5">Đang chờ tài xế tiếp nhận lệnh và di chuyển tới hiện trường...</div>
                     </div>
                   </div>
+
+                  {/* OSRM Simulation Button */}
+                  <button
+                    onClick={() => handleOpenSimulation({ 
+                      id: selectedRequest.missionId || selectedRequest.id,
+                      resourceCode: selectedRequest.resourceCode || 'Xe Cấp cứu',
+                      resourceId: selectedRequest.resourceId,
+                      status: 'ACCEPTED'
+                    })}
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+                  >
+                    <Zap size={16} />
+                    <span>Mở Bảng Mô Phỏng OSRM Real-time</span>
+                  </button>
                 </div>
               </div>
 
@@ -1059,6 +1218,14 @@ const EmergencyIntakeDispatch = () => {
                         <div className="text-[10px] text-amber-400/80">Đang chờ tài xế xác nhận nhiệm vụ...</div>
                       </div>
                     </div>
+
+                    <button
+                      onClick={() => handleOpenSimulation(createdMission)}
+                      className="w-full py-2 px-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+                    >
+                      <Zap size={14} />
+                      <span>Kích hoạt Mô phỏng OSRM Real-time</span>
+                    </button>
                   </div>
                 )}
 
@@ -1193,6 +1360,119 @@ const EmergencyIntakeDispatch = () => {
             <div className="flex items-center justify-end border-t border-slate-800 pt-3">
               <button
                 onClick={() => setResourceDetailModal(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── OSRM SIMULATION CONTROL MODAL ── */}
+      <SimulationControlModal
+        isOpen={isSimulationModalOpen}
+        onClose={() => setIsSimulationModalOpen(false)}
+        mission={simulatingMission}
+        onRequestRefresh={() => {
+          fetchRequestsAndCatalogs();
+          fetchResources();
+        }}
+      />
+
+      {/* ── TIMELINE MODAL ── */}
+      {timelineModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
+                <FileText className="text-indigo-400" size={18} />
+                Lịch sử Timeline Xử lý Ca REQ-{timelineModal.requestId}
+              </h3>
+              <button onClick={() => setTimelineModal(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto space-y-2 pr-1 text-xs">
+              {timelineModal.items.length === 0 ? (
+                <div className="text-slate-500 text-center py-6">Chưa có dữ liệu timeline cho ca này.</div>
+              ) : (
+                timelineModal.items.map((item, idx) => (
+                  <div key={idx} className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between font-mono text-[11px]">
+                      <span className="font-bold text-indigo-300">{item.status || item.action || 'Sự kiện'}</span>
+                      <span className="text-slate-500">{item.timestamp ? new Date(item.timestamp).toLocaleString() : 'N/A'}</span>
+                    </div>
+                    <p className="text-slate-400 text-[11px]">{item.description || item.notes || 'Thao tác điều phối'}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button
+                onClick={() => setTimelineModal(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RECOMMENDATIONS MODAL ── */}
+      {recsModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
+                <Sparkles className="text-amber-400" size={18} />
+                Gợi ý Top 3 Xe Cứu Thương Tốt Nhất (AI Ranking)
+              </h3>
+              <button onClick={() => setRecsModal(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              {recsModal.items.length === 0 ? (
+                <div className="text-slate-500 text-center py-6">Không tìm thấy xe cứu thương khả thi phù hợp tiêu chí.</div>
+              ) : (
+                recsModal.items.map((rec, idx) => (
+                  <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="font-bold text-emerald-400 text-sm">{rec.resourceCode || `Xe #${rec.id}`}</span>
+                        <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded">{rec.providerName || 'Provider'}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-sans">
+                        Khoảng cách: <strong className="text-slate-200 font-mono">{rec.distanceKm ? `${rec.distanceKm} km` : 'N/A'}</strong> • Thời gian tới: <strong className="text-amber-300 font-mono">{rec.etaMinutes ? `${rec.etaMinutes} phút` : 'N/A'}</strong>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const targetRes = resources.find(r => r.id === rec.id || r.resourceCode === rec.resourceCode);
+                        if (targetRes) {
+                          setSelectedResource(targetRes);
+                          setRecsModal(null);
+                        } else {
+                          alert(`Đã chọn xe ${rec.resourceCode || rec.id}`);
+                          setRecsModal(null);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shrink-0"
+                    >
+                      Chọn xe này
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button
+                onClick={() => setRecsModal(null)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
               >
                 Đóng

@@ -1,25 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Activity, ShieldAlert, Truck, CheckCircle2, Clock, AlertTriangle, RefreshCw, BarChart2
+  Activity, ShieldAlert, Truck, CheckCircle2, Clock, AlertTriangle, RefreshCw, BarChart2, Download
 } from 'lucide-react';
 import { dispatchRequestService } from '../../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../../services/dispatchResourceService';
+import { dashboardService } from '../../../../services/dashboardService';
 
 const OperationsOverview = () => {
   const [requests, setRequests] = useState([]);
   const [resources, setResources] = useState([]);
+  const [dashStats, setDashStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchOverviewData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [reqData, resData] = await Promise.all([
+      const [reqData, resData, adminDash] = await Promise.all([
         dispatchRequestService.getAll().catch(() => []),
         dispatchResourceService.getAll().catch(() => []),
+        dashboardService.getAdminDashboard().catch(() => null),
       ]);
 
       setRequests(Array.isArray(reqData) ? reqData : []);
       setResources(Array.isArray(resData) ? resData : []);
+      setDashStats(adminDash);
     } catch (err) {
       console.error('Error fetching overview statistics:', err);
     } finally {
@@ -31,8 +36,28 @@ const OperationsOverview = () => {
     fetchOverviewData();
   }, [fetchOverviewData]);
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const blob = await dashboardService.exportAdminDashboard();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Admin_Dashboard_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting dashboard:', err);
+      alert('Xuất báo cáo Excel thất bại: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Request KPI calculations
-  const totalRequests = requests.length;
+  const totalRequests = dashStats?.totalRequests ?? requests.length;
   const criticalReqs = requests.filter(r => r.urgencyLevel === 'CRITICAL').length;
   const highReqs = requests.filter(r => r.urgencyLevel === 'HIGH').length;
   const pendingReqs = requests.filter(r => r.status === 'PENDING').length;
@@ -40,7 +65,7 @@ const OperationsOverview = () => {
   const completedReqs = requests.filter(r => r.status === 'COMPLETED').length;
 
   // Resource KPI calculations
-  const totalResources = resources.length;
+  const totalResources = dashStats?.totalResources ?? resources.length;
   const availableRes = resources.filter(r => r.status === 'AVAILABLE').length;
   const busyRes = resources.filter(r => r.status === 'BUSY').length;
   const offlineRes = resources.filter(r => r.status === 'OFFLINE').length;
@@ -61,13 +86,24 @@ const OperationsOverview = () => {
           </p>
         </div>
 
-        <button
-          onClick={fetchOverviewData}
-          className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors"
-        >
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          Cập nhật Dữ liệu
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-800 text-emerald-300 rounded-lg text-xs font-semibold transition-all active:scale-95"
+          >
+            <Download size={14} className={isExporting ? 'animate-bounce' : ''} />
+            {isExporting ? 'Đang xuất Excel...' : 'Xuất Báo cáo Excel'}
+          </button>
+
+          <button
+            onClick={fetchOverviewData}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors"
+          >
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            Cập nhật Dữ liệu
+          </button>
+        </div>
       </div>
 
       {/* KPI Summary Cards */}

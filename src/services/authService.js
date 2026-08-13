@@ -32,5 +32,9 @@ export const authService = {
   changePassword: async (data) => {
     const response = await api.post('/v1/auth/change-password', data);
     return response.data;
+  },
+  verifyOtp: async (phoneNumber, otp) => {
+    const response = await api.post('/v1/auth/verify-otp', { phoneNumber, otp });
+    return response.data;
   }
 };
