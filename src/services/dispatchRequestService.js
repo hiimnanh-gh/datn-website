@@ -21,32 +21,33 @@ export const dispatchRequestService = {
   },
 
   // POST /api/v1/dispatch-requests/{id}/verify
-  verify: async (id) => {
-    const response = await api.post(`/v1/dispatch-requests/${id}/verify`);
+  verify: async (id, payload = {}) => {
+    const response = await api.post(`/v1/dispatch-requests/${id}/verify`, payload || {});
     return unwrapBaseResponse(response);
   },
 
   // POST /api/v1/dispatch-requests/{id}/reject
   reject: async (id, reason) => {
-    const response = await api.post(`/v1/dispatch-requests/${id}/reject`, { reason });
+    const body = typeof reason === 'object' ? reason : { reason: reason || 'Từ chối bởi điều phối viên' };
+    const response = await api.post(`/v1/dispatch-requests/${id}/reject`, body);
     return unwrapBaseResponse(response);
   },
 
   // POST /api/v1/dispatch-requests/{id}/redispatch
-  redispatch: async (id, payload) => {
-    const response = await api.post(`/v1/dispatch-requests/${id}/redispatch`, payload);
+  redispatch: async (id, payload = {}) => {
+    const response = await api.post(`/v1/dispatch-requests/${id}/redispatch`, payload || {});
     return unwrapBaseResponse(response);
   },
 
   // POST /api/v1/dispatch-requests/{id}/confirm
-  confirm: async (id, payload) => {
-    const response = await api.post(`/v1/dispatch-requests/${id}/confirm`, payload);
+  confirm: async (id, payload = {}) => {
+    const response = await api.post(`/v1/dispatch-requests/${id}/confirm`, payload || {});
     return unwrapBaseResponse(response);
   },
 
   // POST /api/v1/dispatch-requests/{id}/analyze
-  analyze: async (id) => {
-    const response = await api.post(`/v1/dispatch-requests/${id}/analyze`);
+  analyze: async (id, payload = {}) => {
+    const response = await api.post(`/v1/dispatch-requests/${id}/analyze`, payload || {});
     return unwrapBaseResponse(response);
   },
 

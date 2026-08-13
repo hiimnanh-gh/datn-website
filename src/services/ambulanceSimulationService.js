@@ -17,8 +17,8 @@ export const ambulanceSimulationService = {
    * POST /api/v1/ambulance-simulations/{id}/start
    * @param {number|string} id Simulation ID
    */
-  start: async (id) => {
-    const response = await api.post(`/v1/ambulance-simulations/${id}/start`);
+  start: async (id, payload = {}) => {
+    const response = await api.post(`/v1/ambulance-simulations/${id}/start`, payload || {});
     return unwrapBaseResponse(response);
   },
 
@@ -27,8 +27,8 @@ export const ambulanceSimulationService = {
    * POST /api/v1/ambulance-simulations/{id}/stop
    * @param {number|string} id Simulation ID
    */
-  stop: async (id) => {
-    const response = await api.post(`/v1/ambulance-simulations/${id}/stop`);
+  stop: async (id, payload = {}) => {
+    const response = await api.post(`/v1/ambulance-simulations/${id}/stop`, payload || {});
     return unwrapBaseResponse(response);
   },
 

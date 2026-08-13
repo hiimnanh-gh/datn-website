@@ -120,7 +120,9 @@ const EmergencyIntakeDispatch = () => {
     if (!selectedRequest) return;
     try {
       await dispatchRequestService.verify(selectedRequest.id);
-      alert(`Đã xác minh thành công yêu cầu REQ-${selectedRequest.id}`);
+      // Auto trigger getRecommendations to transition status to RECOMMENDING
+      await dispatchRequestService.getRecommendations(selectedRequest.id).catch(() => {});
+      alert(`Đã xác minh và chuẩn bị gợi ý xe thành công cho REQ-${selectedRequest.id}`);
       fetchReqDetail(selectedRequest.id);
       fetchRequestsAndCatalogs();
     } catch (err) {
@@ -182,6 +184,8 @@ const EmergencyIntakeDispatch = () => {
     try {
       const recs = await dispatchRequestService.getRecommendations(selectedRequest.id);
       setRecsModal({ requestId: selectedRequest.id, items: Array.isArray(recs) ? recs : [] });
+      fetchReqDetail(selectedRequest.id);
+      fetchRequestsAndCatalogs();
     } catch (err) {
       alert('Lỗi tải gợi ý xe: ' + (err.response?.data?.message || err.message));
     }
@@ -359,6 +363,18 @@ const EmergencyIntakeDispatch = () => {
   const handleConfirmDispatch = async () => {
     setIsSubmittingMission(true);
     try {
+      // Backend requires Request to be in status 'RECOMMENDING' before creating a mission
+      if (selectedRequest && selectedRequest.status !== 'RECOMMENDING' && selectedRequest.status !== 'DISPATCHED') {
+        try {
+          if (selectedRequest.status === 'PENDING') {
+            await dispatchRequestService.verify(selectedRequest.id).catch(() => {});
+          }
+          await dispatchRequestService.getRecommendations(selectedRequest.id).catch(() => {});
+        } catch (e) {
+          console.warn('Auto transition to RECOMMENDING failed:', e);
+        }
+      }
+
       const payload = {
         requestId: selectedRequest.id,
         resourceId: selectedResource.id,
@@ -373,6 +389,9 @@ const EmergencyIntakeDispatch = () => {
       // Refresh resources & requests after mission creation
       fetchRequestsAndCatalogs();
       fetchResources();
+      if (selectedRequest?.id) {
+        fetchReqDetail(selectedRequest.id);
+      }
     } catch (err) {
       console.error('Error creating mission:', err);
       alert('Tạo lệnh điều xe thất bại: ' + (err.response?.data?.message || err.message));
@@ -645,7 +664,9 @@ const EmergencyIntakeDispatch = () => {
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px] uppercase font-mono">Vùng quản lý (Node)</span>
-                      <span className="font-semibold text-slate-200 text-[12px]">{selectedRequest.edgeNodeName || `Node #${selectedRequest.edgeNodeId}`}</span>
+                      <span className="font-semibold text-slate-200 text-[12px]">
+                        {selectedRequest.edgeNodeName || selectedRequest.operationZoneName || selectedRequest.zoneName || (selectedRequest.edgeNodeId || selectedRequest.operationZoneId || selectedRequest.zoneId ? `Node #${selectedRequest.edgeNodeId || selectedRequest.operationZoneId || selectedRequest.zoneId}` : 'Chưa phân vùng')}
+                      </span>
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px] uppercase font-mono">Điều phối viên</span>
