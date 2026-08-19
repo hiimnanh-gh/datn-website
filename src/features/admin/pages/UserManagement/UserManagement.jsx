@@ -49,7 +49,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await userService.getUsers();
+      const res = await userService.getUsers({ pageSize: 100 });
       setUsers(Array.isArray(res) ? res : (res?.data || []));
     } catch (err) {
       showToast('Lỗi khi tải danh sách người dùng', 'error');
@@ -199,17 +199,17 @@ const UserManagement = () => {
       </div>
 
       {/* Table */}
-      <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-        <div className="overflow-x-auto flex-1">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-800/50 text-slate-400 sticky top-0 z-10">
+      <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col shadow-xl">
+        <div className="overflow-auto flex-1">
+          <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+            <thead className="bg-slate-900 text-slate-300 sticky top-0 z-20 shadow-sm border-b border-slate-800">
               <tr>
-                <th className="px-4 py-3 font-medium">Username</th>
-                <th className="px-4 py-3 font-medium">Full Name</th>
-                <th className="px-4 py-3 font-medium">Contact Info</th>
-                <th className="px-4 py-3 font-medium">Roles</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
+                <th className="px-4 py-3.5 font-semibold bg-slate-900">Username</th>
+                <th className="px-4 py-3.5 font-semibold bg-slate-900">Full Name</th>
+                <th className="px-4 py-3.5 font-semibold bg-slate-900">Contact Info</th>
+                <th className="px-4 py-3.5 font-semibold bg-slate-900">Roles</th>
+                <th className="px-4 py-3.5 font-semibold bg-slate-900">Status</th>
+                <th className="px-4 py-3.5 font-semibold bg-slate-900 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
