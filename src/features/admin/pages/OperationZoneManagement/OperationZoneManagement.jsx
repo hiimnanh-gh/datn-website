@@ -17,10 +17,9 @@ const OperationZoneManagement = () => {
   // Form State
   const [formData, setFormData] = useState({
     id: null,
-    zoneCode: '',
     zoneName: '',
-    description: '',
-    status: 'ACTIVE'
+    coverageAreaJson: '',
+    isActive: true
   });
 
   const fetchZones = useCallback(async () => {
@@ -43,19 +42,17 @@ const OperationZoneManagement = () => {
     if (zone) {
       setFormData({
         id: zone.id,
-        zoneCode: zone.zoneCode || zone.nodeCode || '',
         zoneName: zone.zoneName || zone.nodeName || '',
-        description: zone.description || '',
-        status: zone.status || 'ACTIVE'
+        coverageAreaJson: zone.coverageArea ? JSON.stringify(zone.coverageArea, null, 2) : '',
+        isActive: zone.isActive !== undefined ? zone.isActive : true
       });
       setIsEditing(true);
     } else {
       setFormData({
         id: null,
-        zoneCode: '',
         zoneName: '',
-        description: '',
-        status: 'ACTIVE'
+        coverageAreaJson: '',
+        isActive: true
       });
       setIsEditing(false);
     }
@@ -67,19 +64,32 @@ const OperationZoneManagement = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     try {
+      let coverageArea = [];
+      if (formData.coverageAreaJson?.trim()) {
+        try {
+          coverageArea = JSON.parse(formData.coverageAreaJson);
+        } catch (jsonErr) {
+          alert('Dữ liệu Tọa độ phạm vi (coverageArea) phải là định dạng JSON hợp lệ dạng: [{"latitude": 21.0, "longitude": 105.8}]');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const payload = {
-        zoneCode: formData.zoneCode,
         zoneName: formData.zoneName,
-        description: formData.description,
-        status: formData.status
+        coverageArea: Array.isArray(coverageArea) ? coverageArea : [],
+        isActive: !!formData.isActive
       };
 
       if (isEditing && formData.id) {
@@ -110,10 +120,8 @@ const OperationZoneManagement = () => {
 
   const filteredZones = zones.filter(z => {
     const term = searchTerm.toLowerCase();
-    const code = (z.zoneCode || z.nodeCode || '').toLowerCase();
     const name = (z.zoneName || z.nodeName || '').toLowerCase();
-    const desc = (z.description || '').toLowerCase();
-    return code.includes(term) || name.includes(term) || desc.includes(term);
+    return name.includes(term) || z.id?.toString().includes(term);
   });
 
   return (
@@ -156,7 +164,7 @@ const OperationZoneManagement = () => {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Tìm theo mã vùng, tên vùng hoạt động..."
+          placeholder="Tìm theo ID, tên vùng hoạt động..."
           className="bg-transparent text-xs text-slate-100 focus:outline-none w-full placeholder:text-slate-500"
         />
         {searchTerm && (
@@ -176,28 +184,36 @@ const OperationZoneManagement = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredZones.map(z => {
-            const zCode = z.zoneCode || z.nodeCode || `ZONE-${z.id}`;
-            const zName = z.zoneName || z.nodeName || 'Vùng địa lý';
+            const zName = z.zoneName || z.nodeName || `Zone #${z.id}`;
+            const pointCount = Array.isArray(z.coverageArea) ? z.coverageArea.length : 0;
             return (
               <div key={z.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-400 border border-indigo-800">
-                        {zCode}
+                        ID: #{z.id}
                       </span>
                       <h3 className="font-bold text-sm text-slate-100 mt-1">{zName}</h3>
                     </div>
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                      z.status === 'ACTIVE' ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 border-slate-700'
+                      z.isActive !== false ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}>
-                      {z.status || 'ACTIVE'}
+                      {z.isActive !== false ? 'ACTIVE' : 'INACTIVE'}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-400 line-clamp-2">
-                    {z.description || 'Không có mô tả chi tiết'}
-                  </p>
+                  <div className="text-xs text-slate-400 space-y-1 font-sans">
+                    <div className="flex items-center gap-1.5">
+                      <Globe size={14} className="text-slate-500 shrink-0" />
+                      <span>{pointCount > 0 ? `${pointCount} điểm biên tọa độ` : 'Chưa thiết lập vùng polygon'}</span>
+                    </div>
+                    {z.createdAt && (
+                      <div className="text-[11px] font-mono text-slate-500">
+                        Tạo lúc: {new Date(z.createdAt).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-3 mt-4">
@@ -237,41 +253,41 @@ const OperationZoneManagement = () => {
 
             <form onSubmit={handleSave} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Mã Vùng (Zone Code) *</label>
-                <input
-                  type="text"
-                  name="zoneCode"
-                  value={formData.zoneCode}
-                  onChange={handleChange}
-                  required
-                  placeholder="ZONE-HN-BA-DINH"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Tên Vùng *</label>
+                <label className="block text-slate-400 mb-1 font-medium">Tên Vùng hoạt động (zoneName) *</label>
                 <input
                   type="text"
                   name="zoneName"
                   value={formData.zoneName}
                   onChange={handleChange}
                   required
-                  placeholder="Vùng điều phối Quận Ba Đình"
+                  placeholder="Vùng điều phối Quận Ba Đình..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Mô tả chi tiết</label>
+                <label className="block text-slate-400 mb-1 font-medium">Tọa độ biên Coverage Area (JSON Array)</label>
                 <textarea
-                  name="description"
-                  rows={3}
-                  value={formData.description}
+                  name="coverageAreaJson"
+                  rows={4}
+                  value={formData.coverageAreaJson}
                   onChange={handleChange}
-                  placeholder="Phạm vi bao phủ các phường thuộc Quận Ba Đình..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500 resize-none"
+                  placeholder={`[\n  {"latitude": 21.033, "longitude": 105.815},\n  {"latitude": 21.040, "longitude": 105.830}\n]`}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono text-[11px] focus:outline-none focus:border-indigo-500 resize-none"
                 />
+              </div>
+
+              <div className="pt-1">
+                <label className="flex items-center gap-2 text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+                  />
+                  <span>Đang hoạt động (isActive)</span>
+                </label>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">

@@ -19,10 +19,13 @@ const ProviderManagement = () => {
   const [formData, setFormData] = useState({
     id: null,
     providerName: '',
+    providerType: 'PRIVATE',
+    businessLicense: '',
     contactPhone: '',
-    contactEmail: '',
-    address: '',
-    status: 'ACTIVE'
+    contactAddress: '',
+    commissionRate: 10,
+    isVerified: true,
+    isActive: true
   });
 
   const fetchProviders = useCallback(async () => {
@@ -46,20 +49,26 @@ const ProviderManagement = () => {
       setFormData({
         id: provider.id,
         providerName: provider.providerName || '',
+        providerType: provider.providerType || 'PRIVATE',
+        businessLicense: provider.businessLicense || '',
         contactPhone: provider.contactPhone || '',
-        contactEmail: provider.contactEmail || '',
-        address: provider.address || '',
-        status: provider.status || 'ACTIVE'
+        contactAddress: provider.contactAddress || provider.address || '',
+        commissionRate: provider.commissionRate !== undefined ? provider.commissionRate : 10,
+        isVerified: provider.isVerified !== undefined ? provider.isVerified : true,
+        isActive: provider.isActive !== undefined ? provider.isActive : true
       });
       setIsEditing(true);
     } else {
       setFormData({
         id: null,
         providerName: '',
+        providerType: 'PRIVATE',
+        businessLicense: '',
         contactPhone: '',
-        contactEmail: '',
-        address: '',
-        status: 'ACTIVE'
+        contactAddress: '',
+        commissionRate: 10,
+        isVerified: true,
+        isActive: true
       });
       setIsEditing(false);
     }
@@ -71,18 +80,32 @@ const ProviderManagement = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : (name === 'commissionRate' ? parseFloat(value) || 0 : value) 
+    }));
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      if (isEditing) {
-        await providerService.update(formData.id, formData);
+      const payload = {
+        providerName: formData.providerName,
+        providerType: formData.providerType || 'PRIVATE',
+        businessLicense: formData.businessLicense,
+        contactPhone: formData.contactPhone,
+        contactAddress: formData.contactAddress,
+        commissionRate: parseFloat(formData.commissionRate) || 0,
+        isVerified: !!formData.isVerified,
+        isActive: !!formData.isActive
+      };
+
+      if (isEditing && formData.id) {
+        await providerService.update(formData.id, payload);
       } else {
-        await providerService.create(formData);
+        await providerService.create(payload);
       }
       setIsModalOpen(false);
       fetchProviders();
@@ -108,7 +131,8 @@ const ProviderManagement = () => {
 
   const filteredProviders = providers.filter(p => 
     p.providerName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.contactPhone?.includes(searchTerm)
+    p.contactPhone?.includes(searchTerm) ||
+    p.providerType?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -165,8 +189,10 @@ const ProviderManagement = () => {
               <tr>
                 <th className="py-4 px-5">ID</th>
                 <th className="py-4 px-5">Tên Đơn vị</th>
+                <th className="py-4 px-5">Loại hình</th>
                 <th className="py-4 px-5">Liên hệ</th>
                 <th className="py-4 px-5">Địa chỉ</th>
+                <th className="py-4 px-5">Hoa hồng</th>
                 <th className="py-4 px-5">Trạng thái</th>
                 <th className="py-4 px-5 text-right">Thao tác</th>
               </tr>
@@ -174,13 +200,13 @@ const ProviderManagement = () => {
             <tbody className="divide-y divide-slate-800/60">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
                     Đang tải danh sách...
                   </td>
                 </tr>
               ) : filteredProviders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
                     Không tìm thấy đơn vị nào.
                   </td>
                 </tr>
@@ -188,28 +214,37 @@ const ProviderManagement = () => {
                 filteredProviders.map(provider => (
                   <tr key={provider.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-5 font-mono text-slate-400 text-xs">#{provider.id}</td>
-                    <td className="py-3.5 px-5 font-medium text-slate-100">{provider.providerName}</td>
+                    <td className="py-3.5 px-5 font-medium text-slate-100">
+                      <div>{provider.providerName}</div>
+                      {provider.businessLicense && (
+                        <div className="text-[11px] text-slate-500 font-mono">GPKD: {provider.businessLicense}</div>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-5 text-xs text-slate-300">
+                      <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px]">
+                        {provider.providerType || 'PRIVATE'}
+                      </span>
+                    </td>
                     <td className="py-3.5 px-5 space-y-1">
                       <div className="flex items-center gap-1.5 text-xs">
                         <Phone size={12} className="text-slate-500" />
                         {provider.contactPhone || <span className="text-slate-600 italic">Trống</span>}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                        <Mail size={12} className="text-slate-500" />
-                        {provider.contactEmail || <span className="text-slate-600 italic">Trống</span>}
-                      </div>
                     </td>
                     <td className="py-3.5 px-5 text-xs text-slate-400 max-w-[200px] truncate">
-                      {provider.address || <span className="text-slate-600 italic">Chưa cập nhật</span>}
+                      {provider.contactAddress || provider.address || <span className="text-slate-600 italic">Chưa cập nhật</span>}
+                    </td>
+                    <td className="py-3.5 px-5 font-mono text-xs text-amber-400">
+                      {provider.commissionRate ?? 0}%
                     </td>
                     <td className="py-3.5 px-5">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                        provider.status === 'ACTIVE' 
+                        provider.isActive !== false
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
                           : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                       }`}>
                         <Activity size={10} />
-                        {provider.status || 'ACTIVE'}
+                        {provider.isActive !== false ? 'ACTIVE' : 'INACTIVE'}
                       </span>
                     </td>
                     <td className="py-3.5 px-5 text-right space-x-2">
@@ -250,7 +285,7 @@ const ProviderManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+            <form onSubmit={handleSave} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Tên đơn vị <span className="text-rose-500">*</span></label>
                 <input
@@ -259,14 +294,42 @@ const ProviderManagement = () => {
                   value={formData.providerName}
                   onChange={handleChange}
                   required
-                  placeholder="Ví dụ: Phòng khám Đa khoa A..."
+                  placeholder="Ví dụ: Công ty Cứu hộ Y tế An Tâm..."
                   className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-indigo-500 transition-colors"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Loại hình đơn vị</label>
+                  <select
+                    name="providerType"
+                    value={formData.providerType}
+                    onChange={handleChange}
+                    className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-indigo-500 transition-colors"
+                  >
+                    <option value="PRIVATE">Tư nhân (PRIVATE)</option>
+                    <option value="PUBLIC">Công lập (PUBLIC)</option>
+                    <option value="HOSPITAL">Bệnh viện (HOSPITAL)</option>
+                    <option value="CLINIC">Phòng khám (CLINIC)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Giấy phép KD</label>
+                  <input
+                    type="text"
+                    name="businessLicense"
+                    value={formData.businessLicense}
+                    onChange={handleChange}
+                    placeholder="GPKD-123456"
+                    className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Số điện thoại</label>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Số điện thoại liên hệ</label>
                   <div className="relative">
                     <Phone size={14} className="absolute left-3 top-3 text-slate-500" />
                     <input
@@ -274,54 +337,62 @@ const ProviderManagement = () => {
                       name="contactPhone"
                       value={formData.contactPhone}
                       onChange={handleChange}
-                      placeholder="0912..."
+                      placeholder="0912345678"
                       className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg pl-9 pr-3 py-2.5 outline-none focus:border-indigo-500 transition-colors"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Email</label>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type="email"
-                      name="contactEmail"
-                      value={formData.contactEmail}
-                      onChange={handleChange}
-                      placeholder="email@..."
-                      className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg pl-9 pr-3 py-2.5 outline-none focus:border-indigo-500 transition-colors"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Địa chỉ</label>
-                <div className="relative">
-                  <MapPin size={14} className="absolute left-3 top-3 text-slate-500" />
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Tỉ lệ hoa hồng (%)</label>
                   <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
+                    type="number"
+                    step="0.1"
+                    name="commissionRate"
+                    value={formData.commissionRate}
                     onChange={handleChange}
-                    placeholder="Số nhà, đường, quận..."
-                    className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg pl-9 pr-3 py-2.5 outline-none focus:border-indigo-500 transition-colors"
+                    placeholder="10.0"
+                    className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-indigo-500 transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Trạng thái</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-indigo-500 transition-colors appearance-none"
-                >
-                  <option value="ACTIVE">ACTIVE (Hoạt động)</option>
-                  <option value="INACTIVE">INACTIVE (Tạm dừng)</option>
-                  <option value="SUSPENDED">SUSPENDED (Đình chỉ)</option>
-                </select>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Địa chỉ liên hệ</label>
+                <div className="relative">
+                  <MapPin size={14} className="absolute left-3 top-3 text-slate-500" />
+                  <input
+                    type="text"
+                    name="contactAddress"
+                    value={formData.contactAddress}
+                    onChange={handleChange}
+                    placeholder="Số nhà, đường, quận, thành phố..."
+                    className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg pl-9 pr-3 py-2.5 outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6 pt-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+                  />
+                  <span>Đang hoạt động (isActive)</span>
+                </label>
+
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isVerified"
+                    checked={formData.isVerified}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+                  />
+                  <span>Đã xác minh (isVerified)</span>
+                </label>
               </div>
 
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-800">

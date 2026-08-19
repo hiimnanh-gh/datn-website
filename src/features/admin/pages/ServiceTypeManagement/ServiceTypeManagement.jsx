@@ -17,9 +17,9 @@ const ServiceTypeManagement = () => {
   // Form State
   const [formData, setFormData] = useState({
     id: null,
-    typeName: '',
-    description: '',
-    baseFee: ''
+    typeCode: '',
+    displayName: '',
+    priorityWeight: 1
   });
 
   const fetchServiceTypes = useCallback(async () => {
@@ -42,17 +42,17 @@ const ServiceTypeManagement = () => {
     if (st) {
       setFormData({
         id: st.id,
-        typeName: st.typeName || st.name || '',
-        description: st.description || '',
-        baseFee: st.baseFee || ''
+        typeCode: st.typeCode || '',
+        displayName: st.displayName || st.typeName || st.name || '',
+        priorityWeight: st.priorityWeight !== undefined ? st.priorityWeight : 1
       });
       setIsEditing(true);
     } else {
       setFormData({
         id: null,
-        typeName: '',
-        description: '',
-        baseFee: ''
+        typeCode: '',
+        displayName: '',
+        priorityWeight: 1
       });
       setIsEditing(false);
     }
@@ -65,7 +65,10 @@ const ServiceTypeManagement = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === 'priorityWeight' ? parseInt(value, 10) || 1 : value 
+    }));
   };
 
   const handleSave = async (e) => {
@@ -73,9 +76,9 @@ const ServiceTypeManagement = () => {
     setIsSaving(true);
     try {
       const payload = {
-        typeName: formData.typeName,
-        description: formData.description,
-        baseFee: formData.baseFee ? parseFloat(formData.baseFee) : 0
+        typeCode: formData.typeCode.trim(),
+        displayName: formData.displayName.trim(),
+        priorityWeight: parseInt(formData.priorityWeight, 10) || 1
       };
 
       if (isEditing && formData.id) {
@@ -106,9 +109,9 @@ const ServiceTypeManagement = () => {
 
   const filteredTypes = serviceTypes.filter(st => {
     const term = searchTerm.toLowerCase();
-    const name = (st.typeName || st.name || '').toLowerCase();
-    const desc = (st.description || '').toLowerCase();
-    return name.includes(term) || desc.includes(term);
+    const code = (st.typeCode || '').toLowerCase();
+    const name = (st.displayName || st.typeName || st.name || '').toLowerCase();
+    return code.includes(term) || name.includes(term) || st.id?.toString().includes(term);
   });
 
   return (
@@ -151,7 +154,7 @@ const ServiceTypeManagement = () => {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Tìm theo tên loại dịch vụ..."
+          placeholder="Tìm theo mã loại (typeCode), tên hiển thị..."
           className="bg-transparent text-xs text-slate-100 focus:outline-none w-full placeholder:text-slate-500"
         />
         {searchTerm && (
@@ -171,26 +174,22 @@ const ServiceTypeManagement = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTypes.map(st => {
-            const stName = st.typeName || st.name || `Loại dịch vụ #${st.id}`;
+            const stName = st.displayName || st.typeName || st.name || `Loại dịch vụ #${st.id}`;
+            const stCode = st.typeCode || `TYPE_${st.id}`;
             return (
               <div key={st.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-bold text-sm text-slate-100">{stName}</h3>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800">
-                      ID #{st.id}
+                    <div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800">
+                        {stCode}
+                      </span>
+                      <h3 className="font-bold text-sm text-slate-100 mt-1">{stName}</h3>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800">
+                      Priority: {st.priorityWeight ?? 1}
                     </span>
                   </div>
-
-                  <p className="text-xs text-slate-400">
-                    {st.description || 'Chưa có mô tả'}
-                  </p>
-
-                  {st.baseFee !== undefined && (
-                    <div className="text-xs font-mono text-emerald-400">
-                      Giá cơ sở: {Number(st.baseFee).toLocaleString()} VNĐ
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-3 mt-4">
@@ -230,11 +229,24 @@ const ServiceTypeManagement = () => {
 
             <form onSubmit={handleSave} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Tên Loại dịch vụ *</label>
+                <label className="block text-slate-400 mb-1 font-medium">Mã Loại dịch vụ (typeCode) *</label>
                 <input
                   type="text"
-                  name="typeName"
-                  value={formData.typeName}
+                  name="typeCode"
+                  value={formData.typeCode}
+                  onChange={handleChange}
+                  required
+                  placeholder="AMBULANCE_BASIC, ICU_MOBILE, ..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1 font-medium">Tên hiển thị (displayName) *</label>
+                <input
+                  type="text"
+                  name="displayName"
+                  value={formData.displayName}
                   onChange={handleChange}
                   required
                   placeholder="Xe Cấp cứu Chuyên dụng (ICU Mobile)"
@@ -243,25 +255,15 @@ const ServiceTypeManagement = () => {
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Mô tả</label>
-                <textarea
-                  name="description"
-                  rows={3}
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Trang bị máy thở, máy sốc tim, kíp bác sĩ chuyên khoa..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500 resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Cước phí cơ sở (VNĐ)</label>
+                <label className="block text-slate-400 mb-1 font-medium">Trọng số ưu tiên (priorityWeight)</label>
                 <input
                   type="number"
-                  name="baseFee"
-                  value={formData.baseFee}
+                  name="priorityWeight"
+                  value={formData.priorityWeight}
                   onChange={handleChange}
-                  placeholder="500000"
+                  min={1}
+                  max={100}
+                  placeholder="1"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>

@@ -50,7 +50,7 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const res = await userService.getUsers();
-      setUsers(res?.data || []);
+      setUsers(Array.isArray(res) ? res : (res?.data || []));
     } catch (err) {
       showToast('Lỗi khi tải danh sách người dùng', 'error');
     } finally {

@@ -158,7 +158,7 @@ const DispatchHistory = () => {
                     {req.serviceTypeName || `ID: ${req.serviceTypeId}`}
                   </td>
                   <td className="py-3 px-4 text-slate-400 font-sans">
-                    {req.edgeNodeName || `Node #${req.edgeNodeId}`}
+                    {req.zoneName || req.edgeNodeName || (req.zoneId ? `Vùng #${req.zoneId}` : 'N/A')}
                   </td>
                   <td className="py-3 px-4 font-sans">
                     <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] border border-slate-700">
@@ -210,11 +210,11 @@ const DispatchHistory = () => {
               </div>
               <div>
                 <span className="text-slate-500 text-[10px] block uppercase">Loại dịch vụ</span>
-                <span className="text-slate-200 font-medium">{selectedDetail.serviceTypeName}</span>
+                <span className="text-slate-200 font-medium">{selectedDetail.serviceTypeName || `Loại #${selectedDetail.serviceTypeId}`}</span>
               </div>
               <div>
                 <span className="text-slate-500 text-[10px] block uppercase">Vùng điều phối</span>
-                <span className="text-slate-200 font-medium">{selectedDetail.edgeNodeName}</span>
+                <span className="text-slate-200 font-medium">{selectedDetail.zoneName || selectedDetail.edgeNodeName || `Vùng #${selectedDetail.zoneId}`}</span>
               </div>
             </div>
 

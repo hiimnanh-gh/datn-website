@@ -18,12 +18,11 @@ const HospitalManagement = () => {
   const [formData, setFormData] = useState({
     id: null,
     hospitalName: '',
-    phone: '',
-    address: '',
+    contactPhone: '',
+    hospitalAddress: '',
     latitude: '',
     longitude: '',
-    capacity: 10,
-    status: 'ACTIVE'
+    isActive: true
   });
 
   const fetchHospitals = useCallback(async () => {
@@ -47,24 +46,22 @@ const HospitalManagement = () => {
       setFormData({
         id: hospital.id,
         hospitalName: hospital.hospitalName || hospital.name || '',
-        phone: hospital.phone || hospital.phoneNumber || '',
-        address: hospital.address || '',
-        latitude: hospital.latitude || '',
-        longitude: hospital.longitude || '',
-        capacity: hospital.capacity || 10,
-        status: hospital.status || 'ACTIVE'
+        contactPhone: hospital.contactPhone || hospital.phone || hospital.phoneNumber || '',
+        hospitalAddress: hospital.hospitalAddress || hospital.address || '',
+        latitude: hospital.latitude !== undefined && hospital.latitude !== null ? hospital.latitude : '',
+        longitude: hospital.longitude !== undefined && hospital.longitude !== null ? hospital.longitude : '',
+        isActive: hospital.isActive !== undefined ? hospital.isActive : true
       });
       setIsEditing(true);
     } else {
       setFormData({
         id: null,
         hospitalName: '',
-        phone: '',
-        address: '',
+        contactPhone: '',
+        hospitalAddress: '',
         latitude: '',
         longitude: '',
-        capacity: 10,
-        status: 'ACTIVE'
+        isActive: true
       });
       setIsEditing(false);
     }
@@ -76,8 +73,11 @@ const HospitalManagement = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleSave = async (e) => {
@@ -86,12 +86,11 @@ const HospitalManagement = () => {
     try {
       const payload = {
         hospitalName: formData.hospitalName,
-        phone: formData.phone,
-        address: formData.address,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-        capacity: parseInt(formData.capacity, 10) || 10,
-        status: formData.status
+        contactPhone: formData.contactPhone,
+        hospitalAddress: formData.hospitalAddress,
+        latitude: formData.latitude !== '' ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude !== '' ? parseFloat(formData.longitude) : null,
+        isActive: !!formData.isActive
       };
 
       if (isEditing && formData.id) {
@@ -123,8 +122,8 @@ const HospitalManagement = () => {
   const filteredHospitals = hospitals.filter(h => {
     const term = searchTerm.toLowerCase();
     const nameStr = (h.hospitalName || h.name || '').toLowerCase();
-    const addrStr = (h.address || '').toLowerCase();
-    const phoneStr = (h.phone || h.phoneNumber || '').toLowerCase();
+    const addrStr = (h.hospitalAddress || h.address || '').toLowerCase();
+    const phoneStr = (h.contactPhone || h.phone || h.phoneNumber || '').toLowerCase();
     return nameStr.includes(term) || addrStr.includes(term) || phoneStr.includes(term);
   });
 
@@ -189,17 +188,17 @@ const HospitalManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredHospitals.map(h => {
             const hName = h.hospitalName || h.name || `Bệnh viện #${h.id}`;
-            const hPhone = h.phone || h.phoneNumber || 'N/A';
-            const hAddress = h.address || 'Chưa cập nhật địa chỉ';
+            const hPhone = h.contactPhone || h.phone || h.phoneNumber || 'N/A';
+            const hAddress = h.hospitalAddress || h.address || 'Chưa cập nhật địa chỉ';
             return (
               <div key={h.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-bold text-sm text-slate-100">{hName}</h3>
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                      h.status === 'ACTIVE' ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 border-slate-700'
+                      h.isActive !== false ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}>
-                      {h.status || 'ACTIVE'}
+                      {h.isActive !== false ? 'ACTIVE' : 'INACTIVE'}
                     </span>
                   </div>
 
@@ -212,10 +211,9 @@ const HospitalManagement = () => {
                       <Phone size={14} className="text-slate-500 shrink-0" />
                       <span>{hPhone}</span>
                     </div>
-                    {h.capacity && (
-                      <div className="flex items-center gap-1.5">
-                        <Activity size={14} className="text-slate-500 shrink-0" />
-                        <span>Sức chứa: {h.capacity} giường cấp cứu</span>
+                    {h.latitude && h.longitude && (
+                      <div className="text-[11px] font-mono text-slate-500">
+                        GPS: {h.latitude}, {h.longitude}
                       </div>
                     )}
                   </div>
@@ -265,41 +263,29 @@ const HospitalManagement = () => {
                   value={formData.hospitalName}
                   onChange={handleChange}
                   required
-                  placeholder="Bệnh viện Bạch Mai - KCN Cấp cứu"
+                  placeholder="Bệnh viện Bạch Mai - Khoa Cấp cứu"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1 font-medium">Số điện thoại hotline</label>
-                  <input
-                    type="text"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="024-3869-xxxx"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1 font-medium">Sức chứa (Giường)</label>
-                  <input
-                    type="number"
-                    name="capacity"
-                    value={formData.capacity}
-                    onChange={handleChange}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-slate-400 mb-1 font-medium">Số điện thoại hotline</label>
+                <input
+                  type="text"
+                  name="contactPhone"
+                  value={formData.contactPhone}
+                  onChange={handleChange}
+                  placeholder="024-3869-xxxx"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
               </div>
 
               <div>
                 <label className="block text-slate-400 mb-1 font-medium">Địa chỉ chi tiết</label>
                 <input
                   type="text"
-                  name="address"
-                  value={formData.address}
+                  name="hospitalAddress"
+                  value={formData.hospitalAddress}
                   onChange={handleChange}
                   placeholder="78 Giải Phóng, Phương Mai, Đống Đa, Hà Nội"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500"
@@ -331,6 +317,19 @@ const HospitalManagement = () => {
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
                   />
                 </div>
+              </div>
+
+              <div className="pt-1">
+                <label className="flex items-center gap-2 text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+                  />
+                  <span>Đang hoạt động tiếp nhận (isActive)</span>
+                </label>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">

@@ -81,7 +81,10 @@ const Profile = () => {
       return;
     }
 
-    const effectivePhone = phone.trim() || profile?.phoneNumber || profile?.phone || authUser?.phoneNumber || authUser?.phone || "";
+    const rawRoles = profile?.roles || authUser?.roles || [userRoleDisplay];
+    const stringRoles = Array.isArray(rawRoles)
+      ? rawRoles.map(r => typeof r === 'string' ? r : (r.name || r.authority || userRoleDisplay))
+      : [userRoleDisplay];
 
     try {
       const updateData = {
@@ -89,9 +92,8 @@ const Profile = () => {
         fullName: fullName.trim(),
         email: email.trim(),
         phoneNumber: effectivePhone,
-        phone: effectivePhone,
-        role: userRoleDisplay,
-        roles: profile?.roles || authUser?.roles || [{ name: userRoleDisplay }],
+        roles: stringRoles,
+        isActive: profile?.isActive !== undefined ? profile.isActive : true
       };
 
       if (password) {
