@@ -30,8 +30,6 @@ import DispatcherLayout from './features/dispatcher/DispatcherLayout';
 import ProviderLayout from './features/provider/ProviderLayout';
 import ProviderDashboard from './features/provider/pages/admin/ProviderDashboard';
 import FleetManagement from './features/provider/pages/admin/FleetManagement';
-import DriverAccounts from './features/provider/pages/admin/DriverAccounts';
-import CommissionSettlement from './features/provider/pages/admin/CommissionSettlement';
 
 // ── Root redirect based on auth state + role ─────────────
 const RootRedirect = () => {
