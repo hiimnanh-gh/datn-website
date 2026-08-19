@@ -285,8 +285,8 @@ const DispatchResources = () => {
                 <span className="text-slate-200 font-medium">{selectedDetail.resourceTypeName}</span>
               </div>
               <div>
-                <span className="text-slate-500 text-[10px] block uppercase">Vùng điều phối (Edge Node)</span>
-                <span className="text-slate-200 font-medium">{selectedDetail.edgeNodeName}</span>
+                <span className="text-slate-500 text-[10px] block uppercase">Vùng điều phối</span>
+                <span className="text-slate-200 font-medium">{selectedDetail.zoneName || selectedDetail.edgeNodeName || (selectedDetail.zoneId ? `Vùng #${selectedDetail.zoneId}` : 'N/A')}</span>
               </div>
               <div>
                 <span className="text-slate-500 text-[10px] block uppercase">Đơn vị cung cấp</span>
@@ -354,9 +354,13 @@ const DispatchResources = () => {
                   onChange={(e) => setNewStatus(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="AVAILABLE">AVAILABLE - Có sẵn phát lệnh</option>
+                  <option value="AVAILABLE">AVAILABLE - Sẵn sàng điều phối</option>
+                  <option value="DISPATCHED">DISPATCHED - Đã gán lệnh điều phối</option>
+                  <option value="ON_MISSION">ON_MISSION - Đang thực hiện nhiệm vụ</option>
+                  <option value="RETURNING">RETURNING - Đang trở về trạm</option>
                   <option value="OFFLINE">OFFLINE - Xe ngắt kết nối / nghỉ</option>
-                  <option value="MAINTENANCE">MAINTENANCE - Xe bảo dưỡng kỹ thuật</option>
+                  <option value="MAINTENANCE">MAINTENANCE - Bảo dưỡng kỹ thuật</option>
+                  <option value="OUT_OF_SERVICE">OUT_OF_SERVICE - Tạm ngừng phục vụ</option>
                 </select>
               </div>
             </div>

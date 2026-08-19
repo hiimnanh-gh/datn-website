@@ -53,7 +53,8 @@ export const dispatchRequestService = {
 
   // PATCH /api/v1/dispatch-requests/{id}/severity
   updateSeverity: async (id, urgencyLevel) => {
-    const response = await api.patch(`/v1/dispatch-requests/${id}/severity`, { urgencyLevel });
+    const severityVal = typeof urgencyLevel === 'object' ? (urgencyLevel.severity || urgencyLevel.urgencyLevel) : urgencyLevel;
+    const response = await api.patch(`/v1/dispatch-requests/${id}/severity`, { severity: severityVal });
     return unwrapBaseResponse(response);
   },
 
