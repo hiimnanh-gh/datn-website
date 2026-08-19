@@ -148,39 +148,39 @@ const Login = () => {
         return;
       }
 
-      const authData = resData.data;
+      const authData = resData.data || resData;
       const { accessToken, refreshToken, fullName, roles } = authData;
 
-      // Extract array of role names
+      // Extract array of role names from BE (e.g. ["DISPATCHER"], ["PROVIDER_ADMIN"], ["ADMIN"])
       const roleNames = (roles || []).map(r => (typeof r === 'object' ? (r.name || r.authority || '') : String(r)));
 
-      // CRITICAL FIX: Check PROVIDER before ADMIN because PROVIDER_ADMIN contains the string 'ADMIN'!
-      let mappedRole = 'REPORTER';
-      if (roleNames.some(r => r.includes('PROVIDER'))) {
-        mappedRole = 'PROVIDER';
-      } else if (roleNames.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN' || r === 'SYSTEM_ADMIN')) {
-        mappedRole = 'ADMIN';
-      } else if (roleNames.some(r => r.includes('DISPATCHER'))) {
-        mappedRole = 'DISPATCHER';
-      } else if (roleNames.some(r => r.includes('DRIVER'))) {
-        mappedRole = 'DRIVER';
-      } else if (roleNames.some(r => r.includes('ADMIN'))) {
-        mappedRole = 'ADMIN';
+      // Keep exact role from BE without converting PROVIDER_ADMIN to PROVIDER
+      let primaryRole = roleNames[0] || 'REPORTER';
+      if (roleNames.includes('PROVIDER_ADMIN')) {
+        primaryRole = 'PROVIDER_ADMIN';
+      } else if (roleNames.includes('PROVIDER')) {
+        primaryRole = 'PROVIDER';
+      } else if (roleNames.includes('ADMIN') || roleNames.includes('ROLE_ADMIN') || roleNames.includes('SYSTEM_ADMIN')) {
+        primaryRole = 'ADMIN';
+      } else if (roleNames.includes('DISPATCHER')) {
+        primaryRole = 'DISPATCHER';
+      } else if (roleNames.includes('DRIVER')) {
+        primaryRole = 'DRIVER';
       }
 
       login(
-        { role: mappedRole, name: fullName || username, ...authData },
+        { role: primaryRole, name: fullName || username, ...authData },
         accessToken,
         refreshToken
       );
 
-      if (mappedRole === 'ADMIN') {
+      if (primaryRole === 'ADMIN') {
         navigate('/admin/dispatch-requests');
-      } else if (mappedRole === 'PROVIDER') {
+      } else if (primaryRole === 'PROVIDER' || primaryRole === 'PROVIDER_ADMIN') {
         navigate('/provider/fleet');
-      } else if (mappedRole === 'DISPATCHER') {
+      } else if (primaryRole === 'DISPATCHER') {
         navigate('/dispatcher/dispatch-requests');
-      } else if (mappedRole === 'DRIVER') {
+      } else if (primaryRole === 'DRIVER') {
         navigate('/driver/mission');
       } else {
         navigate('/');

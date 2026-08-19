@@ -30,6 +30,12 @@ const useAuthStore = create(
         });
       },
 
+      setToken: (token) => set({ token, isAuthenticated: !!token }),
+      setRefreshToken: (refreshToken) => set((state) => ({
+        refreshToken,
+        user: state.user ? { ...state.user, refreshToken } : null
+      })),
+
       updateTokens: (newAccessToken, newRefreshToken) => {
         set((state) => ({
           token: newAccessToken,

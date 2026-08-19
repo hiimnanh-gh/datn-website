@@ -33,8 +33,11 @@ export const authService = {
     const response = await api.post('/v1/auth/change-password', data);
     return response.data;
   },
-  verifyOtp: async (phoneNumber, otp) => {
-    const response = await api.post('/v1/auth/verify-otp', { phoneNumber, otp });
+  verifyOtp: async (phoneNumber, otpCode) => {
+    const payload = typeof phoneNumber === 'object' 
+      ? { phoneNumber: phoneNumber.phoneNumber, otpCode: phoneNumber.otpCode || phoneNumber.otp }
+      : { phoneNumber, otpCode };
+    const response = await api.post('/v1/auth/verify-otp', payload);
     return response.data;
   }
 };
