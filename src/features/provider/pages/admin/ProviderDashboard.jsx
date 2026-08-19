@@ -138,10 +138,10 @@ const ProviderDashboard = () => {
       {/* ── Data Display ── */}
       {!isLoading && !error && (
         <>
-          {/* ── Operational Fleet & Mission Metrics (Backend KPIs) ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-left">
+          {/* ── Operational Fleet & Driver Metrics (Exact 8 Backend KPIs) ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
             
-            {/* Total Ambulances */}
+            {/* 1. Total Ambulances */}
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
               <span className="text-xs font-semibold text-slate-400 block">Tổng Đội Xe</span>
               <div className="flex items-center justify-between">
@@ -150,34 +150,52 @@ const ProviderDashboard = () => {
               </div>
             </div>
 
-            {/* Available Ambulances */}
+            {/* 2. Available Ambulances */}
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-emerald-400 block">Sẵn Sàng</span>
+              <span className="text-xs font-semibold text-emerald-400 block">Xe Sẵn Sàng</span>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold font-mono text-emerald-400">{kpis.availableAmbulances ?? 0}</span>
                 <ShieldCheck size={18} className="text-emerald-500" />
               </div>
             </div>
 
-            {/* Busy Ambulances */}
+            {/* 3. Busy Ambulances */}
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-amber-400 block">Đang Làm Nhiệm Vụ</span>
+              <span className="text-xs font-semibold text-amber-400 block">Xe Đang Điều Động</span>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold font-mono text-amber-400">{kpis.busyAmbulances ?? 0}</span>
                 <Activity size={18} className="text-amber-500" />
               </div>
             </div>
 
-            {/* Maintenance Ambulances */}
+            {/* 4. Maintenance Ambulances */}
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-red-400 block">Bảo Trì / Sửa Chữa</span>
+              <span className="text-xs font-semibold text-red-400 block">Xe Đang Bảo Trì</span>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold font-mono text-red-400">{kpis.maintenanceAmbulances ?? 0}</span>
                 <AlertCircle size={18} className="text-red-500" />
               </div>
             </div>
 
-            {/* Completed Missions */}
+            {/* 5. Total Drivers */}
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-slate-400 block">Tổng Tài Xế</span>
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold font-mono text-white">{kpis.totalDrivers ?? 0}</span>
+                <Users size={18} className="text-slate-500" />
+              </div>
+            </div>
+
+            {/* 6. Active Drivers */}
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-emerald-400 block">Tài Xế Đang Trực</span>
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold font-mono text-emerald-400">{kpis.activeDrivers ?? kpis.totalDrivers ?? 0}</span>
+                <Users size={18} className="text-emerald-500" />
+              </div>
+            </div>
+
+            {/* 7. Completed Missions */}
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
               <span className="text-xs font-semibold text-blue-400 block">Chuyến Hoàn Thành</span>
               <div className="flex items-center justify-between">
@@ -186,9 +204,9 @@ const ProviderDashboard = () => {
               </div>
             </div>
 
-            {/* Fleet Utilization */}
+            {/* 8. Fleet Utilization */}
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-indigo-400 block">Hiệu Suất Xe</span>
+              <span className="text-xs font-semibold text-indigo-400 block">Hiệu Suất Đội Xe</span>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold font-mono text-indigo-300">
                   {kpis.fleetUtilization != null ? `${Number(kpis.fleetUtilization).toFixed(1)}%` : '0%'}
