@@ -17,18 +17,18 @@ export const ambulanceSimulationService = {
    * POST /api/v1/ambulance-simulations/{id}/start
    * @param {number|string} id Simulation ID
    */
-  start: async (id, payload = {}) => {
-    const response = await api.post(`/v1/ambulance-simulations/${id}/start`, payload || {});
+  start: async (id) => {
+    const response = await api.post(`/v1/ambulance-simulations/${id}/start`);
     return unwrapBaseResponse(response);
   },
 
   /**
-   * Dừng tạm thời mô phỏng (Có thể start lại từ vị trí vừa dừng)
+   * Dừng tạm thời mô phỏng
    * POST /api/v1/ambulance-simulations/{id}/stop
    * @param {number|string} id Simulation ID
    */
-  stop: async (id, payload = {}) => {
-    const response = await api.post(`/v1/ambulance-simulations/${id}/stop`, payload || {});
+  stop: async (id) => {
+    const response = await api.post(`/v1/ambulance-simulations/${id}/stop`);
     return unwrapBaseResponse(response);
   },
 

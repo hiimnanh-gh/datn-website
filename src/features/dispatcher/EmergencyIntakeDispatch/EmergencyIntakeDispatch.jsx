@@ -110,6 +110,7 @@ const EmergencyIntakeDispatch = () => {
   const [resourceDetailModal, setResourceDetailModal] = useState(null);
   const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
   const [simulatingMission, setSimulatingMission] = useState(null);
+  const [isLoadingMissionForSim, setIsLoadingMissionForSim] = useState(false);
 
   // New Request Action States
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -192,8 +193,52 @@ const EmergencyIntakeDispatch = () => {
   };
 
   const handleOpenSimulation = (mission) => {
+    if (!mission || !mission.id) return;
     setSimulatingMission(mission);
     setIsSimulationModalOpen(true);
+  };
+
+  const handleOpenSimulationForRequest = async (request) => {
+    if (!request || !request.id) return;
+    setIsLoadingMissionForSim(true);
+    try {
+      let targetMission = null;
+
+      // 1. If request already contains missionId
+      if (request.missionId) {
+        try {
+          targetMission = await dispatchMissionService.getById(request.missionId);
+        } catch (e) {
+          targetMission = { id: request.missionId };
+        }
+      }
+
+      // 2. Fetch mission by requestId from backend dispatch missions
+      if (!targetMission || !targetMission.id) {
+        targetMission = await dispatchMissionService.getByRequestId(request.id);
+      }
+
+      // 3. If no mission found, alert user clearly without fallback to request.id
+      if (!targetMission || !targetMission.id) {
+        alert(`Không tìm thấy Lệnh điều xe (Mission) tương ứng với yêu cầu REQ-${request.id}. Vui lòng tạo lệnh điều xe trước khi chạy mô phỏng!`);
+        return;
+      }
+
+      setSimulatingMission({
+        id: targetMission.id, // Actual Mission ID (e.g. 8), NEVER request.id (e.g. 17)
+        requestId: request.id,
+        resourceCode: targetMission.resourceCode || request.resourceCode || (targetMission.resourceId ? `Xe #${targetMission.resourceId}` : 'Xe Cấp cứu'),
+        resourceId: targetMission.resourceId || request.resourceId,
+        status: targetMission.status || 'ACCEPTED',
+        driverName: targetMission.driverName || targetMission.driver?.fullName || 'Đã điều phối'
+      });
+      setIsSimulationModalOpen(true);
+    } catch (err) {
+      console.error('Error opening simulation for request:', err);
+      alert('Lỗi tải thông tin Mission: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsLoadingMissionForSim(false);
+    }
   };
 
   // 1. Fetch Request List & Supporting Catalogs
@@ -932,16 +977,16 @@ const EmergencyIntakeDispatch = () => {
 
                   {/* OSRM Simulation Button */}
                   <button
-                    onClick={() => handleOpenSimulation({ 
-                      id: selectedRequest.missionId || selectedRequest.id,
-                      resourceCode: selectedRequest.resourceCode || 'Xe Cấp cứu',
-                      resourceId: selectedRequest.resourceId,
-                      status: 'ACCEPTED'
-                    })}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+                    onClick={() => handleOpenSimulationForRequest(selectedRequest)}
+                    disabled={isLoadingMissionForSim}
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    <Zap size={16} />
-                    <span>Mở Bảng Mô Phỏng OSRM Real-time</span>
+                    {isLoadingMissionForSim ? (
+                      <RefreshCw size={16} className="animate-spin" />
+                    ) : (
+                      <Zap size={16} />
+                    )}
+                    <span>{isLoadingMissionForSim ? 'Đang tìm kiếm Mission...' : 'Mở Bảng Mô Phỏng OSRM Real-time'}</span>
                   </button>
                 </div>
               </div>

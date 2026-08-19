@@ -52,6 +52,39 @@ export const dispatchMissionService = {
   getById: async (id) => {
     const response = await api.get(`/v1/dispatch-missions/${id}`);
     return response.data?.data || response.data;
+  },
+
+  // GET mission by requestId (either via query param or filtering list)
+  getByRequestId: async (requestId) => {
+    if (!requestId) return null;
+    try {
+      const response = await api.get('/v1/dispatch-missions', {
+        params: { requestId }
+      });
+      const data = response.data?.data || response.data;
+      if (Array.isArray(data) && data.length > 0) {
+        const found = data.find(m => Number(m.requestId || m.request_id) === Number(requestId));
+        if (found) return found;
+        return data[0];
+      } else if (data && typeof data === 'object' && data.id) {
+        return data;
+      }
+    } catch (e) {
+      console.warn('Get mission by query param requestId failed, falling back to getAll:', e);
+    }
+
+    try {
+      const allMissions = await dispatchMissionService.getAll();
+      if (Array.isArray(allMissions)) {
+        const matching = allMissions
+          .filter(m => Number(m.requestId || m.request_id) === Number(requestId))
+          .sort((a, b) => (b.id || 0) - (a.id || 0));
+        return matching[0] || null;
+      }
+    } catch (err) {
+      console.error('Error getting mission by requestId from getAll:', err);
+    }
+    return null;
   }
 };
 

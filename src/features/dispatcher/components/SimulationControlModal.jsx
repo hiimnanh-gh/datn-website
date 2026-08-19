@@ -174,9 +174,14 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
             <div>
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                 Mô phỏng Hành trình OSRM
-                <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono font-bold">
                   Mission #{mission?.id}
                 </span>
+                {mission?.requestId && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                    REQ-{mission?.requestId}
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-slate-400">
                 Tính toán đường đi qua OSRM & Phát vị trí Real-time qua WebSocket STOMP
@@ -196,14 +201,18 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
           
           {/* Mission Details Summary Card */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div>
-              <span className="text-slate-500 block">Mã xe cứu thương:</span>
-              <span className="font-mono font-bold text-indigo-400">{mission?.resourceCode || `Res #${mission?.resourceId}`}</span>
+              <span className="text-slate-500 block">Mã Nhiệm vụ (Mission):</span>
+              <span className="font-mono font-bold text-emerald-400">#{mission?.id}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">Tài xế phụ trách:</span>
-              <span className="font-medium text-slate-200">{mission?.driverName || 'Đã điều phối'}</span>
+              <span className="text-slate-500 block">Mã Yêu cầu (Request):</span>
+              <span className="font-mono font-bold text-slate-300">{mission?.requestId ? `REQ-${mission.requestId}` : 'N/A'}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block">Mã xe cứu thương:</span>
+              <span className="font-mono font-bold text-indigo-400">{mission?.resourceCode || (mission?.resourceId ? `Xe #${mission.resourceId}` : 'Xe Cấp cứu')}</span>
             </div>
             <div>
               <span className="text-slate-500 block">Trạng thái nhiệm vụ:</span>
