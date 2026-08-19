@@ -38,6 +38,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   // Pagination state
   const [pageNumber, setPageNumber] = useState(0);
@@ -69,7 +70,8 @@ const UserManagement = () => {
         pageNumber,
         pageSize,
         keyword: search.trim() || undefined,
-        role: roleFilter !== 'ALL' ? roleFilter : undefined
+        role: roleFilter !== 'ALL' ? roleFilter : undefined,
+        isActive: statusFilter === 'ACTIVE' ? true : (statusFilter === 'INACTIVE' ? false : undefined)
       };
 
       const res = await userService.getUsers(params);
@@ -89,7 +91,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pageNumber, pageSize, search, roleFilter]);
+  }, [pageNumber, pageSize, search, roleFilter, statusFilter]);
 
   useEffect(() => {
     fetchUsers();
@@ -237,8 +239,24 @@ const UserManagement = () => {
             </select>
           </div>
 
+          {/* Status Filter */}
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPageNumber(0);
+              }}
+              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="ACTIVE">Hoạt động (Active)</option>
+              <option value="INACTIVE">Vô hiệu hóa (Inactive)</option>
+            </select>
+          </div>
+
           {/* Search Box */}
-          <div className="relative w-full md:w-56">
+          <div className="relative w-full md:w-52">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
