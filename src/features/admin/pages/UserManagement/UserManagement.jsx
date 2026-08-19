@@ -1,5 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, X, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Search, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  X, 
+  AlertCircle, 
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Filter
+} from 'lucide-react';
 import { userService } from '../../../../services/userService';
 
 // Custom Toast Component
@@ -24,6 +37,13 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+
+  // Pagination state
+  const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Toast state
   const [toast, setToast] = useState({ message: '', type: 'success' });
@@ -42,21 +62,38 @@ const UserManagement = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await userService.getUsers({ pageSize: 100 });
-      setUsers(Array.isArray(res) ? res : (res?.data || []));
+      const params = {
+        pageNumber,
+        pageSize,
+        keyword: search.trim() || undefined,
+        role: roleFilter !== 'ALL' ? roleFilter : undefined
+      };
+
+      const res = await userService.getUsers(params);
+      const usersList = Array.isArray(res) ? res : (res?.data || []);
+      setUsers(usersList);
+
+      if (res?._metadata) {
+        setTotalElements(res._metadata.totalElements ?? usersList.length);
+        setTotalPages(res._metadata.totalPages ?? 1);
+      } else {
+        setTotalElements(usersList.length);
+        setTotalPages(Math.max(1, Math.ceil(usersList.length / pageSize)));
+      }
     } catch (err) {
+      console.error('Error fetching users:', err);
       showToast('Lỗi khi tải danh sách người dùng', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [pageNumber, pageSize, search, roleFilter]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -113,10 +150,9 @@ const UserManagement = () => {
     if (!validateForm()) return;
 
     try {
-      // Chuẩn bị payload
       const payload = { ...formData };
       if (editingUser && !payload.password) {
-        delete payload.password; // Không gửi password nếu để trống khi sửa
+        delete payload.password;
       }
 
       if (editingUser) {
@@ -130,7 +166,6 @@ const UserManagement = () => {
       fetchUsers();
     } catch (err) {
       console.error(err);
-      // Hiển thị message từ backend nếu có, vd: "Username already exists"
       const errorMsg = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi lưu dữ liệu';
       showToast(`Lỗi: ${errorMsg}`, 'error');
     }
@@ -158,11 +193,17 @@ const UserManagement = () => {
     }));
   };
 
-  const filteredUsers = users.filter(u => 
-    u.username.toLowerCase().includes(search.toLowerCase()) || 
-    u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-    u.phoneNumber?.includes(search)
-  );
+  const handlePageChange = (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setPageNumber(newPage);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    const newSize = Number(e.target.value);
+    setPageSize(newSize);
+    setPageNumber(0);
+  };
 
   return (
     <div className="p-6 h-full flex flex-col bg-slate-950 text-slate-200">
@@ -173,25 +214,48 @@ const UserManagement = () => {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-indigo-500">groups</span>
-            User Management
+            Quản Lý Người Dùng (User Management)
           </h1>
-          <p className="text-sm text-slate-400 mt-1">Quản lý tài khoản, phân quyền và trạng thái hoạt động</p>
+          <p className="text-sm text-slate-400 mt-1">Quản lý tài khoản, phân quyền và trạng thái hoạt động trên toàn hệ thống</p>
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative w-full md:w-64">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {/* Role Filter */}
+          <div className="relative">
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setPageNumber(0);
+              }}
+              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">Tất cả vai trò</option>
+              {AVAILABLE_ROLES.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Search Box */}
+          <div className="relative w-full md:w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
               placeholder="Tìm user, SĐT..." 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPageNumber(0);
+              }}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
             />
           </div>
+
+          {/* Add New Button */}
           <button 
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shadow-lg shadow-indigo-900/40"
           >
             <Plus size={16} /> Thêm Mới
           </button>
@@ -214,11 +278,11 @@ const UserManagement = () => {
             </thead>
             <tbody className="divide-y divide-slate-800">
               {loading ? (
-                <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-500">Đang tải dữ liệu...</td></tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-500">Không tìm thấy người dùng nào</td></tr>
+                <tr><td colSpan="6" className="px-4 py-12 text-center text-slate-400">Đang tải dữ liệu người dùng...</td></tr>
+              ) : users.length === 0 ? (
+                <tr><td colSpan="6" className="px-4 py-12 text-center text-slate-500">Không tìm thấy người dùng nào phù hợp</td></tr>
               ) : (
-                filteredUsers.map(user => (
+                users.map(user => (
                   <tr key={user.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-4 py-3 font-medium text-white">{user.username}</td>
                     <td className="px-4 py-3">{user.fullName}</td>
@@ -271,6 +335,65 @@ const UserManagement = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ── Pagination Footer Bar ── */}
+        <div className="p-3 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
+          <div className="flex items-center gap-2 text-slate-400">
+            <span>Hiển thị</span>
+            <select
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              className="bg-slate-900 border border-slate-750 text-slate-200 rounded px-2 py-1 outline-none"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>dòng/trang • Tổng số <strong>{totalElements}</strong> tài khoản</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handlePageChange(0)}
+              disabled={pageNumber === 0 || loading}
+              className="p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Trang đầu"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+            <button
+              onClick={() => handlePageChange(pageNumber - 1)}
+              disabled={pageNumber === 0 || loading}
+              className="p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Trang trước"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <span className="px-3 py-1 bg-indigo-950 text-indigo-300 font-bold border border-indigo-800 rounded">
+              Trang {pageNumber + 1} / {totalPages || 1}
+            </span>
+
+            <button
+              onClick={() => handlePageChange(pageNumber + 1)}
+              disabled={pageNumber >= totalPages - 1 || loading}
+              className="p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Trang sau"
+            >
+              <ChevronRight size={16} />
+            </button>
+            <button
+              onClick={() => handlePageChange(totalPages - 1)}
+              disabled={pageNumber >= totalPages - 1 || loading}
+              className="p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Trang cuối"
+            >
+              <ChevronsRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -5,6 +5,13 @@ export const userService = {
   // Lấy danh sách tất cả user
   getUsers: async (params) => {
     const response = await api.get('/v1/users', { params });
+    if (response?.data && typeof response.data === 'object' && 'data' in response.data) {
+      const list = response.data.data;
+      if (Array.isArray(list)) {
+        list._metadata = response.data.metadata;
+      }
+      return list;
+    }
     return unwrapBaseResponse(response);
   },
 
