@@ -138,130 +138,63 @@ const ProviderDashboard = () => {
       {/* ── Data Display ── */}
       {!isLoading && !error && (
         <>
-          {/* ── Financial & Revenue Summary (Backend KPIs) ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-            
-            {/* Collected Revenue */}
-            <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl" />
-              <div>
-                <span className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Tổng Doanh Thu</span>
-                <span className="text-[10px] text-slate-500 block font-mono">collectedRevenue</span>
-              </div>
-              <div className="mt-3">
-                <span className="text-2xl font-bold font-mono text-emerald-400 tracking-tight">
-                  {formatCurrency(kpis.collectedRevenue)}
-                </span>
-              </div>
-            </div>
-
-            {/* Platform Fees */}
-            <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full blur-xl" />
-              <div>
-                <span className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Phí Sàn Điều Phối</span>
-                <span className="text-[10px] text-slate-500 block font-mono">platformFees</span>
-              </div>
-              <div className="mt-3">
-                <span className="text-2xl font-bold font-mono text-amber-400 tracking-tight">
-                  {formatCurrency(kpis.platformFees)}
-                </span>
-              </div>
-            </div>
-
-            {/* Net Revenue */}
-            <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full blur-xl" />
-              <div>
-                <span className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Doanh Thu Thực Nhận</span>
-                <span className="text-[10px] text-slate-500 block font-mono">netRevenue</span>
-              </div>
-              <div className="mt-3">
-                <span className="text-2xl font-bold font-mono text-blue-400 tracking-tight">
-                  {formatCurrency(kpis.netRevenue)}
-                </span>
-              </div>
-            </div>
-
-            {/* Pending Settlement */}
-            <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/5 rounded-full blur-xl" />
-              <div>
-                <span className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Chờ Quyết Toán</span>
-                <span className="text-[10px] text-slate-500 block font-mono">pendingSettlement</span>
-              </div>
-              <div className="mt-3">
-                <span className="text-2xl font-bold font-mono text-indigo-300 tracking-tight">
-                  {formatCurrency(kpis.pendingSettlement)}
-                </span>
-              </div>
-            </div>
-
-          </div>
-
           {/* ── Operational Fleet & Mission Metrics (Backend KPIs) ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-left">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-left">
             
             {/* Total Ambulances */}
-            <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-wider block">Tổng Đội Xe</span>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-slate-400 block">Tổng Đội Xe</span>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold font-mono text-white">{kpis.totalAmbulances ?? 0}</span>
-                <Truck size={16} className="text-slate-500" />
+                <span className="text-2xl font-bold font-mono text-white">{kpis.totalAmbulances ?? 0}</span>
+                <Truck size={18} className="text-slate-500" />
               </div>
-              <span className="text-[9px] text-slate-500 font-mono">totalAmbulances</span>
             </div>
 
             {/* Available Ambulances */}
-            <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-bold font-mono text-emerald-400 uppercase tracking-wider block">Sẵn Sàng</span>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-emerald-400 block">Sẵn Sàng</span>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold font-mono text-emerald-400">{kpis.availableAmbulances ?? 0}</span>
-                <ShieldCheck size={16} className="text-emerald-500" />
+                <span className="text-2xl font-bold font-mono text-emerald-400">{kpis.availableAmbulances ?? 0}</span>
+                <ShieldCheck size={18} className="text-emerald-500" />
               </div>
-              <span className="text-[9px] text-slate-500 font-mono">availableAmbulances</span>
             </div>
 
             {/* Busy Ambulances */}
-            <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-bold font-mono text-amber-400 uppercase tracking-wider block">Đang Làm Nhiệm Vụ</span>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-amber-400 block">Đang Làm Nhiệm Vụ</span>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold font-mono text-amber-400">{kpis.busyAmbulances ?? 0}</span>
-                <Activity size={16} className="text-amber-500" />
+                <span className="text-2xl font-bold font-mono text-amber-400">{kpis.busyAmbulances ?? 0}</span>
+                <Activity size={18} className="text-amber-500" />
               </div>
-              <span className="text-[9px] text-slate-500 font-mono">busyAmbulances</span>
             </div>
 
             {/* Maintenance Ambulances */}
-            <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-bold font-mono text-red-400 uppercase tracking-wider block">Bảo Trì / Sửa Chữa</span>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-red-400 block">Bảo Trì / Sửa Chữa</span>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold font-mono text-red-400">{kpis.maintenanceAmbulances ?? 0}</span>
-                <AlertCircle size={16} className="text-red-500" />
+                <span className="text-2xl font-bold font-mono text-red-400">{kpis.maintenanceAmbulances ?? 0}</span>
+                <AlertCircle size={18} className="text-red-500" />
               </div>
-              <span className="text-[9px] text-slate-500 font-mono">maintenanceAmbulances</span>
             </div>
 
             {/* Completed Missions */}
-            <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-bold font-mono text-blue-400 uppercase tracking-wider block">Chuyến Hoàn Thành</span>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-blue-400 block">Chuyến Hoàn Thành</span>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold font-mono text-blue-400">{kpis.completedMissions ?? 0}</span>
-                <CheckCircle size={16} className="text-blue-500" />
+                <span className="text-2xl font-bold font-mono text-blue-400">{kpis.completedMissions ?? 0}</span>
+                <CheckCircle size={18} className="text-blue-500" />
               </div>
-              <span className="text-[9px] text-slate-500 font-mono">completedMissions</span>
             </div>
 
             {/* Fleet Utilization */}
-            <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-bold font-mono text-purple-400 uppercase tracking-wider block">Hiệu Suất Xe</span>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
+              <span className="text-xs font-semibold text-indigo-400 block">Hiệu Suất Xe</span>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold font-mono text-purple-400">
+                <span className="text-2xl font-bold font-mono text-indigo-300">
                   {kpis.fleetUtilization != null ? `${Number(kpis.fleetUtilization).toFixed(1)}%` : '0%'}
                 </span>
-                <Percent size={16} className="text-purple-500" />
+                <Percent size={18} className="text-indigo-400" />
               </div>
-              <span className="text-[9px] text-slate-500 font-mono">fleetUtilization</span>
             </div>
 
           </div>
