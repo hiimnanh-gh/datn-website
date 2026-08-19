@@ -5,18 +5,24 @@ import {
 import { dispatchResourceService } from '../../../../services/dispatchResourceService';
 import { providerService } from '../../../../services/providerService';
 import { serviceTypeService } from '../../../../services/serviceTypeService';
-import { edgeNodeService } from '../../../../services/edgeNodeService';
+import { operationZoneService } from '../../../../services/operationZoneService';
 
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'AVAILABLE':
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
-    case 'BUSY':
+    case 'DISPATCHED':
+      return 'bg-blue-500/20 text-blue-400 border-blue-500/40';
+    case 'ON_MISSION':
       return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
+    case 'RETURNING':
+      return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40';
     case 'OFFLINE':
       return 'bg-slate-500/20 text-slate-400 border-slate-500/40';
     case 'MAINTENANCE':
       return 'bg-rose-500/20 text-rose-400 border-rose-500/40';
+    case 'OUT_OF_SERVICE':
+      return 'bg-red-500/20 text-red-400 border-red-500/40';
     default:
       return 'bg-slate-500/20 text-slate-400 border-slate-500/40';
   }
@@ -26,7 +32,7 @@ const FleetManagement = () => {
   const [resources, setResources] = useState([]);
   const [providers, setProviders] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
-  const [edgeNodes, setEdgeNodes] = useState([]);
+  const [zones, setZones] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,24 +52,24 @@ const FleetManagement = () => {
     resourceCode: '',
     resourceTypeId: '',
     providerId: '',
-    edgeNodeId: '',
+    zoneId: '',
     status: 'AVAILABLE'
   });
 
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [resList, provList, stList, enList] = await Promise.all([
+      const [resList, provList, stList, znList] = await Promise.all([
         dispatchResourceService.getAll(),
         providerService.getAll().catch(() => []),
         serviceTypeService.getAll().catch(() => []),
-        edgeNodeService.getAll().catch(() => []),
+        operationZoneService.getAll().catch(() => []),
       ]);
 
       setResources(Array.isArray(resList) ? resList : []);
       setProviders(Array.isArray(provList) ? provList : []);
       setServiceTypes(Array.isArray(stList) ? stList : []);
-      setEdgeNodes(Array.isArray(enList) ? enList : []);
+      setZones(Array.isArray(znList) ? znList : []);
     } catch (err) {
       console.error('Error fetching fleet resources data:', err);
     } finally {
@@ -99,7 +105,7 @@ const FleetManagement = () => {
         resourceCode: resource.resourceCode || '',
         resourceTypeId: resource.resourceTypeId || '',
         providerId: resource.providerId || '',
-        edgeNodeId: resource.edgeNodeId || '',
+        zoneId: resource.zoneId || '',
         status: resource.status || 'AVAILABLE'
       });
       setIsEditing(true);
@@ -109,7 +115,7 @@ const FleetManagement = () => {
         resourceCode: '',
         resourceTypeId: serviceTypes.length > 0 ? serviceTypes[0].id : '',
         providerId: providers.length > 0 ? providers[0].id : '',
-        edgeNodeId: edgeNodes.length > 0 ? edgeNodes[0].id : '',
+        zoneId: zones.length > 0 ? zones[0].id : '',
         status: 'AVAILABLE'
       });
       setIsEditing(false);
@@ -129,10 +135,11 @@ const FleetManagement = () => {
     setIsSaving(true);
     try {
       const payload = {
-        ...formData,
-        resourceTypeId: Number(formData.resourceTypeId),
-        providerId: Number(formData.providerId),
-        edgeNodeId: Number(formData.edgeNodeId)
+        resourceCode: formData.resourceCode.trim(),
+        resourceTypeId: Number(formData.resourceTypeId) || null,
+        providerId: Number(formData.providerId) || null,
+        zoneId: Number(formData.zoneId) || null,
+        status: formData.status
       };
 
       if (isEditing) {
@@ -273,7 +280,7 @@ const FleetManagement = () => {
                       {res.currentDriverName || <span className="text-slate-500 italic">Chưa gán</span>}
                     </td>
                     <td className="py-3.5 px-4 text-slate-400 font-sans">
-                      {res.edgeNodeName || `Node #${res.edgeNodeId}`}
+                      {res.zoneName || (res.zoneId ? `Vùng #${res.zoneId}` : 'N/A')}
                     </td>
                     <td className="py-3.5 px-4">
                       <button 
@@ -372,17 +379,17 @@ const FleetManagement = () => {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Vùng hoạt động (Edge Node) <span className="text-rose-500">*</span></label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Vùng hoạt động (Zone) <span className="text-rose-500">*</span></label>
                 <select
-                  name="edgeNodeId"
-                  value={formData.edgeNodeId}
+                  name="zoneId"
+                  value={formData.zoneId}
                   onChange={handleFormChange}
                   required
                   className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 transition-colors"
                 >
                   <option value="" disabled>-- Chọn Vùng Hoạt Động --</option>
-                  {edgeNodes.map(node => (
-                    <option key={node.id} value={node.id}>{node.nodeName}</option>
+                  {zones.map(zone => (
+                    <option key={zone.id} value={zone.id}>{zone.zoneName || `Vùng #${zone.id}`}</option>
                   ))}
                 </select>
               </div>
@@ -395,9 +402,13 @@ const FleetManagement = () => {
                   onChange={handleFormChange}
                   className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 transition-colors"
                 >
-                  <option value="AVAILABLE">AVAILABLE - Có sẵn</option>
-                  <option value="OFFLINE">OFFLINE - Tắt máy</option>
+                  <option value="AVAILABLE">AVAILABLE - Sẵn sàng điều xe</option>
+                  <option value="DISPATCHED">DISPATCHED - Đã gán lệnh điều xe</option>
+                  <option value="ON_MISSION">ON_MISSION - Đang thực hiện nhiệm vụ</option>
+                  <option value="RETURNING">RETURNING - Đang trở về trạm</option>
+                  <option value="OFFLINE">OFFLINE - Tắt máy / Nghỉ ca</option>
                   <option value="MAINTENANCE">MAINTENANCE - Bảo dưỡng</option>
+                  <option value="OUT_OF_SERVICE">OUT_OF_SERVICE - Tạm ngừng phục vụ</option>
                 </select>
               </div>
 
@@ -455,8 +466,12 @@ const FleetManagement = () => {
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
                 >
                   <option value="AVAILABLE">AVAILABLE - Sẵn sàng điều xe</option>
+                  <option value="DISPATCHED">DISPATCHED - Đã gán lệnh điều xe</option>
+                  <option value="ON_MISSION">ON_MISSION - Đang thực hiện nhiệm vụ</option>
+                  <option value="RETURNING">RETURNING - Đang trở về trạm</option>
                   <option value="OFFLINE">OFFLINE - Tắt máy / Nghỉ ca</option>
                   <option value="MAINTENANCE">MAINTENANCE - Bảo dưỡng kỹ thuật</option>
+                  <option value="OUT_OF_SERVICE">OUT_OF_SERVICE - Tạm ngừng phục vụ</option>
                 </select>
               </div>
             </div>

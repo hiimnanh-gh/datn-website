@@ -106,8 +106,10 @@ function App() {
           <Route index element={<Navigate to="fleet" replace />} />
           <Route path="dashboard" element={<ProviderDashboard />} />
           <Route path="fleet" element={<FleetManagement />} />
-          <Route path="drivers" element={<DriverAccounts />} />
-          <Route path="commission" element={<CommissionSettlement />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="drivers" element={<Navigate to="/provider/dashboard" replace />} />
+          <Route path="commission" element={<Navigate to="/provider/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="fleet" replace />} />
         </Route>
 
         {/* Catch-all */}

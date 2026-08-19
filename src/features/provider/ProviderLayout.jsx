@@ -14,14 +14,14 @@ const ProviderLayout = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
 
-  if (!isAuthenticated || (user?.role !== 'PROVIDER' && user?.role !== 'ADMIN')) {
+  if (!isAuthenticated || (user?.role !== 'PROVIDER' && user?.role !== 'PROVIDER_ADMIN' && user?.role !== 'ADMIN')) {
     return <Navigate to="/login" replace />;
   }
 
   const links = [
     { to: '/provider/fleet', icon: <Truck size={20} />, label: 'Quản lý Đội xe (Fleet)' },
-    { to: '/provider/drivers', icon: <UserCircle2 size={20} />, label: 'Tài khoản Tài xế' },
     { to: '/provider/dashboard', icon: <LayoutDashboard size={20} />, label: 'Tổng quan Vận hành' },
+    { to: '/provider/profile', icon: <UserCircle2 size={20} />, label: 'Hồ sơ Cá nhân' },
   ];
 
   const handleLogout = () => {
@@ -59,7 +59,7 @@ const ProviderLayout = () => {
             <UserCircle2 size={24} className="user-avatar" />
             <div className="user-details">
               <span className="user-name">{user?.fullName || user?.username}</span>
-              <span className="user-role-badge">PROVIDER</span>
+              <span className="user-role-badge">{user?.role || 'PROVIDER_ADMIN'}</span>
             </div>
           </div>
           <button className="logout-btn" onClick={handleLogout}>
