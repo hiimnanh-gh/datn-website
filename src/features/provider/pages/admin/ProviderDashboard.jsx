@@ -80,12 +80,12 @@ const ProviderDashboard = () => {
       {/* ── Dashboard Header ── */}
       <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-5 text-left">
         <div>
-          <h1 className="text-2xl font-bold tracking-wider font-mono text-white uppercase flex items-center gap-2">
-            <Layers className="text-emerald-500" size={24} />
+          <h1 className="text-xl font-bold font-sans text-white flex items-center gap-2">
+            <Layers className="text-emerald-500" size={22} />
             Tổng Quan Vận Hành Đơn Vị (Provider Dashboard)
           </h1>
-          <p className="text-xs text-slate-500 mt-1 uppercase font-mono tracking-widest">
-            Trung tâm đối soát & giám sát hiệu suất đội xe cấp cứu thời gian thực
+          <p className="text-xs text-slate-400 mt-1 font-sans">
+            Giám sát hiệu suất và tình trạng đội xe cấp cứu thời gian thực
           </p>
         </div>
 
@@ -93,18 +93,10 @@ const ProviderDashboard = () => {
           <button
             onClick={fetchDashboardData}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors font-mono disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin text-emerald-400' : ''} />
             {isLoading ? 'Đang tải...' : 'Làm mới'}
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={isExporting || isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors font-mono shadow-lg shadow-emerald-900/40 disabled:opacity-70"
-          >
-            <Download size={14} className={isExporting ? 'animate-bounce' : ''} />
-            {isExporting ? 'Đang xuất...' : 'Xuất Báo cáo Excel'}
           </button>
         </div>
       </div>
@@ -215,72 +207,6 @@ const ProviderDashboard = () => {
               </div>
             </div>
 
-          </div>
-
-          {/* ── Details / Operations Log Table ── */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl text-left">
-            <div className="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
-              <div>
-                <h3 className="text-xs font-bold font-mono tracking-widest text-slate-200 uppercase flex items-center gap-2">
-                  <Clock size={16} className="text-emerald-400" />
-                  Nhật Ký Chuyến Xe & Đối Soát Doanh Thu
-                </h3>
-                <span className="text-[10px] text-slate-500 font-mono">Dữ liệu chuyến xe thực tế từ Backend</span>
-              </div>
-              <span className="text-[11px] font-mono text-slate-400">
-                {details.length} bản ghi
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-sans">
-                <thead className="bg-slate-950/80 border-b border-slate-800 text-[10px] text-slate-400 uppercase font-mono tracking-wider">
-                  <tr>
-                    <th className="py-3 px-4">Thời gian</th>
-                    <th className="py-3 px-4">Mã Chuyến / Xe</th>
-                    <th className="py-3 px-4 text-right">Cước Phí</th>
-                    <th className="py-3 px-4 text-right">Phí Sàn</th>
-                    <th className="py-3 px-4 text-right">Thực Nhận</th>
-                    <th className="py-3 px-4 text-center">Trạng Thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
-                  {details.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-500">
-                        <FileSpreadsheet size={32} className="mx-auto mb-2 opacity-40 text-slate-400" />
-                        <p className="text-xs font-sans">Chưa có giao dịch / chuyến xe nào được ghi nhận từ hệ thống.</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    details.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4 text-slate-400">
-                          {item.timestamp || item.date || item.createdAt || 'N/A'}
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-slate-200">
-                          {item.missionCode || item.missionId || item.resourceCode || `#${item.id || idx + 1}`}
-                        </td>
-                        <td className="py-3.5 px-4 text-right text-emerald-400 font-bold">
-                          {formatCurrency(item.collectedRevenue ?? item.fare ?? item.amount)}
-                        </td>
-                        <td className="py-3.5 px-4 text-right text-amber-400">
-                          {formatCurrency(item.platformFees ?? item.fee)}
-                        </td>
-                        <td className="py-3.5 px-4 text-right text-blue-400 font-bold">
-                          {formatCurrency(item.netRevenue ?? item.netProfit ?? (item.fare - item.fee))}
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800">
-                            {item.status || 'COMPLETED'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
           </div>
         </>
       )}

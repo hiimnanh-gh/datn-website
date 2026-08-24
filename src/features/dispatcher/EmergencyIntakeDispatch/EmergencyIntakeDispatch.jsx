@@ -720,7 +720,7 @@ const EmergencyIntakeDispatch = () => {
                       className="px-2.5 py-0.5 bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-700/60 rounded font-medium flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <Sparkles size={12} className="text-amber-400" />
-                      Top 3 Xe Gợi Ý (AI)
+                      Gợi ý Top 3 Xe Cứu Thương
                     </button>
                     <button
                       onClick={handleFetchTimeline}
@@ -1155,7 +1155,7 @@ const EmergencyIntakeDispatch = () => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <Sparkles className="text-amber-400" size={18} />
-                Gợi ý Top 3 Xe Cứu Thương Tốt Nhất (AI Ranking)
+                Gợi ý Top 3 Xe Cứu Thương
               </h3>
               <button onClick={() => setRecsModal(null)} className="text-slate-400 hover:text-white">
                 <X size={18} />

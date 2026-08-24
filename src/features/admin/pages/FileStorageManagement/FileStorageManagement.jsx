@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  FolderArchive, Upload, Download, Trash2, Search, X, RefreshCw, FileText, Info, HardDrive
+  Search, X, RefreshCw, FileText, Info, HardDrive
 } from 'lucide-react';
 import { fileStorageService } from '../../../../services/fileStorageService';
 
 const FileStorageManagement = () => {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Selected file for metadata modal
@@ -28,52 +27,6 @@ const FileStorageManagement = () => {
   useEffect(() => {
     fetchFiles();
   }, [fetchFiles]);
-
-  const handleFileUpload = async (e) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    setIsUploading(true);
-    try {
-      await fileStorageService.upload(selectedFile);
-      alert('Tải tệp tin lên MinIO thành công!');
-      fetchFiles();
-    } catch (err) {
-      console.error('Error uploading file:', err);
-      alert('Tải tệp lên thất bại: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleDownload = async (objectKey) => {
-    try {
-      const blob = await fileStorageService.downloadFile(objectKey);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', objectKey.split('/').pop() || objectKey);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error downloading file:', err);
-      alert('Tải file thất bại: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleDelete = async (objectKey) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa tệp "${objectKey}" trên MinIO?`)) return;
-    try {
-      await fileStorageService.deleteFile(objectKey);
-      fetchFiles();
-    } catch (err) {
-      console.error('Error deleting file:', err);
-      alert('Xóa file thất bại: ' + (err.response?.data?.message || err.message));
-    }
-  };
 
   const handleViewMetadata = async (objectKey) => {
     try {
@@ -107,17 +60,12 @@ const FileStorageManagement = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={fetchFiles}
-            className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl text-xs font-medium transition-colors cursor-pointer"
             title="Tải lại danh sách"
           >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+            <span>Làm mới</span>
           </button>
-
-          <label className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/30 cursor-pointer transition-all active:scale-95">
-            <Upload size={16} />
-            <span>{isUploading ? 'Đang tải lên...' : 'Tải tệp lên MinIO'}</span>
-            <input type="file" onChange={handleFileUpload} className="hidden" disabled={isUploading} />
-          </label>
         </div>
       </div>
 
@@ -153,7 +101,7 @@ const FileStorageManagement = () => {
                 <th className="py-3 px-4">Tên tệp / Object Key</th>
                 <th className="py-3 px-4">Dung lượng</th>
                 <th className="py-3 px-4">Ngày tải lên</th>
-                <th className="py-3 px-4 text-right">Thao tác</th>
+                <th className="py-3 px-4 text-right">Chi tiết</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -170,24 +118,12 @@ const FileStorageManagement = () => {
                     </td>
                     <td className="py-3 px-4 text-slate-400 font-mono">{size}</td>
                     <td className="py-3 px-4 text-slate-400 font-mono">{lastModified}</td>
-                    <td className="py-3 px-4 text-right space-x-2">
+                    <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => handleViewMetadata(objectKey)}
-                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] font-medium"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-900/40 rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
                       >
                         Metadata
-                      </button>
-                      <button
-                        onClick={() => handleDownload(objectKey)}
-                        className="px-2 py-1 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-800/60 rounded text-[11px] font-medium"
-                      >
-                        Tải về
-                      </button>
-                      <button
-                        onClick={() => handleDelete(objectKey)}
-                        className="px-2 py-1 bg-red-950/50 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded text-[11px] font-medium"
-                      >
-                        Xóa
                       </button>
                     </td>
                   </tr>
