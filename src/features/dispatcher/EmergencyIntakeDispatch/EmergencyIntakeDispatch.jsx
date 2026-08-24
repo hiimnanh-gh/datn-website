@@ -797,83 +797,47 @@ const EmergencyIntakeDispatch = () => {
                   </div>
                 </div>
 
-                {/* 2. Combined AI & Extended Info (Side-by-side / Compact Grid) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {/* AI Panel */}
-                  <div className="bg-slate-900 border border-indigo-950/80 rounded-xl p-2 space-y-1">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
-                      <span className="font-bold text-[11px] text-indigo-300 flex items-center gap-1 uppercase tracking-wider">
-                        <Sparkles size={12} className="text-indigo-400" />
-                        Phân tích AI
-                      </span>
-                      {selectedRequest.aiConfidenceScore != null && (
-                        <span className="text-[10px] text-emerald-400 font-mono font-bold">
-                          {Math.round(selectedRequest.aiConfidenceScore * (selectedRequest.aiConfidenceScore <= 1 ? 100 : 1))}% Tin cậy
-                        </span>
+                {/* 2. Extended Requirements */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+                  <span className="font-bold text-[11px] text-slate-300 flex items-center gap-1 border-b border-slate-800/80 pb-1 uppercase tracking-wider">
+                    <FileText size={12} className="text-indigo-400" />
+                    Yêu cầu mở rộng
+                  </span>
+
+                  {selectedRequest.extendedRequirements && (selectedRequest.extendedRequirements.symptoms || selectedRequest.extendedRequirements.equipment) ? (
+                    <div className="space-y-1 text-[11px]">
+                      {selectedRequest.extendedRequirements.symptoms && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-slate-500 shrink-0 font-mono text-[10px]">Triệu chứng:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {Array.isArray(selectedRequest.extendedRequirements.symptoms) ? (
+                              selectedRequest.extendedRequirements.symptoms.map((s, idx) => (
+                                <span key={idx} className="bg-red-950/60 text-red-300 border border-red-800/60 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                                  {s}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-slate-300 font-medium">{selectedRequest.extendedRequirements.symptoms}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {selectedRequest.extendedRequirements.equipment && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-slate-500 shrink-0 font-mono text-[10px]">Thiết bị:</span>
+                          <span className="text-slate-300 font-medium">{Array.isArray(selectedRequest.extendedRequirements.equipment) ? selectedRequest.extendedRequirements.equipment.join(', ') : selectedRequest.extendedRequirements.equipment}</span>
+                        </div>
                       )}
                     </div>
-
-                    {selectedRequest.aiUrgencyPrediction || selectedRequest.aiTranscript ? (
-                      <div className="space-y-1 text-[11px]">
-                        <div className="flex items-center justify-between text-slate-300 font-mono">
-                          <span className="text-slate-500 text-[10px]">AI Đề xuất:</span>
-                          <span className="font-bold text-amber-400">{selectedRequest.aiUrgencyPrediction || 'N/A'}</span>
-                        </div>
-                        {selectedRequest.aiTranscript && (
-                          <p className="text-[10px] text-slate-300 bg-slate-950 px-1.5 py-1 rounded border border-slate-800 italic line-clamp-2">
-                            "{selectedRequest.aiTranscript}"
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-slate-500 text-[10px] italic py-1 text-center">
-                        Chưa có dữ liệu AI
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Extended Requirements */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2 space-y-1">
-                    <span className="font-bold text-[11px] text-slate-300 flex items-center gap-1 border-b border-slate-800/80 pb-1 uppercase tracking-wider">
-                      <FileText size={12} className="text-indigo-400" />
-                      Yêu cầu mở rộng
-                    </span>
-
-                    {selectedRequest.extendedRequirements && (selectedRequest.extendedRequirements.symptoms || selectedRequest.extendedRequirements.equipment) ? (
-                      <div className="space-y-1 text-[10px]">
-                        {selectedRequest.extendedRequirements.symptoms && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-slate-500 shrink-0 font-mono">Triệu chứng:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {Array.isArray(selectedRequest.extendedRequirements.symptoms) ? (
-                                selectedRequest.extendedRequirements.symptoms.map((s, idx) => (
-                                  <span key={idx} className="bg-red-950/60 text-red-300 border border-red-800/60 px-1 rounded text-[9px] font-mono">
-                                    {s}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="text-slate-300">{selectedRequest.extendedRequirements.symptoms}</span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {selectedRequest.extendedRequirements.equipment && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-slate-500 shrink-0 font-mono">Thiết bị:</span>
-                            <span className="text-slate-300">{Array.isArray(selectedRequest.extendedRequirements.equipment) ? selectedRequest.extendedRequirements.equipment.join(', ') : selectedRequest.extendedRequirements.equipment}</span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-slate-500 text-[10px] italic py-1 text-center">
-                        Không có yêu cầu mở rộng
-                      </p>
-                    )}
-                  </div>
+                  ) : (
+                    <p className="text-slate-500 text-[10px] italic py-0.5 text-center">
+                      Không có yêu cầu mở rộng
+                    </p>
+                  )}
                 </div>
 
-                {/* 3. Location & Map Section (Compact Height) */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2 space-y-1">
+                {/* 3. Location & Map Section */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
                   <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
                     <span className="flex items-center gap-1 font-bold text-[11px] text-slate-200 uppercase tracking-wider">
                       <MapPin size={12} className="text-emerald-400" />
@@ -931,10 +895,48 @@ const EmergencyIntakeDispatch = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-2 bg-slate-950 rounded-lg border border-slate-800 text-center text-slate-500 text-[10px]">
+                    <div className="h-16 w-full rounded-lg border border-dashed border-slate-800 flex flex-col items-center justify-center text-[10px] text-slate-500 font-mono">
                       <AlertTriangle size={14} className="mx-auto mb-0.5 text-amber-500/60" />
                       Chưa có dữ liệu vị trí GPS cho yêu cầu này.
                     </div>
+                  )}
+                </div>
+
+                {/* 4. AI Analysis Panel (Placed below map, auto-expanding height based on text) */}
+                <div className="bg-slate-900 border border-indigo-950/80 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                    <span className="font-bold text-[11px] text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Sparkles size={13} className="text-indigo-400" />
+                      Phân tích AI
+                    </span>
+                    {selectedRequest.aiConfidenceScore != null && (
+                      <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
+                        {Math.round(selectedRequest.aiConfidenceScore * (selectedRequest.aiConfidenceScore <= 1 ? 100 : 1))}% Tin cậy
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedRequest.aiUrgencyPrediction || selectedRequest.aiTranscript ? (
+                    <div className="space-y-2 text-xs">
+                      {selectedRequest.aiUrgencyPrediction && (
+                        <div className="flex items-center justify-between text-slate-300 font-mono bg-slate-950/80 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+                          <span className="text-slate-400 text-[11px]">Mức độ đề xuất:</span>
+                          <span className="font-bold text-amber-400 text-xs">{selectedRequest.aiUrgencyPrediction}</span>
+                        </div>
+                      )}
+                      {selectedRequest.aiTranscript && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Trích xuất nội dung cuộc gọi:</span>
+                          <div className="text-[11px] text-slate-200 bg-slate-950 p-3 rounded-xl border border-slate-800 whitespace-pre-wrap break-words leading-relaxed font-sans shadow-inner">
+                            "{selectedRequest.aiTranscript}"
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 text-[10px] italic py-1 text-center font-sans">
+                      Chưa có dữ liệu AI
+                    </p>
                   )}
                 </div>
               </>
