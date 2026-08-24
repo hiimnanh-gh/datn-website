@@ -1,40 +1,47 @@
 import React, { useState, useEffect } from "react";
 import { userService } from "../../../../services/userService";
+import { authService } from "../../../../services/authService";
 import useTopbarStore from "../../../../store/useTopbarStore";
 import useAuthStore from "../../../../store/useAuthStore";
+import { User, Lock, KeyRound, Shield, CheckCircle2, AlertCircle } from "lucide-react";
 
 const Profile = () => {
   const { setSlot, clearSlot } = useTopbarStore();
-  const { user: authUser, login } = useAuthStore();
+  const { user: authUser } = useAuthStore();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Edit states
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  // Profile edit states
+  const [fullNameInput, setFullNameInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileError, setProfileError] = useState("");
+
+  // Change Password states
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const userRoleDisplay = (
     profile?.roles?.[0]?.name ||
     profile?.role ||
     authUser?.role ||
-    "DISPATCHER"
+    "ADMIN"
   ).toUpperCase();
 
-  const isAdmin = userRoleDisplay === "ADMIN";
-
-  // Breadcrumbs/header slot
+  // Header badge slot
   useEffect(() => {
     setSlot(
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-900/40 border border-indigo-800 text-indigo-300">
           {userRoleDisplay} Account
         </span>
-      </div>,
+      </div>
     );
     return () => clearSlot();
   }, [userRoleDisplay]);
@@ -46,18 +53,18 @@ const Profile = () => {
       const res = await userService.getMe();
       const userData = res.data || res;
       setProfile(userData);
-      setFullName(userData.fullName || authUser?.fullName || authUser?.name || "");
-      setEmail(userData.email || authUser?.email || "");
-      setPhone(userData.phoneNumber || userData.phone || authUser?.phoneNumber || authUser?.phone || "");
+      setFullNameInput(userData.fullName || authUser?.fullName || authUser?.name || "");
+      setEmailInput(userData.email || authUser?.email || "");
+      setPhoneInput(userData.phoneNumber || userData.phone || authUser?.phoneNumber || authUser?.phone || "");
     } catch (err) {
       console.error("Failed to fetch profile", err);
       if (authUser) {
         setProfile(authUser);
-        setFullName(authUser.fullName || authUser.name || "");
-        setEmail(authUser.email || "");
-        setPhone(authUser.phoneNumber || authUser.phone || "");
+        setFullNameInput(authUser.fullName || authUser.name || "");
+        setEmailInput(authUser.email || "");
+        setPhoneInput(authUser.phoneNumber || authUser.phone || "");
       } else {
-        setError("Failed to load profile data from server.");
+        setError("Không thể tải thông tin tài khoản từ máy chủ.");
       }
     } finally {
       setLoading(false);
@@ -70,59 +77,81 @@ const Profile = () => {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    setProfileError("");
+    setProfileSuccess("");
+
+    if (!fullNameInput.trim()) {
+      setProfileError("Họ và tên không được để trống.");
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      const payload = {
+        id: profile?.id,
+        fullName: fullNameInput.trim(),
+        email: emailInput.trim(),
+        phoneNumber: phoneInput.trim(),
+        phone: phoneInput.trim()
+      };
+
+      const updated = await userService.updateMe(payload);
+      const updatedData = updated.data || updated || payload;
+
+      setProfile(prev => ({ ...prev, ...payload }));
+      useAuthStore.getState().updateUser({
+        fullName: payload.fullName,
+        name: payload.fullName,
+        email: payload.email,
+        phoneNumber: payload.phoneNumber,
+        phone: payload.phone
+      });
+
+      setProfileSuccess("Cập nhật thông tin hồ sơ thành công!");
+    } catch (err) {
+      console.error("Failed to update profile", err);
+      const msg = err.response?.data?.message || err.message || "Cập nhật hồ sơ thất bại.";
+      setProfileError(msg);
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!profile?.id && !authUser?.userId && !authUser?.id) return;
-    const targetUserId = profile?.id || authUser?.userId || authUser?.id;
-
-    if (password && password !== confirmPassword) {
+    if (!oldPassword) {
+      setError("Vui lòng nhập mật khẩu hiện tại.");
+      return;
+    }
+    if (!newPassword) {
+      setError("Vui lòng nhập mật khẩu mới.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
       setError("Mật khẩu xác nhận không khớp!");
       return;
     }
 
-    const rawRoles = profile?.roles || authUser?.roles || [userRoleDisplay];
-    const stringRoles = Array.isArray(rawRoles)
-      ? rawRoles.map(r => typeof r === 'string' ? r : (r.name || r.authority || userRoleDisplay))
-      : [userRoleDisplay];
-
+    setIsChangingPassword(true);
     try {
-      const updateData = {
-        username: profile?.username || authUser?.username,
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phoneNumber: effectivePhone,
-        roles: stringRoles,
-        isActive: profile?.isActive !== undefined ? profile.isActive : true
-      };
+      await authService.changePassword({
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      });
 
-      if (password) {
-        updateData.password = password;
-      }
-
-      const res = await userService.updateUser(targetUserId, updateData);
-      const updatedUser = res.data || res;
-
-      setProfile(updatedUser);
-      setSuccess("Cập nhật thông tin tài khoản thành công!");
-      setPassword("");
+      setSuccess("Đổi mật khẩu thành công!");
+      setOldPassword("");
+      setNewPassword("");
       setConfirmPassword("");
-
-      if (authUser) {
-        login(
-          { ...authUser, fullName: fullName.trim(), phoneNumber: effectivePhone, phone: effectivePhone },
-          useAuthStore.getState().token,
-          useAuthStore.getState().refreshToken
-        );
-      }
     } catch (err) {
-      console.error("Failed to update profile", err);
-      if (err.response?.status === 403) {
-        setError("Phân quyền Backend (Spring Security): Chỉ tài khoản ADMIN mới có quyền chỉnh sửa thông tin người dùng qua API PUT /api/v1/users/{id}.");
-      } else {
-        const errorMsg = err.response?.data?.message || "Lỗi khi cập nhật thông tin.";
-        setError(errorMsg);
-      }
+      console.error("Failed to change password", err);
+      const errorMsg = err.response?.data?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.";
+      setError(errorMsg);
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -133,36 +162,34 @@ const Profile = () => {
           <span className="material-symbols-outlined animate-spin text-[36px] text-indigo-500">
             progress_activity
           </span>
-          <p className="text-sm font-semibold">Loading profile...</p>
+          <p className="text-sm font-semibold">Đang tải hồ sơ...</p>
         </div>
       </div>
     );
   }
+
+  const fullName = profile?.fullName || authUser?.fullName || authUser?.name || "Người dùng";
+  const username = profile?.username || authUser?.username || "";
 
   const initials = fullName
     ? fullName.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()
     : "US";
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 pb-12 space-y-6">
+    <div className="min-h-screen bg-slate-950 p-6 pb-12 space-y-6 font-sans text-slate-100">
       {/* Header */}
       <div>
-        <h1 className="text-[26px] font-bold text-white flex items-center gap-2">
-          <span
-            className="material-symbols-outlined text-indigo-400 text-[28px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            person
-          </span>
-          My Profile
+        <h1 className="text-[24px] font-bold text-white flex items-center gap-2">
+          <User className="text-indigo-400" size={26} />
+          Thông tin tài khoản (My Profile)
         </h1>
         <p className="text-[13px] text-slate-400 mt-0.5">
-          View and manage your account details and password
+          Quản lý thông tin cá nhân và cập nhật mật khẩu bảo mật tài khoản.
         </p>
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-[1200px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-[1100px]">
         {/* Left Card: Avatar & Summary Info */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center text-center h-fit">
           <div className="relative">
@@ -178,183 +205,225 @@ const Profile = () => {
 
           <h2 className="text-[18px] font-bold text-white mt-4">{fullName}</h2>
           <p className="text-[12px] text-slate-400 font-mono mt-0.5">
-            @{profile?.username || authUser?.username}
+            @{username}
           </p>
 
-          <div className="inline-block mt-2 text-[10px] font-bold px-3 py-1 rounded-full bg-indigo-950/50 border border-indigo-900/50 text-indigo-300">
+          <div className="inline-block mt-2 text-[10px] font-bold px-3 py-1 rounded-full bg-indigo-950/50 border border-indigo-900/50 text-indigo-300 font-mono">
             {userRoleDisplay}
           </div>
 
           <div className="w-full border-t border-slate-800 my-5 pt-4 space-y-3 text-left text-[13px]">
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">Status</span>
+              <span className="text-slate-500">Trạng thái</span>
               <span className="font-semibold text-emerald-400 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Active Account
+                Đang hoạt động (Active)
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">Registered</span>
-              <span className="font-semibold text-slate-300 font-mono">
+              <span className="text-slate-500">Ngày tạo</span>
+              <span className="font-semibold text-slate-300 font-mono text-xs">
                 {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "2026-07-01"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right Card: Form Edit */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[16px] font-bold text-white">
-              Account Settings
+        {/* Right Column: Profile Info & Change Password Form */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Profile Information Card (Editable for ADMIN, Read-only for DISPATCHER / PROVIDER) */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+            <h3 className="text-[15px] font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+              <Shield className="text-indigo-400" size={18} />
+              {userRoleDisplay === "ADMIN" ? "Chỉnh sửa thông tin cá nhân" : "Thông tin hồ sơ (Chỉ xem)"}
             </h3>
-            {!isAdmin && (
-              <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-amber-950/40 border border-amber-800/50 text-amber-300">
-                View Only (Admin Permission Required)
-              </span>
+
+            {userRoleDisplay === "ADMIN" ? (
+              <>
+                {profileError && (
+                  <div className="p-3 bg-red-950/40 border border-red-900 text-red-400 text-[12px] rounded-xl flex items-center gap-2">
+                    <AlertCircle size={16} />
+                    {profileError}
+                  </div>
+                )}
+
+                {profileSuccess && (
+                  <div className="p-3 bg-emerald-950/40 border border-emerald-900 text-emerald-400 text-[12px] rounded-xl flex items-center gap-2">
+                    <CheckCircle2 size={16} />
+                    {profileSuccess}
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdateProfile} className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                        Tên đăng nhập (Username)
+                      </label>
+                      <input
+                        type="text"
+                        value={username}
+                        disabled
+                        className="w-full px-4 py-2.5 border border-slate-800 rounded-xl text-xs bg-slate-950/60 text-slate-500 font-mono cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                        Họ và Tên *
+                      </label>
+                      <input
+                        type="text"
+                        value={fullNameInput}
+                        onChange={(e) => setFullNameInput(e.target.value)}
+                        required
+                        placeholder="Nhập họ và tên đầy đủ"
+                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                        Địa chỉ Email
+                      </label>
+                      <input
+                        type="email"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="example@domain.com"
+                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                        Số điện thoại
+                      </label>
+                      <input
+                        type="tel"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        placeholder="0987654321"
+                        className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isUpdatingProfile}
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70"
+                    >
+                      <User size={15} />
+                      {isUpdatingProfile ? "Đang lưu..." : "Lưu thay đổi"}
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                  <span className="text-slate-500 block text-[10px] uppercase font-mono mb-1">Tên đăng nhập</span>
+                  <span className="font-mono font-bold text-slate-200 text-sm">@{username}</span>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                  <span className="text-slate-500 block text-[10px] uppercase font-mono mb-1">Họ và Tên</span>
+                  <span className="font-semibold text-slate-200 text-sm">{fullName}</span>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                  <span className="text-slate-500 block text-[10px] uppercase font-mono mb-1">Địa chỉ Email</span>
+                  <span className="font-medium text-slate-300">{profile?.email || authUser?.email || "Chưa cập nhật"}</span>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                  <span className="text-slate-500 block text-[10px] uppercase font-mono mb-1">Số điện thoại</span>
+                  <span className="font-medium text-slate-300 font-mono">{profile?.phoneNumber || profile?.phone || authUser?.phoneNumber || authUser?.phone || "Chưa cập nhật"}</span>
+                </div>
+              </div>
             )}
           </div>
 
-          {!isAdmin && (
-            <div className="mb-4 p-3 bg-amber-950/30 border border-amber-900/50 text-amber-300 text-[12px] rounded-xl flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">
-                info
-              </span>
-              Tài khoản của bạn thuộc vai trò {userRoleDisplay}. Phân quyền Backend (Spring Security) chỉ cho phép tài khoản ADMIN thực thi API cập nhật thông tin người dùng (`PUT /api/v1/users/{'{id}'}`).
-            </div>
-          )}
+          {/* Change Password Form Card */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h3 className="text-[15px] font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3 mb-4">
+              <KeyRound className="text-indigo-400" size={18} />
+              Đổi Mật Khẩu (Change Password)
+            </h3>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-950/40 border border-red-900 text-red-400 text-[13px] rounded-xl flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">
-                error
-              </span>
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="mb-4 p-3 bg-red-950/40 border border-red-900 text-red-400 text-[12px] rounded-xl flex items-center gap-2">
+                <AlertCircle size={16} />
+                {error}
+              </div>
+            )}
 
-          {success && (
-            <div className="mb-4 p-3 bg-emerald-950/40 border border-emerald-900 text-emerald-400 text-[13px] rounded-xl flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">
-                check_circle
-              </span>
-              {success}
-            </div>
-          )}
+            {success && (
+              <div className="mb-4 p-3 bg-emerald-950/40 border border-emerald-900 text-emerald-400 text-[12px] rounded-xl flex items-center gap-2">
+                <CheckCircle2 size={16} />
+                {success}
+              </div>
+            )}
 
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
-            {/* Username (Read-Only) */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Username
-              </label>
-              <input
-                value={profile?.username || authUser?.username || ""}
-                disabled
-                className="w-full px-4 py-2.5 border border-slate-800 rounded-xl text-[14px] outline-none bg-slate-950 text-slate-500 cursor-not-allowed"
-              />
-            </div>
-
-            {/* Grid 2 Columns */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={handleChangePassword} className="space-y-4 text-xs">
               <div>
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Full Name
+                  Mật khẩu hiện tại *
                 </label>
                 <input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  disabled={!isAdmin}
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
                   required
-                  placeholder="Enter full name"
-                  className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  placeholder="Nhập mật khẩu cũ"
+                  className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
                 />
               </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Email Address
-                </label>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={!isAdmin}
-                  type="email"
-                  placeholder="Enter email address"
-                  className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Phone Number
-              </label>
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                disabled={!isAdmin}
-                placeholder="Enter phone number"
-                className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
-              />
-            </div>
-
-            {/* Password Section */}
-            <div className="border-t border-slate-800 pt-5 mt-5">
-              <h4 className="text-[14px] font-bold text-white mb-3">
-                Change Password
-              </h4>
-              <p className="text-[12px] text-slate-500 mb-4">
-                Leave blank if you do not want to change your password.
-              </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    New Password
+                    Mật khẩu mới *
                   </label>
                   <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={!isAdmin}
                     type="password"
-                    placeholder="Min 6 characters"
-                    className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    placeholder="Mật khẩu mới (chữ số)"
+                    className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
                   />
                 </div>
+
                 <div>
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    Confirm New Password
+                    Xác nhận mật khẩu mới *
                   </label>
                   <input
+                    type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={!isAdmin}
-                    type="password"
-                    placeholder="Verify new password"
-                    className={`w-full px-4 py-2.5 border border-slate-700 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600 ${!isAdmin ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    required
+                    placeholder="Xác nhận lại mật khẩu mới"
+                    className="w-full px-4 py-2.5 border border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/50 bg-slate-950 text-white placeholder-slate-600"
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="mt-6 flex justify-end">
-              <button
-                type="submit"
-                disabled={!isAdmin}
-                className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all flex items-center gap-2 ${
-                  isAdmin
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-60'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  save
-                </span>
-                Save Profile
-              </button>
-            </div>
-          </form>
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70"
+                >
+                  <Lock size={15} />
+                  {isChangingPassword ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -21,6 +21,20 @@ export const userService = {
     return unwrapBaseResponse(response);
   },
 
+  // Cập nhật thông tin user hiện tại
+  updateMe: async (data) => {
+    try {
+      const response = await api.put('/v1/users/me', data);
+      return unwrapBaseResponse(response);
+    } catch (e) {
+      if (data?.id) {
+        const response = await api.put(`/v1/users/${data.id}`, data);
+        return unwrapBaseResponse(response);
+      }
+      throw e;
+    }
+  },
+
   // Lấy chi tiết một user
   getUserById: async (id) => {
     const response = await api.get(`/v1/users/${id}`);

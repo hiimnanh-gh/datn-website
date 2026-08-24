@@ -45,6 +45,12 @@ const useAuthStore = create(
         }));
       },
 
+      updateUser: (updatedData) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updatedData } : updatedData
+        }));
+      },
+
       logout: () => set({
         user: null,
         token: null,
