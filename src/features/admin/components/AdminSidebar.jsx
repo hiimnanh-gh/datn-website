@@ -17,15 +17,11 @@ import {
 import AppLogo from '../../../components/AppLogo';
 
 const NAV_ITEMS = [
-  { to: '/admin/dispatch-requests', icon: ShieldAlert,     label: 'Tiếp nhận & Điều phối', badge: 'SOS' },
-  { to: '/admin/dispatch-resources',icon: Truck,           label: 'Tài nguyên điều phối' },
-  { to: '/admin/dispatch-map',       icon: Map,             label: 'Bản đồ điều phối' },
-  { to: '/admin/incidents',          icon: History,         label: 'Lịch sử điều phối' },
   { to: '/admin/dashboard',          icon: LayoutDashboard, label: 'Tổng quan vận hành' },
-  { to: '/admin/users',              icon: Users,           label: 'Quản lý người dùng' },
+  { to: '/admin/incidents',          icon: History,         label: 'Lịch sử ca cấp cứu' },
+  { to: '/admin/users',              icon: Users,           label: 'Quản lý Người dùng' },
   { to: '/admin/providers',          icon: Building2,       label: 'Quản lý Đơn vị' },
   { to: '/admin/hospitals',         icon: Building2,       label: 'Bệnh viện & TT Cấp cứu' },
-  { to: '/admin/operation-zones',   icon: RadioTower,      label: 'Vùng hoạt động' },
   { to: '/admin/service-types',     icon: Layers,          label: 'Loại dịch vụ' },
   { to: '/admin/files',             icon: HardDrive,       label: 'Lưu trữ Tệp (MinIO)' },
 ];
@@ -117,20 +113,6 @@ const AdminSidebar = ({ open, onClose }) => {
             </NavLink>
           ))}
         </nav>
-
-        {/* Bottom CTA Button */}
-        <div className="mt-auto pt-4 border-t border-slate-800/80 px-1">
-          <button
-            onClick={() => {
-              navigate('/admin/dispatch-requests');
-              if (onClose) onClose();
-            }}
-            className="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-[13px] py-2.5 px-4 rounded-xl shadow-lg shadow-red-950/40 flex items-center justify-center gap-2 transition-all active:scale-95 border border-red-500/30"
-          >
-            <RadioTower size={17} className="animate-pulse" />
-            <span>Điều phối Khẩn cấp</span>
-          </button>
-        </div>
       </aside>
     </>
   );

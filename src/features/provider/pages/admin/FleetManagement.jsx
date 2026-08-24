@@ -5,7 +5,6 @@ import {
 import { dispatchResourceService } from '../../../../services/dispatchResourceService';
 import { providerService } from '../../../../services/providerService';
 import { serviceTypeService } from '../../../../services/serviceTypeService';
-import { operationZoneService } from '../../../../services/operationZoneService';
 
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
@@ -32,7 +31,6 @@ const FleetManagement = () => {
   const [resources, setResources] = useState([]);
   const [providers, setProviders] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
-  const [zones, setZones] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,24 +50,21 @@ const FleetManagement = () => {
     resourceCode: '',
     resourceTypeId: '',
     providerId: '',
-    zoneId: '',
     status: 'AVAILABLE'
   });
 
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [resList, provList, stList, znList] = await Promise.all([
+      const [resList, provList, stList] = await Promise.all([
         dispatchResourceService.getAll(),
         providerService.getAll().catch(() => []),
         serviceTypeService.getAll().catch(() => []),
-        operationZoneService.getAll().catch(() => []),
       ]);
 
       setResources(Array.isArray(resList) ? resList : []);
       setProviders(Array.isArray(provList) ? provList : []);
       setServiceTypes(Array.isArray(stList) ? stList : []);
-      setZones(Array.isArray(znList) ? znList : []);
     } catch (err) {
       console.error('Error fetching fleet resources data:', err);
     } finally {
@@ -138,7 +133,6 @@ const FleetManagement = () => {
         resourceCode: formData.resourceCode.trim(),
         resourceTypeId: Number(formData.resourceTypeId) || null,
         providerId: Number(formData.providerId) || null,
-        zoneId: Number(formData.zoneId) || null,
         status: formData.status
       };
 
@@ -245,7 +239,6 @@ const FleetManagement = () => {
                 <th className="py-3.5 px-4">Loại dịch vụ</th>
                 <th className="py-3.5 px-4">Đơn vị (Provider)</th>
                 <th className="py-3.5 px-4">Tài xế hiện tại</th>
-                <th className="py-3.5 px-4">Vùng (Edge Node)</th>
                 <th className="py-3.5 px-4">Trạng thái</th>
                 <th className="py-3.5 px-4 text-right">Thao tác</th>
               </tr>
@@ -253,13 +246,13 @@ const FleetManagement = () => {
             <tbody className="divide-y divide-slate-800/60 font-mono">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
+                  <td colSpan={6} className="py-12 text-center text-slate-500 font-sans">
                     Đang tải thông tin Đội xe...
                   </td>
                 </tr>
               ) : filteredFleet.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
+                  <td colSpan={6} className="py-12 text-center text-slate-500 font-sans">
                     Không tìm thấy phương tiện phù hợp.
                   </td>
                 </tr>
@@ -278,9 +271,6 @@ const FleetManagement = () => {
                     </td>
                     <td className="py-3.5 px-4 text-slate-300 font-sans">
                       {res.currentDriverName || <span className="text-slate-500 italic">Chưa gán</span>}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-400 font-sans">
-                      {res.zoneName || (res.zoneId ? `Vùng #${res.zoneId}` : 'N/A')}
                     </td>
                     <td className="py-3.5 px-4">
                       <button 
@@ -374,22 +364,6 @@ const FleetManagement = () => {
                   <option value="" disabled>-- Chọn Đơn Vị --</option>
                   {providers.map(p => (
                     <option key={p.id} value={p.id}>{p.providerName}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Vùng hoạt động (Zone) <span className="text-rose-500">*</span></label>
-                <select
-                  name="zoneId"
-                  value={formData.zoneId}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 transition-colors"
-                >
-                  <option value="" disabled>-- Chọn Vùng Hoạt Động --</option>
-                  {zones.map(zone => (
-                    <option key={zone.id} value={zone.id}>{zone.zoneName || `Vùng #${zone.id}`}</option>
                   ))}
                 </select>
               </div>
