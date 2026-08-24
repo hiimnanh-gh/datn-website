@@ -121,7 +121,7 @@ const DispatchHistory = () => {
               <th className="py-3.5 px-4">Call ID</th>
               <th className="py-3.5 px-4">Mức độ</th>
               <th className="py-3.5 px-4">Loại dịch vụ</th>
-              <th className="py-3.5 px-4">Vùng (Edge Node)</th>
+              <th className="py-3.5 px-4">Địa chỉ</th>
               <th className="py-3.5 px-4">Trạng thái</th>
               <th className="py-3.5 px-4">Thời gian tạo</th>
               <th className="py-3.5 px-4 text-right">Chi tiết</th>
@@ -157,8 +157,8 @@ const DispatchHistory = () => {
                   <td className="py-3 px-4 text-slate-200 font-sans font-medium">
                     {req.serviceTypeName || `ID: ${req.serviceTypeId}`}
                   </td>
-                  <td className="py-3 px-4 text-slate-400 font-sans">
-                    {req.zoneName || req.edgeNodeName || (req.zoneId ? `Vùng #${req.zoneId}` : 'N/A')}
+                  <td className="py-3 px-4 text-slate-400 font-sans truncate max-w-[150px]">
+                    {req.address || req.callerAddress || 'Hà Nội'}
                   </td>
                   <td className="py-3 px-4 font-sans">
                     <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] border border-slate-700">
@@ -213,8 +213,8 @@ const DispatchHistory = () => {
                 <span className="text-slate-200 font-medium">{selectedDetail.serviceTypeName || `Loại #${selectedDetail.serviceTypeId}`}</span>
               </div>
               <div>
-                <span className="text-slate-500 text-[10px] block uppercase">Vùng điều phối</span>
-                <span className="text-slate-200 font-medium">{selectedDetail.zoneName || selectedDetail.edgeNodeName || `Vùng #${selectedDetail.zoneId}`}</span>
+                <span className="text-slate-500 text-[10px] block uppercase">Địa chỉ hiện trường</span>
+                <span className="text-slate-200 font-medium">{selectedDetail.address || selectedDetail.callerAddress || 'Hà Nội'}</span>
               </div>
             </div>
 
