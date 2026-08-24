@@ -18,7 +18,6 @@ import DispatchHistory from './features/admin/pages/DispatchHistory/DispatchHist
 import UserManagement from './features/admin/pages/UserManagement/UserManagement';
 import ProviderManagement from './features/admin/pages/ProviderManagement/ProviderManagement';
 import HospitalManagement from './features/admin/pages/HospitalManagement/HospitalManagement';
-import OperationZoneManagement from './features/admin/pages/OperationZoneManagement/OperationZoneManagement';
 import ServiceTypeManagement from './features/admin/pages/ServiceTypeManagement/ServiceTypeManagement';
 import FileStorageManagement from './features/admin/pages/FileStorageManagement/FileStorageManagement';
 import Profile from './features/admin/pages/Profile/Profile';
@@ -39,7 +38,7 @@ const RootRedirect = () => {
 
   const userRole = user?.role?.toUpperCase() || '';
   if (userRole.includes('PROVIDER')) return <Navigate to="/provider/fleet" replace />;
-  if (userRole === 'ADMIN') return <Navigate to="/admin/dispatch-requests" replace />;
+  if (userRole === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
   if (userRole === 'DISPATCHER') return <Navigate to="/dispatcher/dispatch-requests" replace />;
 
   return <Navigate to="/login" replace />;
@@ -56,35 +55,27 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Admin Portal Routes */}
+        {/* Admin Management Portal Routes (Chỉ Quản lý, không điều phối) */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="dispatch-requests" replace />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
           
-          {/* Main Dispatch Flow */}
-          <Route path="dispatch-requests" element={<EmergencyIntakeDispatch />} />
-          <Route path="dispatch" element={<Navigate to="/admin/dispatch-requests" replace />} />
-
-          {/* Resources & Map */}
-          <Route path="dispatch-resources" element={<DispatchResources />} />
-          <Route path="tracking" element={<Navigate to="/admin/dispatch-resources" replace />} />
-          <Route path="dispatch-map" element={<DispatchMap />} />
-
-          {/* History & Stats */}
-          <Route path="incidents" element={<DispatchHistory />} />
           <Route path="dashboard" element={<OperationsOverview />} />
+          <Route path="incidents" element={<DispatchHistory />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="providers" element={<ProviderManagement />} />
           <Route path="hospitals" element={<HospitalManagement />} />
-          <Route path="operation-zones" element={<OperationZoneManagement />} />
           <Route path="service-types" element={<ServiceTypeManagement />} />
           <Route path="files" element={<FileStorageManagement />} />
           <Route path="profile" element={<Profile />} />
 
-          {/* Legacy route fallbacks */}
-          <Route path="*" element={<Navigate to="dispatch-requests" replace />} />
+          {/* Legacy route redirects */}
+          <Route path="dispatch-requests" element={<Navigate to="/dispatcher/dispatch-requests" replace />} />
+          <Route path="dispatch-resources" element={<Navigate to="/dispatcher/dispatch-resources" replace />} />
+          <Route path="dispatch-map" element={<Navigate to="/dispatcher/dispatch-map" replace />} />
+          <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Route>
 
-        {/* Dispatcher Portal Routes */}
+        {/* Dispatcher Operational Portal Routes (Dành riêng cho Điều phối viên) */}
         <Route path="/dispatcher" element={<DispatcherLayout />}>
           <Route index element={<Navigate to="dispatch-requests" replace />} />
           

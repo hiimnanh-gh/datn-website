@@ -175,7 +175,7 @@ const Login = () => {
       );
 
       if (primaryRole === 'ADMIN') {
-        navigate('/admin/dispatch-requests');
+        navigate('/admin/dashboard');
       } else if (primaryRole === 'PROVIDER' || primaryRole === 'PROVIDER_ADMIN') {
         navigate('/provider/fleet');
       } else if (primaryRole === 'DISPATCHER') {

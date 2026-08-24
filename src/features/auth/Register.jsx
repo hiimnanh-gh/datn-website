@@ -113,11 +113,10 @@ const InputField = ({ id, label, type = 'text', placeholder, value, onChange, ic
 );
 
 const Register = () => {
-  // Steps: 1 (Send OTP), 2 (Verify OTP), 3 (Complete Profile)
+  // Steps: 1 (Send OTP to Phone), 2 (Enter OTP + Account info to Register)
   const [step, setStep] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
-  const [verificationToken, setVerificationToken] = useState('');
 
   const [formData, setFormData] = useState({
     username: '',
@@ -149,7 +148,15 @@ const Register = () => {
 
     try {
       const res = await authService.sendOtp(phoneNumber.trim());
-      setSuccess(res.message || 'Mã OTP đã được gửi đến số điện thoại của bạn.');
+      const otpReceived = res?.data || res?.message;
+      setSuccess(
+        otpReceived && typeof otpReceived === 'string' && otpReceived.length === 6
+          ? `Mã OTP của bạn là: ${otpReceived}`
+          : (res?.message || 'Mã OTP đã được gửi đến số điện thoại của bạn.')
+      );
+      if (otpReceived && typeof otpReceived === 'string' && otpReceived.length === 6) {
+        setOtpCode(otpReceived);
+      }
       setStep(2);
     } catch (err) {
       console.error('Send OTP error:', err);
@@ -159,50 +166,19 @@ const Register = () => {
     }
   };
 
-  // Step 2: Verify OTP
-  const handleVerifyOtp = async (e) => {
+  // Step 2: Register with OTP and Profile info
+  const handleRegister = async (e) => {
     e.preventDefault();
     if (!otpCode.trim()) {
       setError('Vui lòng nhập mã OTP.');
       return;
     }
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const res = await authService.verifyOtp(phoneNumber.trim(), otpCode.trim());
-      const resData = res.data || res;
-      const token = resData.verificationToken || resData.token;
-
-      if (!token) {
-        throw new Error('Không nhận được mã xác thực verificationToken.');
-      }
-
-      setVerificationToken(token);
-      setSuccess('Xác minh số điện thoại thành công! Vui lòng hoàn tất thông tin tài khoản.');
-      setStep(3);
-    } catch (err) {
-      console.error('Verify OTP error:', err);
-      setError(err.response?.data?.message || 'Mã OTP không hợp lệ hoặc đã hết hạn.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Step 3: Register Account
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    if (!formData.username || !formData.password || !formData.fullName) {
+    if (!formData.username.trim() || !formData.password || !formData.fullName.trim()) {
       setError('Vui lòng điền đầy đủ các thông tin bắt buộc.');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không khớp.');
-      return;
-    }
-    if (!verificationToken) {
-      setError('Phiên xác thực số điện thoại đã hết hạn. Vui lòng thử lại.');
-      setStep(1);
       return;
     }
 
@@ -217,7 +193,7 @@ const Register = () => {
         fullName: formData.fullName.trim(),
         phoneNumber: phoneNumber.trim(),
         email: formData.email.trim() || undefined,
-        verificationToken: verificationToken
+        otpCode: otpCode.trim()
       };
 
       const resData = await authService.register(payload);
@@ -234,7 +210,7 @@ const Register = () => {
       }, 1500);
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMsg = err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+      const errorMsg = err.response?.data?.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại mã OTP hoặc thông tin đã nhập.';
       setError(errorMsg);
     } finally {
       setIsLoading(false);
@@ -270,9 +246,8 @@ const Register = () => {
               Đăng Ký Tài Khoản
             </h1>
             <p className="mt-2 text-[14px] text-slate-500">
-              {step === 1 && 'Bước 1/3: Nhập số điện thoại để nhận mã OTP'}
-              {step === 2 && 'Bước 2/3: Nhập mã OTP xác thực số điện thoại'}
-              {step === 3 && 'Bước 3/3: Hoàn tất thông tin đăng ký tài khoản'}
+              {step === 1 && 'Bước 1/2: Nhập số điện thoại để nhận mã OTP'}
+              {step === 2 && 'Bước 2/2: Nhập mã OTP và thông tin tài khoản'}
             </p>
           </div>
 
@@ -306,29 +281,19 @@ const Register = () => {
             </form>
           )}
 
-          {/* Step 2: Verify OTP Form */}
+          {/* Step 2: Enter OTP and Complete Registration Form */}
           {step === 2 && (
-            <form onSubmit={handleVerifyOtp} className="space-y-4 px-8 pb-4 pt-2">
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600 font-mono">
-                Số điện thoại: <span className="font-bold text-slate-900">{phoneNumber}</span>
+            <form onSubmit={handleRegister} className="space-y-4 px-8 pb-4 pt-2">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600 font-mono flex items-center justify-between">
+                <span>Số điện thoại: <strong className="text-slate-900">{phoneNumber}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  Đổi số
+                </button>
               </div>
-
-              <InputField
-                id="otpCode"
-                label="Mã OTP (6 chữ số) *"
-                placeholder="Ví dụ: 123456"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                icon="pin"
-                required
-              />
-
-              {error && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  <span className="material-symbols-outlined text-[18px]">error</span>
-                  {error}
-                </div>
-              )}
 
               {success && (
                 <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -337,29 +302,16 @@ const Register = () => {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="glow-button mt-4 w-full rounded-lg bg-slate-900 py-3.5 text-sm font-bold tracking-widest uppercase text-white transition-all duration-200 hover:bg-slate-800 font-mono-jb disabled:opacity-70"
-              >
-                {isLoading ? 'Đang xác minh...' : 'Xác thực OTP'}
-              </button>
+              <InputField
+                id="otpCode"
+                label="Mã OTP Xác Thực *"
+                placeholder="Nhập mã 6 chữ số (Ví dụ: 123456)"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value)}
+                icon="pin"
+                required
+              />
 
-              <div className="text-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                >
-                  Đổi số điện thoại khác
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Step 3: Complete Registration Form */}
-          {step === 3 && (
-            <form onSubmit={handleRegister} className="space-y-4 px-8 pb-4 pt-2">
               <InputField
                 id="fullName"
                 label="Họ và Tên *"
@@ -382,9 +334,9 @@ const Register = () => {
 
               <InputField
                 id="password"
-                label="Mật Khẩu *"
+                label="Mật Khẩu (Chữ số, ví dụ 123456) *"
                 type="password"
-                placeholder="••••••••••"
+                placeholder="123456"
                 value={formData.password}
                 onChange={handleChange}
                 icon="lock"
@@ -395,7 +347,7 @@ const Register = () => {
                 id="confirmPassword"
                 label="Xác Nhận Mật Khẩu *"
                 type="password"
-                placeholder="••••••••••"
+                placeholder="123456"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 icon="lock_reset"
@@ -418,17 +370,10 @@ const Register = () => {
                   {error}
                 </div>
               )}
-              
-              {success && (
-                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  {success}
-                </div>
-              )}
 
               <button
                 type="submit"
-                disabled={isLoading || success}
+                disabled={isLoading}
                 className="glow-button mt-4 w-full rounded-lg bg-blue-600 py-3.5 text-sm font-bold tracking-widest uppercase text-white transition-all duration-200 hover:bg-blue-700 font-mono-jb disabled:opacity-70"
               >
                 {isLoading ? 'Đang tạo tài khoản...' : 'Hoàn tất Đăng ký'}
