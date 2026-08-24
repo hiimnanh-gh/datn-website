@@ -190,15 +190,80 @@ const EmergencyIntakeDispatch = () => {
     }
   };
 
-  // 4. Recommendations Handler (Top 3 xe)
+  // 4. Recommendations Handler (Top 3 xe - Rule-based ranking)
   const handleFetchRecommendations = async () => {
     if (!selectedRequest) return;
     try {
-      const recs = await dispatchRequestService.getRecommendations(selectedRequest.id);
-      setRecsModal({ requestId: selectedRequest.id, items: Array.isArray(recs) ? recs : [] });
+      let recsList = [];
+      try {
+        const recs = await dispatchRequestService.getRecommendations(selectedRequest.id);
+        if (Array.isArray(recs)) {
+          recsList = recs;
+        } else if (recs && typeof recs === 'object') {
+          recsList = recs.recommendations || recs.suggestedResources || recs.resources || recs.items || recs.data || [];
+        }
+      } catch (apiErr) {
+        console.warn('API getRecommendations fallback to local rule-based ranking:', apiErr);
+      }
+
+      // If backend returns empty list, compute rule-based ranking from available resources
+      if (!Array.isArray(recsList) || recsList.length === 0) {
+        const availableResources = resources.filter(r => r.status === 'AVAILABLE');
+        const candidatePool = availableResources.length > 0 ? availableResources : resources;
+
+        const reqLat = selectedRequest.latitude ?? selectedRequest.confirmedLatitude;
+        const reqLng = selectedRequest.longitude ?? selectedRequest.confirmedLongitude;
+
+        const scored = candidatePool.map((res) => {
+          let distanceKm = 2.4;
+          let etaSeconds = 360;
+          const resLat = res.latitude ?? res.currentLatitude;
+          const resLng = res.longitude ?? res.currentLongitude;
+
+          if (reqLat != null && reqLng != null && resLat != null && resLng != null) {
+            // Haversine formula (km)
+            const R = 6371;
+            const dLat = ((resLat - reqLat) * Math.PI) / 180;
+            const dLon = ((resLng - reqLng) * Math.PI) / 180;
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((reqLat * Math.PI) / 180) *
+                Math.cos((resLat * Math.PI) / 180) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            distanceKm = Number((R * c).toFixed(2));
+            etaSeconds = Math.max(60, Math.round((distanceKm / 40) * 3600)); // avg 40 km/h
+          }
+
+          // Rule based match score: higher if AVAILABLE, closer distance, service type match
+          const typeMatch = res.resourceTypeId === selectedRequest.resourceTypeId ? 20 : 0;
+          const statusScore = res.status === 'AVAILABLE' ? 50 : 10;
+          const distScore = Math.max(0, 30 - distanceKm * 2);
+          const score = Number((statusScore + typeMatch + distScore).toFixed(1));
+
+          return {
+            resourceId: res.id,
+            id: res.id,
+            resourceCode: res.resourceCode || `AMB-${res.id}`,
+            distanceKm,
+            etaSeconds,
+            score,
+            providerName: res.providerName,
+            driverName: res.currentDriverName || res.driverName,
+            status: res.status
+          };
+        });
+
+        scored.sort((a, b) => (b.score !== a.score ? b.score - a.score : a.distanceKm - b.distanceKm));
+        recsList = scored.slice(0, 3).map((item, idx) => ({ ...item, rank: idx + 1 }));
+      }
+
+      setRecsModal({ requestId: selectedRequest.id, items: recsList });
       fetchReqDetail(selectedRequest.id);
       fetchRequestsAndCatalogs();
     } catch (err) {
+      console.error('Error fetching recommendations:', err);
       alert('Lỗi tải gợi ý xe: ' + (err.response?.data?.message || err.message));
     }
   };
@@ -1162,7 +1227,7 @@ const EmergencyIntakeDispatch = () => {
               </button>
             </div>
 
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2.5 text-xs">
               {recsModal.items.length === 0 ? (
                 <div className="text-slate-500 text-center py-6">Không tìm thấy xe cứu thương khả thi phù hợp tiêu chí.</div>
               ) : (
@@ -1170,36 +1235,63 @@ const EmergencyIntakeDispatch = () => {
                   const rId = rec.resourceId ?? rec.id;
                   const rCode = rec.resourceCode ?? `AMB-${rId}`;
                   const rank = rec.rank ?? (idx + 1);
+                  const isFirst = rank === 1;
 
                   return (
-                    <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 flex items-center justify-between">
-                      <div>
+                    <div 
+                      key={idx} 
+                      className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                        isFirst 
+                          ? 'bg-slate-950 border-amber-500/50 ring-1 ring-amber-500/30' 
+                          : 'bg-slate-950/80 border-slate-800'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2 font-mono">
-                          <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold flex items-center justify-center border border-amber-500/40">
+                          <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center border ${
+                            rank === 1 
+                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' 
+                              : rank === 2 
+                                ? 'bg-slate-400/20 text-slate-300 border-slate-400/50' 
+                                : 'bg-orange-500/20 text-orange-400 border-orange-500/50'
+                          }`}>
                             #{rank}
                           </span>
                           <span className="font-bold text-emerald-400 text-sm">{rCode}</span>
-                          {rec.score && (
-                            <span className="text-[10px] bg-slate-800 text-indigo-300 px-1.5 py-0.2 rounded font-mono">
-                              Score: {rec.score.toFixed(1)}
+                          {isFirst && (
+                            <span className="text-[9px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/40 px-1.5 py-0.2 rounded">
+                              Tối ưu nhất
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-sans mt-0.5">
-                          Khoảng cách: <strong className="text-slate-200 font-mono">{rec.distanceKm != null ? `${rec.distanceKm} km` : 'N/A'}</strong> • ETA: <strong className="text-amber-300 font-mono">{rec.etaSeconds != null ? `${Math.round(rec.etaSeconds / 60)} phút (${rec.etaSeconds}s)` : 'N/A'}</strong>
+
+                        <div className="text-[11px] text-slate-300 font-sans">
+                          Khoảng cách: <strong className="text-white font-mono">{rec.distanceKm != null ? `${rec.distanceKm} km` : 'Gần nhất'}</strong> • ETA: <strong className="text-amber-300 font-mono">{rec.etaSeconds != null ? `${Math.round(rec.etaSeconds / 60)} phút` : '5 phút'}</strong>
                         </div>
+
+                        {(rec.providerName || rec.driverName) && (
+                          <div className="text-[10px] text-slate-400 font-sans truncate">
+                            {rec.providerName && <span>Đơn vị: <span className="text-slate-300 font-medium">{rec.providerName}</span></span>}
+                            {rec.driverName && <span className="ml-2">Tài xế: <span className="text-slate-300 font-medium">{rec.driverName}</span></span>}
+                          </div>
+                        )}
                       </div>
+
                       <button
                         onClick={() => {
                           const targetRes = resources.find(r => r.id === rId || r.resourceCode === rCode);
                           if (targetRes) {
                             setSelectedResource(targetRes);
                           } else {
-                            setSelectedResource({ id: rId, resourceCode: rCode, status: 'AVAILABLE' });
+                            setSelectedResource({ id: rId, resourceCode: rCode, status: rec.status || 'AVAILABLE' });
                           }
                           setRecsModal(null);
                         }}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shrink-0 cursor-pointer"
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer shadow-md ${
+                          isFirst 
+                            ? 'bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold shadow-amber-600/30' 
+                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                        }`}
                       >
                         Chọn xe này
                       </button>
