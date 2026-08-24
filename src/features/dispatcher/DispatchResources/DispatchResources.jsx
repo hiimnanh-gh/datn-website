@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Truck, RefreshCw, Search, Filter, ShieldCheck, Eye, Edit3, X, Check, AlertCircle, MapPin
+  Truck, RefreshCw, Search, Eye, X, MapPin
 } from 'lucide-react';
 import { dispatchResourceService } from '../../../services/dispatchResourceService';
 import { providerService } from '../../../services/providerService';
 import { serviceTypeService } from '../../../services/serviceTypeService';
-import { edgeNodeService } from '../../../services/edgeNodeService';
+
+import HeaderUserProfile from '../../../components/HeaderUserProfile';
 
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'AVAILABLE':
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
+    case 'DISPATCHED':
+      return 'bg-blue-500/20 text-blue-400 border-blue-500/40';
+    case 'ON_MISSION':
+      return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
     case 'BUSY':
       return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
     case 'OFFLINE':
@@ -26,34 +31,27 @@ const DispatchResources = () => {
   const [resources, setResources] = useState([]);
   const [providers, setProviders] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
-  const [edgeNodes, setEdgeNodes] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [searchCode, setSearchCode] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [providerFilter, setProviderFilter] = useState('ALL');
-  const [edgeNodeFilter, setEdgeNodeFilter] = useState('ALL');
 
   const [selectedDetail, setSelectedDetail] = useState(null);
-  const [editStatusModal, setEditStatusModal] = useState(null);
-  const [newStatus, setNewStatus] = useState('AVAILABLE');
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [resList, provList, stList, enList] = await Promise.all([
+      const [resList, provList, stList] = await Promise.all([
         dispatchResourceService.getAll(),
         providerService.getAll().catch(() => []),
         serviceTypeService.getAll().catch(() => []),
-        edgeNodeService.getAll().catch(() => []),
       ]);
 
       setResources(Array.isArray(resList) ? resList : []);
       setProviders(Array.isArray(provList) ? provList : []);
       setServiceTypes(Array.isArray(stList) ? stList : []);
-      setEdgeNodes(Array.isArray(enList) ? enList : []);
     } catch (err) {
       console.error('Error loading dispatch resources:', err);
     } finally {
@@ -65,35 +63,17 @@ const DispatchResources = () => {
     fetchAllData();
   }, [fetchAllData]);
 
-  // Update Status handler
-  const handleUpdateStatus = async () => {
-    if (!editStatusModal) return;
-    setIsUpdatingStatus(true);
-    try {
-      await dispatchResourceService.updateStatus(editStatusModal.id, newStatus);
-      setEditStatusModal(null);
-      fetchAllData();
-    } catch (err) {
-      console.error('Error updating status:', err);
-      alert('Cập nhật trạng thái thất bại: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
   // Filter resources
   const filteredResources = resources.filter(r => {
     const codeMatch = searchCode ? r.resourceCode?.toLowerCase().includes(searchCode.toLowerCase()) : true;
     const statusMatch = statusFilter === 'ALL' || r.status === statusFilter;
     const typeMatch = typeFilter === 'ALL' || r.resourceTypeId === Number(typeFilter);
     const provMatch = providerFilter === 'ALL' || r.providerId === Number(providerFilter);
-    const edgeMatch = edgeNodeFilter === 'ALL' || r.edgeNodeId === Number(edgeNodeFilter);
-    return codeMatch && statusMatch && typeMatch && provMatch && edgeMatch;
+    return codeMatch && statusMatch && typeMatch && provMatch;
   });
 
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-sans p-6 overflow-y-auto">
-      
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -106,17 +86,23 @@ const DispatchResources = () => {
           </p>
         </div>
 
-        <button
-          onClick={fetchAllData}
-          className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors"
-        >
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          Làm mới
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchAllData}
+            className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+          >
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            <span>Làm mới</span>
+          </button>
+
+          <div className="pl-2 border-l border-slate-800">
+            <HeaderUserProfile profilePath="/dispatcher/profile" />
+          </div>
+        </div>
       </div>
 
       {/* Toolbar Filters */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6 grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-3 text-slate-500" />
           <input
@@ -135,6 +121,8 @@ const DispatchResources = () => {
         >
           <option value="ALL">Trạng thái: Tất cả</option>
           <option value="AVAILABLE">AVAILABLE (Có sẵn)</option>
+          <option value="DISPATCHED">DISPATCHED (Đã giao xe)</option>
+          <option value="ON_MISSION">ON_MISSION (Đang chạy ca)</option>
           <option value="BUSY">BUSY (Bận nhiệm vụ)</option>
           <option value="OFFLINE">OFFLINE (Tắt máy)</option>
           <option value="MAINTENANCE">MAINTENANCE (Bảo trì)</option>
@@ -161,17 +149,6 @@ const DispatchResources = () => {
             <option key={p.id} value={p.id}>{p.providerName}</option>
           ))}
         </select>
-
-        <select
-          value={edgeNodeFilter}
-          onChange={(e) => setEdgeNodeFilter(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none"
-        >
-          <option value="ALL">Vùng điều phối: Tất cả</option>
-          {edgeNodes.map(node => (
-            <option key={node.id} value={node.id}>{node.nodeName}</option>
-          ))}
-        </select>
       </div>
 
       {/* Resource Table */}
@@ -183,7 +160,6 @@ const DispatchResources = () => {
               <th className="py-3.5 px-4">Loại xe / Dịch vụ</th>
               <th className="py-3.5 px-4">Đơn vị (Provider)</th>
               <th className="py-3.5 px-4">Tài xế hiện tại</th>
-              <th className="py-3.5 px-4">Vùng (Edge Node)</th>
               <th className="py-3.5 px-4">Trạng thái</th>
               <th className="py-3.5 px-4">Cập nhật cuối</th>
               <th className="py-3.5 px-4 text-right">Thao tác</th>
@@ -192,13 +168,13 @@ const DispatchResources = () => {
           <tbody className="divide-y divide-slate-800/60 font-mono">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-slate-500 font-sans">
+                <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
                   Đang tải danh sách Tài nguyên...
                 </td>
               </tr>
             ) : filteredResources.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-slate-500 font-sans">
+                <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
                   Không tìm thấy tài nguyên nào phù hợp.
                 </td>
               </tr>
@@ -218,9 +194,6 @@ const DispatchResources = () => {
                   <td className="py-3 px-4 text-slate-300 font-sans">
                     {res.currentDriverName || <span className="text-slate-500 italic">Chưa gán</span>}
                   </td>
-                  <td className="py-3 px-4 text-slate-400 font-sans">
-                    {res.edgeNodeName || `Node #${res.edgeNodeId}`}
-                  </td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusBadge(res.status)}`}>
                       {res.status}
@@ -236,16 +209,6 @@ const DispatchResources = () => {
                       title="Xem chi tiết"
                     >
                       <Eye size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditStatusModal(res);
-                        setNewStatus(res.status);
-                      }}
-                      className="p-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 rounded transition-colors"
-                      title="Đổi trạng thái vận hành"
-                    >
-                      <Edit3 size={14} />
                     </button>
                   </td>
                 </tr>
@@ -285,10 +248,6 @@ const DispatchResources = () => {
                 <span className="text-slate-200 font-medium">{selectedDetail.resourceTypeName}</span>
               </div>
               <div>
-                <span className="text-slate-500 text-[10px] block uppercase">Vùng điều phối</span>
-                <span className="text-slate-200 font-medium">{selectedDetail.zoneName || selectedDetail.edgeNodeName || (selectedDetail.zoneId ? `Vùng #${selectedDetail.zoneId}` : 'N/A')}</span>
-              </div>
-              <div>
                 <span className="text-slate-500 text-[10px] block uppercase">Đơn vị cung cấp</span>
                 <span className="text-slate-200 font-medium">{selectedDetail.providerName}</span>
               </div>
@@ -326,64 +285,6 @@ const DispatchResources = () => {
           </div>
         </div>
       )}
-
-      {/* EDIT STATUS MODAL */}
-      {editStatusModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
-                <Edit3 className="text-indigo-400" size={18} />
-                Cập nhật Trạng thái Vận hành
-              </h3>
-              <button onClick={() => setEditStatusModal(null)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono">
-                <div>Xe: <span className="font-bold text-slate-100">{editStatusModal.resourceCode}</span></div>
-                <div>Trạng thái hiện tại: <span className="text-indigo-400 font-bold">{editStatusModal.status}</span></div>
-              </div>
-
-              <div>
-                <label className="text-[10px] text-slate-500 block mb-1 uppercase font-semibold">Chọn trạng thái mới</label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="AVAILABLE">AVAILABLE - Sẵn sàng điều phối</option>
-                  <option value="DISPATCHED">DISPATCHED - Đã gán lệnh điều phối</option>
-                  <option value="ON_MISSION">ON_MISSION - Đang thực hiện nhiệm vụ</option>
-                  <option value="RETURNING">RETURNING - Đang trở về trạm</option>
-                  <option value="OFFLINE">OFFLINE - Xe ngắt kết nối / nghỉ</option>
-                  <option value="MAINTENANCE">MAINTENANCE - Bảo dưỡng kỹ thuật</option>
-                  <option value="OUT_OF_SERVICE">OUT_OF_SERVICE - Tạm ngừng phục vụ</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-slate-800 pt-3">
-              <button
-                onClick={() => setEditStatusModal(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleUpdateStatus}
-                disabled={isUpdatingStatus}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors"
-              >
-                {isUpdatingStatus ? 'Đang lưu...' : 'Lưu trạng thái'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

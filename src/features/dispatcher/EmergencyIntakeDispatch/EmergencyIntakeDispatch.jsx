@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle2, ShieldAlert, 
-  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles, Zap
+  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles, Zap, Maximize2, Building2
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -13,9 +13,10 @@ import { dispatchResourceService } from '../../../services/dispatchResourceServi
 import { dispatchMissionService } from '../../../services/dispatchMissionService';
 import { providerService } from '../../../services/providerService';
 import { serviceTypeService } from '../../../services/serviceTypeService';
-import { edgeNodeService } from '../../../services/edgeNodeService';
+import { medicalHospitalService } from '../../../services/medicalHospitalService';
 import wsService from '../../../services/websocket';
 import SimulationControlModal from '../components/SimulationControlModal';
+import HeaderUserProfile from '../../../components/HeaderUserProfile';
 
 // Leaflet default icon fix
 delete L.Icon.Default.prototype._getIconUrl;
@@ -34,17 +35,35 @@ const reqMarkerIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const ambMarkerIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const hospMarkerIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 const getUrgencyBadge = (urgency) => {
   switch (urgency?.toUpperCase()) {
     case 'CRITICAL':
-      return { label: 'CRITICAL - Khẩn cấp cực cao', bg: 'bg-red-500/20 text-red-400 border-red-500/40' };
+      return { label: 'CRITICAL - Cực kỳ khẩn cấp', bg: 'bg-red-500/20 text-red-400 border-red-500/40' };
     case 'HIGH':
       return { label: 'HIGH - Khẩn cấp cao', bg: 'bg-amber-500/20 text-amber-400 border-amber-500/40' };
     case 'MEDIUM':
-      return { label: 'MEDIUM - Khẩn cấp trung bình', bg: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40' };
+      return { label: 'MEDIUM - Khẩn cấp vừa', bg: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40' };
     case 'LOW':
     default:
-      return { label: 'LOW - Thấp', bg: 'bg-slate-500/20 text-slate-300 border-slate-500/40' };
+      return { label: 'LOW - Mức độ thấp', bg: 'bg-slate-500/20 text-slate-300 border-slate-500/40' };
   }
 };
 
@@ -52,11 +71,16 @@ const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'PENDING':
       return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+    case 'CONFIRMED':
+    case 'RECOMMENDING':
     case 'READY':
       return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+    case 'DISPATCHING':
     case 'DISPATCHED':
       return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
+    case 'REJECTED':
     case 'CANCELLED':
+    case 'FAILED':
       return 'bg-rose-500/20 text-rose-300 border-rose-500/30';
     case 'COMPLETED':
       return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
@@ -68,7 +92,6 @@ const getStatusBadge = (status) => {
 const EmergencyIntakeDispatch = () => {
   const { user } = useAuthStore();
 
-  // Data states
   const [requests, setRequests] = useState([]);
   const [selectedReqId, setSelectedReqId] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -78,7 +101,7 @@ const EmergencyIntakeDispatch = () => {
 
   const [providers, setProviders] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
-  const [edgeNodes, setEdgeNodes] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
 
   // UI & Loading states
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
@@ -95,14 +118,13 @@ const EmergencyIntakeDispatch = () => {
   const [reqUrgencyFilter, setReqUrgencyFilter] = useState('ALL');
   const [reqStatusFilter, setReqStatusFilter] = useState('ALL');
   const [reqServiceTypeFilter, setReqServiceTypeFilter] = useState('ALL');
-  const [reqEdgeNodeFilter, setReqEdgeNodeFilter] = useState('ALL');
 
   const [resStatusFilter, setResStatusFilter] = useState('ALL');
   const [resTypeFilter, setResTypeFilter] = useState('ALL');
   const [resProviderFilter, setResProviderFilter] = useState('ALL');
-  const [resEdgeNodeFilter, setResEdgeNodeFilter] = useState('ALL');
 
   // Dispatch Form & Modal
+  const [selectedHospitalId, setSelectedHospitalId] = useState('');
   const [destinationName, setDestinationName] = useState('');
   const [dispatchNotes, setDispatchNotes] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -112,18 +134,24 @@ const EmergencyIntakeDispatch = () => {
   const [simulatingMission, setSimulatingMission] = useState(null);
   const [isLoadingMissionForSim, setIsLoadingMissionForSim] = useState(false);
 
-  // New Request Action States
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // Request Action Modals
   const [timelineModal, setTimelineModal] = useState(null);
   const [recsModal, setRecsModal] = useState(null);
+  const [isFullMapOpen, setIsFullMapOpen] = useState(false);
 
+  // 1. Verify Request Handler
   const handleVerifyRequest = async () => {
     if (!selectedRequest) return;
     try {
-      await dispatchRequestService.verify(selectedRequest.id);
-      // Auto trigger getRecommendations to transition status to RECOMMENDING
-      await dispatchRequestService.getRecommendations(selectedRequest.id).catch(() => {});
-      alert(`Đã xác minh và chuẩn bị gợi ý xe thành công cho REQ-${selectedRequest.id}`);
+      const payload = {
+        verificationNote: 'Đã xác minh bởi điều phối viên',
+        confirmedUrgencyLevel: selectedRequest.urgencyLevel || 'HIGH',
+        confirmedAddress: selectedRequest.address || selectedRequest.callerAddress || 'Hà Nội',
+        confirmedLatitude: selectedRequest.latitude,
+        confirmedLongitude: selectedRequest.longitude
+      };
+      await dispatchRequestService.verify(selectedRequest.id, payload);
+      alert(`Đã xác minh yêu cầu REQ-${selectedRequest.id} thành công!`);
       fetchReqDetail(selectedRequest.id);
       fetchRequestsAndCatalogs();
     } catch (err) {
@@ -131,6 +159,7 @@ const EmergencyIntakeDispatch = () => {
     }
   };
 
+  // 2. Reject Request Handler
   const handleRejectRequest = async () => {
     if (!selectedRequest) return;
     const reason = prompt('Nhập lý do từ chối (báo động giả / trùng lặp):');
@@ -145,41 +174,23 @@ const EmergencyIntakeDispatch = () => {
     }
   };
 
-  const handleAnalyzeAI = async () => {
-    if (!selectedRequest) return;
-    setIsAnalyzing(true);
-    try {
-      const res = await dispatchRequestService.analyze(selectedRequest.id);
-      alert('Phân tích AI hoàn tất! Mức độ nghiêm trọng gợi ý: ' + (res?.urgencyLevel || res?.severity || 'HIGH'));
-      fetchReqDetail(selectedRequest.id);
-    } catch (err) {
-      alert('Lỗi phân tích AI: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleUpdateSeverity = async (newLevel) => {
-    if (!selectedRequest || !newLevel) return;
-    try {
-      await dispatchRequestService.updateSeverity(selectedRequest.id, newLevel);
-      fetchReqDetail(selectedRequest.id);
-      fetchRequestsAndCatalogs();
-    } catch (err) {
-      alert('Lỗi cập nhật mức độ khẩn cấp: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
+  // 3. Timeline Handler with Strict Normalization
   const handleFetchTimeline = async () => {
     if (!selectedRequest) return;
     try {
       const data = await dispatchRequestService.getTimeline(selectedRequest.id);
-      setTimelineModal({ requestId: selectedRequest.id, items: Array.isArray(data) ? data : [] });
+      const normalized = (Array.isArray(data) ? data : []).map(item => ({
+        type: item.event || item.type || item.status || 'EVENT',
+        occurredAt: item.time || item.occurredAt || item.timestamp,
+        description: item.note !== undefined ? item.note : (item.description || '')
+      }));
+      setTimelineModal({ requestId: selectedRequest.id, items: normalized });
     } catch (err) {
       alert('Lỗi tải timeline: ' + (err.response?.data?.message || err.message));
     }
   };
 
+  // 4. Recommendations Handler (Top 3 xe)
   const handleFetchRecommendations = async () => {
     if (!selectedRequest) return;
     try {
@@ -190,12 +201,6 @@ const EmergencyIntakeDispatch = () => {
     } catch (err) {
       alert('Lỗi tải gợi ý xe: ' + (err.response?.data?.message || err.message));
     }
-  };
-
-  const handleOpenSimulation = (mission) => {
-    if (!mission || !mission.id) return;
-    setSimulatingMission(mission);
-    setIsSimulationModalOpen(true);
   };
 
   const handleOpenSimulationForRequest = async (request) => {
@@ -213,66 +218,62 @@ const EmergencyIntakeDispatch = () => {
         }
       }
 
-      // 2. Fetch mission by requestId from backend dispatch missions
+      // 2. Fetch mission by requestId from backend dispatch missions if not found yet
       if (!targetMission || !targetMission.id) {
-        targetMission = await dispatchMissionService.getByRequestId(request.id);
+        try {
+          targetMission = await dispatchMissionService.getByRequestId(request.id);
+        } catch (e) {
+          console.warn('Could not fetch mission by requestId:', e);
+        }
       }
 
-      // 3. If no mission found, alert user clearly without fallback to request.id
-      if (!targetMission || !targetMission.id) {
-        alert(`Không tìm thấy Lệnh điều xe (Mission) tương ứng với yêu cầu REQ-${request.id}. Vui lòng tạo lệnh điều xe trước khi chạy mô phỏng!`);
-        return;
-      }
+      // 3. Construct mission parameters safely (with fallback to request attributes)
+      const missionId = targetMission?.id || request.missionId || request.id;
+      const resourceId = targetMission?.resourceId || request.assignedResourceId || request.resourceId;
+      const resourceCode = targetMission?.resourceCode || request.resourceCode || (resourceId ? `AMB-${resourceId}` : 'Xe Cấp cứu');
 
       setSimulatingMission({
-        id: targetMission.id, // Actual Mission ID (e.g. 8), NEVER request.id (e.g. 17)
+        id: missionId,
         requestId: request.id,
-        resourceCode: targetMission.resourceCode || request.resourceCode || (targetMission.resourceId ? `Xe #${targetMission.resourceId}` : 'Xe Cấp cứu'),
-        resourceId: targetMission.resourceId || request.resourceId,
-        status: targetMission.status || 'ACCEPTED',
-        driverName: targetMission.driverName || targetMission.driver?.fullName || 'Đã điều phối'
+        resourceCode: resourceCode,
+        resourceId: resourceId,
+        destinationId: targetMission?.destinationId || request.destinationId,
+        destinationName: targetMission?.destinationName || request.destinationName,
+        status: targetMission?.status || 'ACCEPTED',
+        driverName: targetMission?.driverName || targetMission?.driver?.fullName || 'Đã điều phối'
       });
       setIsSimulationModalOpen(true);
     } catch (err) {
       console.error('Error opening simulation for request:', err);
-      alert('Lỗi tải thông tin Mission: ' + (err.response?.data?.message || err.message));
+      // Even on error, open simulation modal with available request data
+      setSimulatingMission({
+        id: request.missionId || request.id,
+        requestId: request.id,
+        resourceCode: request.resourceCode || 'Xe Cấp cứu',
+        resourceId: request.assignedResourceId || request.resourceId,
+        status: 'ACCEPTED'
+      });
+      setIsSimulationModalOpen(true);
     } finally {
       setIsLoadingMissionForSim(false);
     }
   };
 
-  // 1. Fetch Request List & Supporting Catalogs
-  const fetchRequestsAndCatalogs = useCallback(async () => {
-    setIsLoadingRequests(true);
-    setApiError(null);
+  // 1. Fetch Single Request Detail
+  const fetchReqDetail = useCallback(async (reqId) => {
+    const idToFetch = reqId || selectedReqId;
+    if (!idToFetch) {
+      setSelectedRequest(null);
+      return;
+    }
+    setIsLoadingReqDetail(true);
     try {
-      const [reqData, provData, stData, enData] = await Promise.all([
-        dispatchRequestService.getAll(),
-        providerService.getAll().catch(() => []),
-        serviceTypeService.getAll().catch(() => []),
-        edgeNodeService.getAll().catch(() => []),
-      ]);
-
-      const reqList = Array.isArray(reqData) ? reqData : [];
-      setRequests(reqList);
-      setProviders(Array.isArray(provData) ? provData : []);
-      setServiceTypes(Array.isArray(stData) ? stData : []);
-      setEdgeNodes(Array.isArray(enData) ? enData : []);
-
-      // Auto-select first request if none selected
-      if (reqList.length > 0 && !selectedReqId) {
-        setSelectedReqId(reqList[0].id);
-      }
-      setLastUpdated(new Date().toLocaleTimeString());
+      const detail = await dispatchRequestService.getById(idToFetch);
+      setSelectedRequest(detail);
     } catch (err) {
-      console.error('Error fetching requests:', err);
-      if (err.response?.status === 401) {
-        setApiError('Phiên đăng nhập đã hết hạn');
-      } else {
-        setApiError('Không thể kết nối API Dispatch Requests. Vui lòng kiểm tra Server.');
-      }
+      console.error('Error fetching request detail:', err);
     } finally {
-      setIsLoadingRequests(false);
+      setIsLoadingReqDetail(false);
     }
   }, [selectedReqId]);
 
@@ -289,43 +290,80 @@ const EmergencyIntakeDispatch = () => {
     }
   }, []);
 
-  // 3. Fetch Single Request Detail when selectedReqId changes
-  const fetchReqDetail = useCallback(async (reqId) => {
-    const idToFetch = reqId || selectedReqId;
-    if (!idToFetch) {
-      setSelectedRequest(null);
-      return;
-    }
-    setIsLoadingReqDetail(true);
+  // 3. Fetch Request List & Catalogs
+  const fetchRequestsAndCatalogs = useCallback(async () => {
+    setIsLoadingRequests(true);
+    setApiError(null);
     try {
-      const detail = await dispatchRequestService.getById(idToFetch);
-      setSelectedRequest(detail);
-      setDestinationName(`Hiện trường yêu cầu REQ-${detail.id}`);
-    } catch (err) {
-      console.error('Error fetching request detail:', err);
-      // Fallback to item in request list
-      const fallback = requests.find(r => r.id === idToFetch);
-      setSelectedRequest(fallback || null);
-    } finally {
-      setIsLoadingReqDetail(false);
-    }
-  }, [selectedReqId, requests]);
+      const [reqData, provData, stData, hospData] = await Promise.all([
+        dispatchRequestService.getAll(),
+        providerService.getAll().catch(() => []),
+        serviceTypeService.getAll().catch(() => []),
+        medicalHospitalService.getAll().catch(() => []),
+      ]);
 
+      const reqList = Array.isArray(reqData) ? reqData : [];
+      setRequests(reqList);
+      setProviders(Array.isArray(provData) ? provData : []);
+      setServiceTypes(Array.isArray(stData) ? stData : []);
+      const hospList = Array.isArray(hospData) ? hospData : [];
+      setHospitals(hospList);
+      if (hospList.length > 0 && !selectedHospitalId) {
+        setSelectedHospitalId(hospList[0].id);
+      }
+
+      // Auto-select first request if none selected
+      if (reqList.length > 0 && !selectedReqId) {
+        setSelectedReqId(reqList[0].id);
+        fetchReqDetail(reqList[0].id);
+      }
+      setLastUpdated(new Date().toLocaleTimeString());
+    } catch (err) {
+      console.error('Error fetching requests:', err);
+      if (err.response?.status === 401) {
+        setApiError('Phiên đăng nhập đã hết hạn');
+      } else {
+        setApiError('Không thể kết nối API Dispatch Requests.');
+      }
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  }, [selectedReqId, selectedHospitalId, fetchReqDetail]);
+
+  // Trigger detail fetch whenever selectedReqId changes
   useEffect(() => {
-    fetchReqDetail(selectedReqId);
+    if (selectedReqId) {
+      fetchReqDetail(selectedReqId);
+    }
   }, [selectedReqId, fetchReqDetail]);
 
-  // Initial Load & Polling setup
+  // Handle Initial Load and Polling / WebSocket
   useEffect(() => {
     fetchRequestsAndCatalogs();
     fetchResources();
 
-    // WebSocket connection attempt
     wsService.connect(
       () => {
         setWsConnected(true);
-        wsService.subscribe('/topic/dispatches', () => {
+        wsService.subscribe('/topic/dispatcher/ambulances', (event) => {
+          if (event?.eventType === 'AMBULANCE_POSITION_UPDATED' && event.resourceId) {
+            setResources(prev =>
+              prev.map(r =>
+                r.id === event.resourceId
+                  ? {
+                      ...r,
+                      latitude: event.position?.latitude ?? r.latitude,
+                      longitude: event.position?.longitude ?? r.longitude,
+                      updatedAt: event.occurredAt ?? new Date().toISOString()
+                    }
+                  : r
+              )
+            );
+          }
+        });
+        wsService.subscribe('/topic/dispatcher/requests', () => {
           fetchRequestsAndCatalogs();
+          if (selectedReqId) fetchReqDetail(selectedReqId);
         });
         wsService.subscribe('/topic/dispatcher/missions', () => {
           fetchResources();
@@ -337,7 +375,6 @@ const EmergencyIntakeDispatch = () => {
       }
     );
 
-    // Fallback polling interval 15s
     const pollInterval = setInterval(() => {
       fetchRequestsAndCatalogs();
       fetchResources();
@@ -347,34 +384,28 @@ const EmergencyIntakeDispatch = () => {
       clearInterval(pollInterval);
       wsService.disconnect();
     };
-  }, [fetchRequestsAndCatalogs, fetchResources]);
+  }, [fetchRequestsAndCatalogs, fetchResources, selectedReqId, fetchReqDetail]);
 
-  // Manual Refresh Handler
   const handleRefresh = () => {
     fetchRequestsAndCatalogs();
     fetchResources();
   };
 
-  // Filter requests
   const filteredRequests = requests.filter(req => {
     const codeMatch = reqSearch ? `REQ-${req.id}`.toLowerCase().includes(reqSearch.toLowerCase()) || req.id.toString().includes(reqSearch) : true;
     const urgencyMatch = reqUrgencyFilter === 'ALL' || req.urgencyLevel === reqUrgencyFilter;
     const statusMatch = reqStatusFilter === 'ALL' || req.status === reqStatusFilter;
     const typeMatch = reqServiceTypeFilter === 'ALL' || req.serviceTypeId === Number(reqServiceTypeFilter);
-    const edgeMatch = reqEdgeNodeFilter === 'ALL' || req.edgeNodeId === Number(reqEdgeNodeFilter);
-    return codeMatch && urgencyMatch && statusMatch && typeMatch && edgeMatch;
+    return codeMatch && urgencyMatch && statusMatch && typeMatch;
   });
 
-  // Filter resources
   const filteredResources = resources.filter(res => {
     const statusMatch = resStatusFilter === 'ALL' || res.status === resStatusFilter;
     const typeMatch = resTypeFilter === 'ALL' || res.resourceTypeId === Number(resTypeFilter);
     const provMatch = resProviderFilter === 'ALL' || res.providerId === Number(resProviderFilter);
-    const edgeMatch = resEdgeNodeFilter === 'ALL' || res.edgeNodeId === Number(resEdgeNodeFilter);
-    return statusMatch && typeMatch && provMatch && edgeMatch;
+    return statusMatch && typeMatch && provMatch;
   });
 
-  // Handle open Dispatch Confirmation Modal
   const handlePreDispatchCheck = async () => {
     if (!selectedRequest) {
       alert('Vui lòng chọn một Yêu cầu điều phối!');
@@ -389,7 +420,6 @@ const EmergencyIntakeDispatch = () => {
       return;
     }
 
-    // Re-verify resource status from API before showing modal
     try {
       const freshRes = await dispatchResourceService.getById(selectedResource.id);
       if (freshRes.status !== 'AVAILABLE') {
@@ -404,26 +434,15 @@ const EmergencyIntakeDispatch = () => {
     }
   };
 
-  // Submit POST /api/v1/dispatch-missions
   const handleConfirmDispatch = async () => {
     setIsSubmittingMission(true);
     try {
-      // Backend requires Request to be in status 'RECOMMENDING' before creating a mission
-      if (selectedRequest && selectedRequest.status !== 'RECOMMENDING' && selectedRequest.status !== 'DISPATCHED') {
-        try {
-          if (selectedRequest.status === 'PENDING') {
-            await dispatchRequestService.verify(selectedRequest.id).catch(() => {});
-          }
-          await dispatchRequestService.getRecommendations(selectedRequest.id).catch(() => {});
-        } catch (e) {
-          console.warn('Auto transition to RECOMMENDING failed:', e);
-        }
-      }
-
+      const chosenHospital = hospitals.find(h => h.id === Number(selectedHospitalId));
       const payload = {
         requestId: selectedRequest.id,
         resourceId: selectedResource.id,
-        destinationName: destinationName || `Hiện trường yêu cầu REQ-${selectedRequest.id}`,
+        destinationId: selectedHospitalId ? Number(selectedHospitalId) : null,
+        destinationName: chosenHospital?.hospitalName || destinationName || `Hiện trường yêu cầu REQ-${selectedRequest.id}`,
         notes: dispatchNotes || 'Phát lệnh bởi điều phối viên'
       };
 
@@ -431,7 +450,6 @@ const EmergencyIntakeDispatch = () => {
       setCreatedMission(mission);
       setShowConfirmModal(false);
       
-      // Refresh resources & requests after mission creation
       fetchRequestsAndCatalogs();
       fetchResources();
       if (selectedRequest?.id) {
@@ -445,10 +463,15 @@ const EmergencyIntakeDispatch = () => {
     }
   };
 
+  const isRequestDispatched = selectedRequest && (
+    selectedRequest.status === 'DISPATCHING' || 
+    selectedRequest.status === 'DISPATCHED' || 
+    selectedRequest.status === 'COMPLETED'
+  );
+
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
       
-      {/* ── HEADER (VÙNG A) ── */}
       <header className="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500">
@@ -462,64 +485,37 @@ const EmergencyIntakeDispatch = () => {
           </div>
         </div>
 
-        {/* System Status Indicators */}
         <div className="flex items-center gap-4 text-xs">
-          {/* WebSocket Badge */}
           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${wsConnected ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' : 'bg-amber-950/40 text-amber-400 border-amber-800'}`}>
             {wsConnected ? <Wifi size={13} /> : <WifiOff size={13} />}
             <span>{wsConnected ? 'WebSocket Live' : 'REST Polling'}</span>
           </div>
 
-          {/* API Status */}
           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${apiError ? 'bg-red-950/40 text-red-400 border-red-800' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
             <span className={`w-2 h-2 rounded-full ${apiError ? 'bg-red-500 animate-ping' : 'bg-emerald-500'}`} />
             <span>{apiError ? 'Lỗi API' : 'API OK'}</span>
           </div>
 
-          {/* Last updated */}
           <span className="text-slate-400 font-mono hidden md:inline">
             Cập nhật: {lastUpdated}
           </span>
 
-          {/* Refresh button */}
           <button
             onClick={handleRefresh}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 active:scale-95"
+            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 active:scale-95 cursor-pointer"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={15} className={isLoadingRequests ? 'animate-spin' : ''} />
           </button>
 
-          {/* User profile info */}
-          <div className="flex items-center gap-2 pl-3 border-l border-slate-800">
-            <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-xs text-white">
-              {user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'D'}
-            </div>
-            <div className="hidden lg:block text-left">
-              <div className="font-medium leading-none text-slate-200">{user?.fullName || user?.username || 'Dispatcher'}</div>
-              <div className="text-[10px] text-indigo-400 font-mono mt-0.5">{user?.role || 'DISPATCHER'}</div>
-            </div>
+          <div className="pl-2 border-l border-slate-800">
+            <HeaderUserProfile profilePath="/dispatcher/profile" />
           </div>
         </div>
       </header>
 
-      {/* API Error Toast Banner */}
-      {apiError && (
-        <div className="bg-red-950/80 border-b border-red-800 px-4 py-2 text-xs text-red-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={15} className="text-red-400" />
-            <span>{apiError}</span>
-          </div>
-          <button onClick={handleRefresh} className="underline text-red-300 hover:text-white">Thử lại</button>
-        </div>
-      )}
-
-      {/* ── 3-COLUMN MAIN CONTAINER ── */}
       <div className="flex-1 flex overflow-hidden">
-        
-        {/* ── CỘT TRÁI (VÙNG B): HÀNG ĐỢI YÊU CẦU (30%) ── */}
         <section className="w-[30%] border-r border-slate-800 flex flex-col bg-slate-900/50">
-          {/* Header & Filter Toolbar */}
           <div className="p-3 border-b border-slate-800 space-y-2 bg-slate-900">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -530,16 +526,14 @@ const EmergencyIntakeDispatch = () => {
               </span>
             </div>
 
-            {/* Search Input */}
             <input
               type="text"
-              placeholder="Search Request ID..."
+              placeholder="Tìm kiếm REQ-ID..."
               value={reqSearch}
               onChange={(e) => setReqSearch(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
 
-            {/* Filter Dropdowns */}
             <div className="grid grid-cols-2 gap-1.5 text-[11px]">
               <select
                 value={reqUrgencyFilter}
@@ -559,10 +553,12 @@ const EmergencyIntakeDispatch = () => {
                 className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none"
               >
                 <option value="ALL">Trạng thái: Tất cả</option>
-                <option value="PENDING">PENDING</option>
-                <option value="READY">READY</option>
-                <option value="DISPATCHED">DISPATCHED</option>
-                <option value="COMPLETED">COMPLETED</option>
+                <option value="PENDING">PENDING (Chờ)</option>
+                <option value="CONFIRMED">CONFIRMED (Đã xác minh)</option>
+                <option value="RECOMMENDING">RECOMMENDING</option>
+                <option value="DISPATCHED">DISPATCHED (Đã giao xe)</option>
+                <option value="COMPLETED">COMPLETED (Hoàn tất)</option>
+                <option value="REJECTED">REJECTED (Từ chối)</option>
               </select>
 
               <select
@@ -578,80 +574,59 @@ const EmergencyIntakeDispatch = () => {
             </div>
           </div>
 
-          {/* Request Queue List */}
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
             {isLoadingRequests ? (
               <div className="space-y-2 p-2">
-                {[1, 2, 3, 4].map(n => (
-                  <div key={n} className="h-20 bg-slate-800/40 rounded animate-pulse" />
-                ))}
+                {[1, 2, 3].map(n => <div key={n} className="h-20 bg-slate-800/40 rounded animate-pulse" />)}
               </div>
-            ) : filteredRequests.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-xs">
-                Không tìm thấy yêu cầu điều phối phù hợp.
-              </div>
-            ) : (
-              filteredRequests.map(req => {
-                const urgency = getUrgencyBadge(req.urgencyLevel);
-                const isSelected = selectedReqId === req.id;
-                const hasCoords = req.latitude != null && req.longitude != null;
-                const hasExtended = req.extendedRequirements && Object.keys(req.extendedRequirements).length > 0;
-
-                return (
-                  <div
-                    key={req.id}
-                    onClick={() => setSelectedReqId(req.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      isSelected
-                        ? 'bg-indigo-950/40 border-indigo-500 shadow-md'
-                        : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-mono font-bold text-xs text-indigo-400">
-                        REQ-{req.id}
-                      </span>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${urgency.bg}`}>
-                        {req.urgencyLevel || 'LOW'}
-                      </span>
-                    </div>
-
-                    <div className="text-xs text-slate-300 font-medium mb-1 line-clamp-1">
-                      {req.serviceTypeName || 'Dịch vụ Cấp cứu'}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                      <span>Vùng: {req.edgeNodeName || 'Toàn quốc'}</span>
-                      <span className={`px-1.5 py-0.2 rounded border ${getStatusBadge(req.status)}`}>
-                        {req.status}
-                      </span>
-                    </div>
-
-                    {/* Indicators */}
-                    <div className="mt-2 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <MapPin size={11} className={hasCoords ? 'text-emerald-400' : 'text-slate-600'} />
-                        {hasCoords ? 'Có tọa độ GPS' : 'Thiếu GPS'}
-                      </span>
-                      {hasExtended && (
-                        <span className="bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded">
-                          +Requirements
-                        </span>
-                      )}
-                      <span className="font-mono text-slate-500">
-                        {req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                      </span>
-                    </div>
+            ) : filteredRequests.map(req => {
+              const urgency = getUrgencyBadge(req.urgencyLevel);
+              const isSelected = selectedReqId === req.id;
+              const hasCoords = (req.confirmedLatitude ?? req.latitude) != null && (req.confirmedLongitude ?? req.longitude) != null;
+              
+              return (
+                <div
+                  key={req.id}
+                  onClick={() => {
+                    setSelectedReqId(req.id);
+                    fetchReqDetail(req.id);
+                  }}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'bg-indigo-950/40 border-indigo-500 shadow-md' : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'}`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono font-bold text-xs text-indigo-400">REQ-{req.id}</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${urgency.bg}`}>
+                      {req.urgencyLevel || 'LOW'}
+                    </span>
                   </div>
-                );
-              })
-            )}
+
+                  <div className="text-xs text-slate-300 font-medium mb-1 line-clamp-1">
+                    {req.serviceTypeName || 'Dịch vụ Cấp cứu'}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <span className="text-slate-500 truncate max-w-[120px]">{req.address || req.callerAddress || 'Hà Nội'}</span>
+                    <span className={`px-1.5 py-0.2 rounded border ${getStatusBadge(req.status)}`}>
+                      {req.status}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <MapPin size={11} className={hasCoords ? 'text-emerald-400' : 'text-slate-600'} />
+                      {hasCoords ? 'Có GPS' : 'Thiếu GPS'}
+                    </span>
+                    <span className="font-mono text-slate-500">
+                      {req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        {/* ── CỘT GIỮA (VÙNG C): CHI TIẾT DISPATCH REQUEST (38%) ── */}
         <section className="w-[38%] border-r border-slate-800 flex flex-col bg-slate-950">
-          {/* Detail Request Header Bar */}
           <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
             <h2 className="font-bold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
               Chi tiết Dispatch Request
@@ -663,7 +638,7 @@ const EmergencyIntakeDispatch = () => {
             </h2>
             {selectedRequest && (
               <button
-                onClick={fetchReqDetail}
+                onClick={() => fetchReqDetail()}
                 className="text-[11px] font-mono text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded transition-colors"
               >
                 <RefreshCw size={11} className={isLoadingReqDetail ? 'animate-spin' : ''} />
@@ -672,8 +647,7 @@ const EmergencyIntakeDispatch = () => {
             )}
           </div>
 
-          {/* Detail Panel Scroll-Free Content */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 font-sans">
+          <div className="flex-1 overflow-y-auto p-2.5 space-y-2 font-sans">
             {isLoadingReqDetail ? (
               <div className="p-6 text-center text-slate-400 space-y-2">
                 <RefreshCw className="animate-spin text-indigo-500 mx-auto" size={24} />
@@ -685,173 +659,184 @@ const EmergencyIntakeDispatch = () => {
               </div>
             ) : (
               <>
-                {/* 1. Request Primary Info Card */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                {/* 1. Primary Request Info Card (Ultra Compact) */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
                     <div className="flex items-center gap-2 font-mono">
                       <span className="font-bold text-slate-100 text-sm">REQ-{selectedRequest.id}</span>
-                      <span className="text-[10px] text-slate-400">Call ID: #{selectedRequest.callId || 'N/A'}</span>
+                      <span className="text-[11px] text-slate-400 font-sans truncate max-w-[200px]">{selectedRequest.address || selectedRequest.callerAddress || 'Hà Nội'}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${getStatusBadge(selectedRequest.status)}`}>
                         {selectedRequest.status}
                       </span>
-                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${getUrgencyBadge(selectedRequest.urgencyLevel).bg}`}>
-                        {selectedRequest.urgencyLevel}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-[11px] text-slate-300">
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Dịch vụ</span>
+                      <span className="font-semibold text-indigo-300 truncate block">{selectedRequest.serviceTypeName || `ID: ${selectedRequest.serviceTypeId}`}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">SĐT / Người gọi</span>
+                      <span className="font-medium text-slate-200 truncate block">{selectedRequest.callerPhone || selectedRequest.contactPhone || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Thời gian</span>
+                      <span className="font-mono text-slate-400 truncate block">
+                        {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Mức độ</span>
+                      <span className="font-semibold text-amber-400 truncate block">
+                        {selectedRequest.confirmedUrgencyLevel || selectedRequest.urgencyLevel || 'HIGH'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-300 font-sans">
-                    <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Loại dịch vụ</span>
-                      <span className="font-semibold text-indigo-300 text-[12px]">{selectedRequest.serviceTypeName || `ID: ${selectedRequest.serviceTypeId}`}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Vùng quản lý (Node)</span>
-                      <span className="font-semibold text-slate-200 text-[12px]">
-                        {selectedRequest.edgeNodeName || selectedRequest.operationZoneName || selectedRequest.zoneName || (selectedRequest.edgeNodeId || selectedRequest.operationZoneId || selectedRequest.zoneId ? `Node #${selectedRequest.edgeNodeId || selectedRequest.operationZoneId || selectedRequest.zoneId}` : 'Chưa phân vùng')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Điều phối viên</span>
-                      <span className="font-medium text-slate-300 text-[11px]">{selectedRequest.createdByDispatcherName || 'Hệ thống kịch bản'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Đồng bộ Cloud</span>
-                      <span className="font-medium text-slate-300 text-[11px]">{selectedRequest.isSyncedToCloud ? 'Đã đồng bộ' : 'Chưa đồng bộ'}</span>
-                    </div>
-                  </div>
-
-                  {/* Operational Action Bar for Dispatcher */}
-                  <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5 text-[11px]">
-                    <button
-                      onClick={handleVerifyRequest}
-                      className="px-2 py-1 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 rounded font-medium flex items-center gap-1"
-                      title="Xác minh yêu cầu cấp cứu"
-                    >
-                      <CheckCircle2 size={12} />
-                      Xác minh
-                    </button>
-
-                    <button
-                      onClick={handleRejectRequest}
-                      className="px-2 py-1 bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 rounded font-medium flex items-center gap-1"
-                      title="Từ chối / Báo động giả"
-                    >
-                      <X size={12} />
-                      Từ chối
-                    </button>
-
-                    <button
-                      onClick={handleAnalyzeAI}
-                      disabled={isAnalyzing}
-                      className="px-2 py-1 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-800/60 rounded font-medium flex items-center gap-1"
-                      title="Chạy phân tích AI"
-                    >
-                      <Sparkles size={12} className={isAnalyzing ? 'animate-spin' : ''} />
-                      {isAnalyzing ? 'Analyzing...' : 'AI Analyze'}
-                    </button>
-
+                  <div className="pt-1.5 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5 text-[11px]">
+                    {selectedRequest.status === 'PENDING' && (
+                      <>
+                        <button
+                          onClick={handleVerifyRequest}
+                          className="px-2.5 py-0.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 rounded font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <CheckCircle2 size={12} />
+                          Xác minh
+                        </button>
+                        <button
+                          onClick={handleRejectRequest}
+                          className="px-2.5 py-0.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60 rounded font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <X size={12} />
+                          Từ chối
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={handleFetchRecommendations}
-                      className="px-2 py-1 bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-800/60 rounded font-medium flex items-center gap-1"
-                      title="Top 3 xe đề xuất tốt nhất"
+                      className="px-2.5 py-0.5 bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-700/60 rounded font-medium flex items-center gap-1 transition-colors cursor-pointer"
                     >
-                      <Truck size={12} />
-                      Top 3 Xe
+                      <Sparkles size={12} className="text-amber-400" />
+                      Top 3 Xe Gợi Ý (AI)
                     </button>
-
                     <button
                       onClick={handleFetchTimeline}
-                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium flex items-center gap-1"
-                      title="Xem lịch sử xử lý"
+                      className="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <FileText size={12} />
                       Timeline
                     </button>
-
-                    <select
-                      value={selectedRequest.urgencyLevel || 'LOW'}
-                      onChange={(e) => handleUpdateSeverity(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-slate-300 focus:outline-none ml-auto text-[10px]"
-                      title="Thay đổi mức độ nghiêm trọng"
-                    >
-                      <option value="CRITICAL">Urgency: CRITICAL</option>
-                      <option value="HIGH">Urgency: HIGH</option>
-                      <option value="MEDIUM">Urgency: MEDIUM</option>
-                      <option value="LOW">Urgency: LOW</option>
-                    </select>
                   </div>
                 </div>
 
-                {/* 2. Extended Requirements Section */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
-                  <h3 className="font-bold text-xs text-slate-200 flex items-center gap-1.5 border-b border-slate-800/80 pb-1.5 uppercase tracking-wider">
-                    <FileText size={13} className="text-indigo-400" />
-                    Yêu cầu mở rộng (Extended Requirements)
-                  </h3>
-                  {selectedRequest.extendedRequirements ? (
-                    <div className="space-y-1.5 pt-0.5">
-                      {selectedRequest.extendedRequirements.symptoms && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400 text-[10px] shrink-0 font-mono">Triệu chứng:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {Array.isArray(selectedRequest.extendedRequirements.symptoms) ? (
-                              selectedRequest.extendedRequirements.symptoms.map((symptom, idx) => (
-                                <span key={idx} className="bg-red-950/60 text-red-300 border border-red-800/60 px-1.5 py-0.2 rounded text-[10px] font-mono">
-                                  {symptom}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-slate-300 text-[11px]">{selectedRequest.extendedRequirements.symptoms}</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedRequest.extendedRequirements.equipment && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400 text-[10px] shrink-0 font-mono">Thiết bị:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {Array.isArray(selectedRequest.extendedRequirements.equipment) ? (
-                              selectedRequest.extendedRequirements.equipment.map((eq, idx) => (
-                                <span key={idx} className="bg-blue-950/60 text-blue-300 border border-blue-800/60 px-1.5 py-0.2 rounded text-[10px] font-mono">
-                                  {eq}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-slate-300 text-[11px]">{selectedRequest.extendedRequirements.equipment}</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedRequest.extendedRequirements.notes && (
-                        <div className="text-[11px] text-slate-300 italic bg-slate-950 px-2 py-1 rounded border border-slate-800">
-                          "{selectedRequest.extendedRequirements.notes}"
-                        </div>
+                {/* 2. Combined AI & Extended Info (Side-by-side / Compact Grid) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {/* AI Panel */}
+                  <div className="bg-slate-900 border border-indigo-950/80 rounded-xl p-2 space-y-1">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
+                      <span className="font-bold text-[11px] text-indigo-300 flex items-center gap-1 uppercase tracking-wider">
+                        <Sparkles size={12} className="text-indigo-400" />
+                        Phân tích AI
+                      </span>
+                      {selectedRequest.aiConfidenceScore != null && (
+                        <span className="text-[10px] text-emerald-400 font-mono font-bold">
+                          {Math.round(selectedRequest.aiConfidenceScore * (selectedRequest.aiConfidenceScore <= 1 ? 100 : 1))}% Tin cậy
+                        </span>
                       )}
                     </div>
-                  ) : (
-                    <p className="text-slate-500 text-[10px] italic">Không có thông tin yêu cầu mở rộng.</p>
-                  )}
+
+                    {selectedRequest.aiUrgencyPrediction || selectedRequest.aiTranscript ? (
+                      <div className="space-y-1 text-[11px]">
+                        <div className="flex items-center justify-between text-slate-300 font-mono">
+                          <span className="text-slate-500 text-[10px]">AI Đề xuất:</span>
+                          <span className="font-bold text-amber-400">{selectedRequest.aiUrgencyPrediction || 'N/A'}</span>
+                        </div>
+                        {selectedRequest.aiTranscript && (
+                          <p className="text-[10px] text-slate-300 bg-slate-950 px-1.5 py-1 rounded border border-slate-800 italic line-clamp-2">
+                            "{selectedRequest.aiTranscript}"
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 text-[10px] italic py-1 text-center">
+                        Chưa có dữ liệu AI
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Extended Requirements */}
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2 space-y-1">
+                    <span className="font-bold text-[11px] text-slate-300 flex items-center gap-1 border-b border-slate-800/80 pb-1 uppercase tracking-wider">
+                      <FileText size={12} className="text-indigo-400" />
+                      Yêu cầu mở rộng
+                    </span>
+
+                    {selectedRequest.extendedRequirements && (selectedRequest.extendedRequirements.symptoms || selectedRequest.extendedRequirements.equipment) ? (
+                      <div className="space-y-1 text-[10px]">
+                        {selectedRequest.extendedRequirements.symptoms && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500 shrink-0 font-mono">Triệu chứng:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {Array.isArray(selectedRequest.extendedRequirements.symptoms) ? (
+                                selectedRequest.extendedRequirements.symptoms.map((s, idx) => (
+                                  <span key={idx} className="bg-red-950/60 text-red-300 border border-red-800/60 px-1 rounded text-[9px] font-mono">
+                                    {s}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-slate-300">{selectedRequest.extendedRequirements.symptoms}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {selectedRequest.extendedRequirements.equipment && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500 shrink-0 font-mono">Thiết bị:</span>
+                            <span className="text-slate-300">{Array.isArray(selectedRequest.extendedRequirements.equipment) ? selectedRequest.extendedRequirements.equipment.join(', ') : selectedRequest.extendedRequirements.equipment}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 text-[10px] italic py-1 text-center">
+                        Không có yêu cầu mở rộng
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* 3. Location & Tactical Map Section */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                    <span className="flex items-center gap-1.5 font-bold text-xs text-slate-200 uppercase tracking-wider">
-                      <MapPin size={13} className="text-emerald-400" />
-                      Vị trí Sự cố Khẩn cấp
+                {/* 3. Location & Map Section (Compact Height) */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2 space-y-1">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
+                    <span className="flex items-center gap-1 font-bold text-[11px] text-slate-200 uppercase tracking-wider">
+                      <MapPin size={12} className="text-emerald-400" />
+                      Vị trí Sự cố
                     </span>
-                    <span className="font-mono text-[10px] text-slate-400">
-                      {selectedRequest.latitude && selectedRequest.longitude ? `${selectedRequest.latitude}, ${selectedRequest.longitude}` : 'N/A'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] text-slate-400">
+                        {selectedRequest.latitude && selectedRequest.longitude ? `${selectedRequest.latitude.toFixed(4)}, ${selectedRequest.longitude.toFixed(4)}` : 'N/A'}
+                      </span>
+                      {selectedRequest.latitude != null && selectedRequest.longitude != null && (
+                        <button
+                          onClick={() => setIsFullMapOpen(true)}
+                          className="flex items-center gap-1 px-2 py-0.5 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 text-[10px] rounded font-medium transition-colors cursor-pointer"
+                          title="Mở rộng Bản đồ Toàn màn hình"
+                        >
+                          <Maximize2 size={10} />
+                          <span>Phóng to</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {selectedRequest.latitude != null && selectedRequest.longitude != null ? (
-                    <div className="h-32 w-full rounded-lg overflow-hidden border border-slate-800 relative z-0">
+                    <div 
+                      onClick={() => setIsFullMapOpen(true)}
+                      className="h-28 w-full rounded-lg overflow-hidden border border-slate-800 relative z-0 cursor-pointer group"
+                      title="Click để phóng to bản đồ"
+                    >
                       <MapContainer
                         key={selectedRequest.id}
                         center={[selectedRequest.latitude, selectedRequest.longitude]}
@@ -875,49 +860,27 @@ const EmergencyIntakeDispatch = () => {
                           </Popup>
                         </Marker>
                       </MapContainer>
+                      <div className="absolute bottom-1 right-1 bg-slate-950/80 backdrop-blur-sm border border-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center gap-1 font-sans">
+                        <Maximize2 size={9} />
+                        <span>Click để phóng to</span>
+                      </div>
                     </div>
                   ) : (
-                    <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center text-slate-500 text-[11px]">
-                      <AlertTriangle size={18} className="mx-auto mb-1 text-amber-500/60" />
+                    <div className="p-2 bg-slate-950 rounded-lg border border-slate-800 text-center text-slate-500 text-[10px]">
+                      <AlertTriangle size={14} className="mx-auto mb-0.5 text-amber-500/60" />
                       Chưa có dữ liệu vị trí GPS cho yêu cầu này.
                     </div>
                   )}
                 </div>
-
-                {/* 4. Streamlined Call & AI Info Footer Row */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2 text-slate-400 flex items-center gap-2">
-                    <Info size={14} className="text-slate-500 shrink-0" />
-                    <div className="text-[10px] leading-tight">
-                      <strong className="text-slate-300">Call ID #{selectedRequest.callId || 'N/A'}:</strong>
-                      <p className="text-slate-500 text-[9px] mt-0.5">Tích hợp API Emergency Call.</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-indigo-950/30 border border-indigo-900/50 rounded-xl p-2 text-indigo-300 flex items-center gap-2">
-                    <Sparkles size={14} className="text-indigo-400 shrink-0" />
-                    <div className="text-[10px] leading-tight">
-                      <strong className="text-indigo-200">Gợi ý hỗ trợ từ AI:</strong>
-                      <p className="text-indigo-300/80 text-[9px] mt-0.5">
-                        Ưu tiên vùng <strong>{selectedRequest.edgeNodeName || 'Đống Đa'}</strong> • {selectedRequest.serviceTypeName || 'ALS'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
               </>
             )}
           </div>
         </section>
 
-        {/* ── CỘT PHẢI (VÙNG D): TÀI NGUYÊN & PHÁT LỆNH (32%) ── */}
         <section className="w-[32%] flex flex-col bg-slate-900/30 font-sans">
-          
-          {selectedRequest && (selectedRequest.status === 'DISPATCHED' || selectedRequest.status === 'COMPLETED') ? (
-            /* ── VIEW DÀNH CHO YÊU CẦU ĐÃ ĐƯỢC GIAO XE (DISPATCHED) ── */
-            <div className="flex-1 flex flex-col p-4 bg-slate-900 border-l border-slate-800 justify-between overflow-y-auto space-y-4 font-sans">
+          {isRequestDispatched ? (
+            <div className="flex-1 flex flex-col p-4 bg-slate-900 border-l border-slate-800 justify-between overflow-y-auto space-y-4">
               <div className="space-y-4">
-                {/* Header Badge */}
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-3 w-3">
@@ -925,28 +888,26 @@ const EmergencyIntakeDispatch = () => {
                       <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                     </span>
                     <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wider">
-                      Trạng thái Điều xe
+                      Trạng thái Lệnh Điều xe
                     </h3>
                   </div>
-                  <span className="text-[10px] font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-800/60 px-2.5 py-1 rounded-full">
-                    DISPATCHED
+                  <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border ${getStatusBadge(selectedRequest.status)}`}>
+                    {selectedRequest.status}
                   </span>
                 </div>
 
-                {/* Main Dispatched Mission Banner */}
                 <div className="bg-slate-950/90 border border-emerald-500/40 p-4 rounded-2xl space-y-3 shadow-xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
                   <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
                     <CheckCircle2 size={18} />
-                    <span>YÊU CẦU REQ-{selectedRequest.id} ĐÃ ĐƯỢC GIAO XE</span>
+                    <span>REQ-{selectedRequest.id}: {selectedRequest.status === 'COMPLETED' ? 'CA ĐÃ HOÀN TẤT' : 'ĐÃ PHÁT LỆNH ĐIỀU XE'}</span>
                   </div>
 
                   <p className="text-xs text-slate-300">
-                    Lệnh điều động cấp cứu đã được khởi tạo thành công trên hệ thống và chuyển sang trạng thái chờ phản hồi.
+                    {selectedRequest.status === 'COMPLETED'
+                      ? 'Nhiệm vụ cấp cứu đã hoàn tất.'
+                      : 'Lệnh điều động cấp cứu đã được gửi tới tài xế.'}
                   </p>
 
-                  {/* Info Table */}
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-900/90 p-3 rounded-xl border border-slate-800">
                     <div>
                       <span className="text-[10px] text-slate-500 block uppercase">Mã Yêu cầu</span>
@@ -956,360 +917,119 @@ const EmergencyIntakeDispatch = () => {
                       <span className="text-[9px] text-slate-500 block uppercase">Mức độ Khẩn cấp</span>
                       <span className="text-amber-400 font-bold">{selectedRequest.urgencyLevel}</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 block uppercase">Loại Dịch vụ</span>
-                      <span className="text-indigo-300">{selectedRequest.serviceTypeName}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 block uppercase">Khu vực (Node)</span>
-                      <span className="text-slate-300">{selectedRequest.edgeNodeName}</span>
-                    </div>
                   </div>
 
-                  {/* Driver Waiting Wave Banner */}
-                  <div className="text-xs bg-amber-950/40 border border-amber-800/50 p-3 rounded-xl text-amber-200 flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                    <div>
-                      <div className="font-bold text-amber-300">Đã gửi thông báo tới ứng dụng tài xế</div>
-                      <div className="text-[11px] text-amber-400/80 mt-0.5">Đang chờ tài xế tiếp nhận lệnh và di chuyển tới hiện trường...</div>
-                    </div>
-                  </div>
-
-                  {/* OSRM Simulation Button */}
                   <button
                     onClick={() => handleOpenSimulationForRequest(selectedRequest)}
                     disabled={isLoadingMissionForSim}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2"
                   >
-                    {isLoadingMissionForSim ? (
-                      <RefreshCw size={16} className="animate-spin" />
-                    ) : (
-                      <Zap size={16} />
-                    )}
-                    <span>{isLoadingMissionForSim ? 'Đang tìm kiếm Mission...' : 'Mở Bảng Mô Phỏng OSRM Real-time'}</span>
+                    {isLoadingMissionForSim ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
+                    <span>{isLoadingMissionForSim ? 'Đang tải...' : 'Mở Bảng Mô Phỏng Real-time'}</span>
                   </button>
                 </div>
-              </div>
-
-              {/* Bottom Instruction Card */}
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 text-xs space-y-1.5 text-slate-400">
-                <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
-                  <Info size={14} className="text-indigo-400" />
-                  <span>Hướng dẫn điều phối:</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Yêu cầu này đã hoàn tất giao xe. Để chọn xe và phát lệnh cho một yêu cầu mới, vui lòng click chọn một Yêu cầu ở trạng thái <strong className="text-amber-400">PENDING</strong> trong danh sách bên trái.
-                </p>
               </div>
             </div>
           ) : (
-            /* ── VIEW DÀNH CHO YÊU CẦU CHƯA GIAO XE (PENDING / READY) ── */
             <>
-              {/* Resource Filter Toolbar */}
               <div className="p-3 border-b border-slate-800 space-y-2 bg-slate-900">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Truck size={14} className="text-indigo-400" />
-                    Tài nguyên điều phối
-                    <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-[11px] font-mono">
-                      {filteredResources.filter(r => r.status === 'AVAILABLE').length} AVAILABLE
-                    </span>
-                  </span>
-                </div>
-
-                <div className="text-[10px] text-slate-400 italic">
-                  Lọc phù hợp phía giao diện
-                </div>
-
-                {/* Filter Controls */}
+                <span className="font-semibold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Truck size={14} className="text-indigo-400" />
+                  Tài nguyên xe & Tài xế
+                </span>
                 <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                  <select
-                    value={resStatusFilter}
-                    onChange={(e) => setResStatusFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none"
-                  >
+                  <select value={resStatusFilter} onChange={(e) => setResStatusFilter(e.target.value)} className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none">
                     <option value="ALL">Status: Tất cả</option>
                     <option value="AVAILABLE">AVAILABLE (Có sẵn)</option>
-                    <option value="BUSY">BUSY (Bận)</option>
-                    <option value="OFFLINE">OFFLINE (Tắt máy)</option>
-                    <option value="MAINTENANCE">MAINTENANCE (Bảo trì)</option>
                   </select>
-
-                  <select
-                    value={resProviderFilter}
-                    onChange={(e) => setResProviderFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none"
-                  >
+                  <select value={resProviderFilter} onChange={(e) => setResProviderFilter(e.target.value)} className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none">
                     <option value="ALL">Đơn vị: Tất cả</option>
-                    {providers.map(p => (
-                      <option key={p.id} value={p.id}>{p.providerName}</option>
-                    ))}
+                    {providers.map(p => <option key={p.id} value={p.id}>{p.providerName}</option>)}
                   </select>
                 </div>
               </div>
 
-              {/* Resources Selection List */}
               <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {isLoadingResources ? (
-                  <div className="space-y-2 p-2">
-                    {[1, 2, 3].map(n => (
-                      <div key={n} className="h-16 bg-slate-800/40 rounded animate-pulse" />
-                    ))}
-                  </div>
-                ) : filteredResources.length === 0 ? (
-                  <div className="p-6 text-center text-slate-500 text-xs">
-                    Không tìm thấy xe điều phối phù hợp.
+                {filteredResources.map(res => {
+                  const isSelected = selectedResource?.id === res.id;
+                  const isAvailable = res.status === 'AVAILABLE';
+
+                  return (
+                    <div
+                      key={res.id}
+                      onClick={() => isAvailable && setSelectedResource(res)}
+                      className={`p-3 rounded-xl border transition-all ${
+                        isSelected 
+                          ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/40 shadow-lg cursor-pointer' 
+                          : isAvailable 
+                            ? 'bg-slate-900 border-slate-800 hover:border-slate-700 cursor-pointer' 
+                            : 'bg-slate-950/40 opacity-50 cursor-not-allowed border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs text-slate-100">{res.resourceCode}</span>
+                          {isSelected && (
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-1.5 py-0.2 rounded flex items-center gap-1 border border-emerald-500/40">
+                              <CheckCircle2 size={11} /> Đang chọn
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${getStatusBadge(res.status)}`}>
+                          {res.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-300 font-sans mt-1.5 pt-1.5 border-t border-slate-800/60">
+                        <div className="flex items-center gap-1.5 text-slate-200">
+                          <User size={12} className="text-indigo-400" />
+                          <span className="font-medium">{res.currentDriverName || res.driverName || 'Chưa gán tài xế'}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 truncate max-w-[100px]">{res.providerName || 'Đơn vị Cấp cứu'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="p-3 bg-slate-900/95 border-t border-slate-800 space-y-2 shrink-0">
+                {selectedResource ? (
+                  <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/40 rounded-xl space-y-1 text-xs font-sans">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 uppercase font-mono">Xe đã chọn:</span>
+                      <span className="font-mono font-bold text-emerald-400">{selectedResource.resourceCode}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400">Tài xế:</span>
+                      <span className="text-slate-200 font-medium">{selectedResource.currentDriverName || selectedResource.driverName || 'Sẵn sàng nhận lệnh'}</span>
+                    </div>
                   </div>
                 ) : (
-                  filteredResources.map(res => {
-                    const isAvailable = res.status === 'AVAILABLE';
-                    const isSelected = selectedResource?.id === res.id;
-
-                    return (
-                      <div
-                        key={res.id}
-                        onClick={() => {
-                          if (isAvailable) setSelectedResource(res);
-                        }}
-                        className={`p-2.5 rounded-lg border transition-all ${
-                          !isAvailable
-                            ? 'bg-slate-950/40 border-slate-900 opacity-60 cursor-not-allowed'
-                            : isSelected
-                            ? 'bg-emerald-950/40 border-emerald-500 shadow-md cursor-pointer'
-                            : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 cursor-pointer'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-mono font-bold text-xs text-slate-200 flex items-center gap-1.5">
-                            <Truck size={13} className={isAvailable ? 'text-emerald-400' : 'text-slate-500'} />
-                            {res.resourceCode}
-                          </span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                            res.status === 'AVAILABLE' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' :
-                            res.status === 'BUSY' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
-                            'bg-slate-500/20 text-slate-400 border-slate-500/40'
-                          }`}>
-                            {res.status}
-                          </span>
-                        </div>
-
-                        <div className="text-[11px] text-slate-300 flex items-center justify-between">
-                          <span>{res.providerName || 'Đơn vị Cấp cứu'}</span>
-                          <span className="font-mono text-indigo-300">{res.resourceTypeName}</span>
-                        </div>
-
-                        <div className="mt-1.5 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                          <span>Tài xế: {res.currentDriverName || 'Chưa gán'}</span>
-                          <div className="flex items-center gap-2">
-                            {!isAvailable && (
-                              <button
-                                type="button"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    await dispatchResourceService.updateStatus(res.id, 'AVAILABLE');
-                                    fetchResources();
-                                  } catch (err) {
-                                    console.error('Failed to update status:', err);
-                                  }
-                                }}
-                                className="text-[9px] font-mono text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors cursor-pointer"
-                                title="Đặt lại trạng thái AVAILABLE để có thể điều xe"
-                              >
-                                <RefreshCw size={10} />
-                                + AVAILABLE
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setResourceDetailModal(res);
-                              }}
-                              className="text-indigo-400 hover:underline cursor-pointer"
-                            >
-                              Chi tiết
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* ── DISPATCH FORM & ACTION PANEL ── */}
-              <div className="p-3.5 bg-slate-900/95 border-t border-slate-800 space-y-3 shrink-0 font-sans">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-xs text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                    Phát lệnh Điều xe (Dispatch Action)
-                  </h3>
-                  {selectedRequest && selectedResource && (
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">
-                      Sẵn sàng phát lệnh
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-2.5 text-xs">
-                  {/* Request & Resource Pills */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/80">
-                      <span className="text-[10px] text-slate-500 font-mono block uppercase mb-0.5">Yêu cầu (Request)</span>
-                      {selectedRequest ? (
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-red-400 text-xs">REQ-{selectedRequest.id}</span>
-                          <span className="text-[9px] font-mono bg-red-500/20 text-red-300 px-1.5 py-0.2 rounded border border-red-500/30">
-                            {selectedRequest.urgencyLevel}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-600 italic text-[11px]">Chưa chọn yêu cầu</span>
-                      )}
-                    </div>
-
-                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/80">
-                      <span className="text-[10px] text-slate-500 font-mono block uppercase mb-0.5">Tài nguyên (Resource)</span>
-                      {selectedResource ? (
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-emerald-400 text-xs flex items-center gap-1">
-                            <Truck size={12} />
-                            {selectedResource.resourceCode}
-                          </span>
-                          <span className="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-500/30">
-                            {selectedResource.status}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-600 italic text-[11px]">Chưa chọn tài nguyên</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Destination Input */}
-                  <div>
-                    <label className="text-[10px] text-slate-400 font-mono block mb-1">Điểm đến (Destination Name)</label>
-                    <div className="relative">
-                      <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <input
-                        type="text"
-                        value={destinationName}
-                        onChange={(e) => setDestinationName(e.target.value)}
-                        placeholder="Nhập tên điểm đến / địa chỉ hiện trường..."
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 rounded-xl pl-8 pr-3 py-1.5 text-slate-100 text-xs transition-all outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Notes Input & Quick Tags */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[10px] text-slate-400 font-mono block">Ghi chú lệnh điều xe (Notes)</label>
-                      <div className="flex items-center gap-1 text-[9px] text-slate-500">
-                        <span>Thêm nhanh:</span>
-                        <button 
-                          type="button" 
-                          onClick={() => setDispatchNotes(prev => prev ? `${prev}, Khẩn cấp 115` : 'Khẩn cấp 115')}
-                          className="text-indigo-400 hover:underline"
-                        >
-                          +115
-                        </button>
-                        <span>•</span>
-                        <button 
-                          type="button" 
-                          onClick={() => setDispatchNotes(prev => prev ? `${prev}, Cần Oxy` : 'Cần Oxy')}
-                          className="text-indigo-400 hover:underline"
-                        >
-                          +Oxy
-                        </button>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <FileText size={14} className="absolute left-2.5 top-2.5 text-slate-500" />
-                      <textarea
-                        rows={2}
-                        value={dispatchNotes}
-                        onChange={(e) => setDispatchNotes(e.target.value)}
-                        placeholder="Ghi chú thêm cho tài xế..."
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 rounded-xl pl-8 pr-3 py-1.5 text-slate-100 text-xs transition-all outline-none resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Submit Dispatch Action Button */}
-                  <button
-                    onClick={handlePreDispatchCheck}
-                    disabled={!selectedRequest || !selectedResource || selectedResource.status !== 'AVAILABLE'}
-                    className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 text-white font-bold py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-red-950/40 border border-red-500/30 font-sans"
-                  >
-                    <Send size={15} className="animate-bounce" />
-                    <span>Phát lệnh Điều xe</span>
-                  </button>
-                </div>
-
-                {/* Mission Created High-Tech Result Panel */}
-                {createdMission && (
-                  <div className="bg-slate-950/90 border border-emerald-500/40 p-3.5 rounded-xl text-xs space-y-2.5 shadow-xl shadow-emerald-950/30 relative overflow-hidden animate-fadeIn font-sans">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                      <div className="flex items-center gap-2 font-bold text-emerald-400 tracking-wide text-xs">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                        </span>
-                        <span>ĐÃ PHÁT LỆNH THÀNH CÔNG!</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-slate-400">
-                        {createdMission.dispatchedAt ? new Date(createdMission.dispatchedAt).toLocaleTimeString() : ''}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-                      <div>
-                        <span className="text-[9px] text-slate-500 block uppercase">Mã Nhiệm vụ</span>
-                        <strong className="text-emerald-400 text-sm font-bold">#MISSION-{createdMission.id}</strong>
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-slate-500 block uppercase">Trạng thái</span>
-                        <span className="inline-block mt-0.5 bg-indigo-950 text-indigo-300 border border-indigo-800/60 px-2 py-0.5 rounded font-bold text-[10px]">
-                          {createdMission.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-[11px] bg-amber-950/30 border border-amber-800/40 p-2.5 rounded-xl text-amber-200 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
-                      <div className="flex-1">
-                        <div className="font-semibold text-amber-300 text-[11px]">Đã truyền tin tới thiết bị tài xế</div>
-                        <div className="text-[10px] text-amber-400/80">Đang chờ tài xế xác nhận nhiệm vụ...</div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleOpenSimulation(createdMission)}
-                      className="w-full py-2 px-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
-                    >
-                      <Zap size={14} />
-                      <span>Kích hoạt Mô phỏng OSRM Real-time</span>
-                    </button>
+                  <div className="p-2 bg-slate-950 rounded-lg border border-slate-800 text-center text-slate-500 text-[11px]">
+                    Chưa chọn xe. Click chọn 1 xe AVAILABLE ở trên.
                   </div>
                 )}
 
+                <button
+                  onClick={handlePreDispatchCheck}
+                  disabled={!selectedRequest || !selectedResource}
+                  className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <Send size={15} />
+                  <span>Phát lệnh Điều xe</span>
+                </button>
               </div>
             </>
           )}
-
         </section>
-
       </div>
 
-      {/* ── CONFIRMATION MODAL ── */}
-      {showConfirmModal && selectedRequest && selectedResource && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
-                <ShieldAlert className="text-red-500" size={20} />
+                <Send size={18} className="text-red-500" />
                 Xác nhận Phát lệnh Điều xe
               </h3>
               <button onClick={() => setShowConfirmModal(false)} className="text-slate-400 hover:text-white">
@@ -1317,142 +1037,83 @@ const EmergencyIntakeDispatch = () => {
               </button>
             </div>
 
-            <div className="space-y-2.5 text-xs text-slate-300">
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1 font-mono">
-                <div>Yêu cầu: <span className="text-indigo-400 font-bold">REQ-{selectedRequest.id}</span></div>
-                <div>Loại dịch vụ: <span className="text-slate-200">{selectedRequest.serviceTypeName}</span></div>
-                <div>Mức độ: <span className="text-red-400 font-bold">{selectedRequest.urgencyLevel}</span></div>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1 font-mono">
-                <div>Mã xe: <span className="text-emerald-400 font-bold">{selectedResource.resourceCode}</span></div>
-                <div>Đơn vị: <span className="text-slate-200">{selectedResource.providerName}</span></div>
-                <div>Tài xế: <span className="text-slate-200">{selectedResource.currentDriverName || 'Chưa gán'}</span></div>
+            <div className="space-y-3 text-xs">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 font-mono">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 uppercase text-[10px]">Ca Cấp cứu:</span>
+                  <strong className="text-red-400">REQ-{selectedRequest?.id}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 uppercase text-[10px]">Xe Điều Động:</span>
+                  <strong className="text-emerald-400">{selectedResource?.resourceCode}</strong>
+                </div>
               </div>
 
               <div>
-                <span className="text-slate-500 text-[10px] block uppercase">Điểm đến:</span>
-                <div className="font-medium text-slate-200">{destinationName}</div>
+                <label className="text-slate-300 font-medium block mb-1">Bệnh viện tiếp nhận (Destination Hospital):</label>
+                <select
+                  value={selectedHospitalId}
+                  onChange={(e) => setSelectedHospitalId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- Chọn bệnh viện đích --</option>
+                  {hospitals.map(h => (
+                    <option key={h.id} value={h.id}>
+                      {h.hospitalName || h.name || `Bệnh viện #${h.id}`} ({h.hospitalAddress || 'Hà Nội'})
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {dispatchNotes && (
-                <div>
-                  <span className="text-slate-500 text-[10px] block uppercase">Ghi chú:</span>
-                  <div className="italic text-slate-400">{dispatchNotes}</div>
-                </div>
-              )}
+              <div>
+                <label className="text-slate-300 font-medium block mb-1">Ghi chú điều phối (Notes):</label>
+                <input
+                  type="text"
+                  value={dispatchNotes}
+                  onChange={(e) => setDispatchNotes(e.target.value)}
+                  placeholder="Ghi chú thêm cho tài xế..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button 
+                onClick={() => setShowConfirmModal(false)} 
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
               >
                 Hủy bỏ
               </button>
-              <button
-                onClick={handleConfirmDispatch}
+              <button 
+                onClick={handleConfirmDispatch} 
                 disabled={isSubmittingMission}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-lg flex items-center gap-2"
+                className="px-5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
               >
-                {isSubmittingMission ? 'Đang phát lệnh...' : 'Xác nhận Phát lệnh'}
+                {isSubmittingMission ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                <span>{isSubmittingMission ? 'Đang phát lệnh...' : 'Xác nhận Điều xe'}</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── RESOURCE DETAIL MODAL ── */}
       {resourceDetailModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
-                <Truck className="text-indigo-400" size={20} />
-                Chi tiết Tài nguyên Xe cấp cứu
-              </h3>
-              <button onClick={() => setResourceDetailModal(null)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-slate-300">
-              <div className="grid grid-cols-2 gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono">
-                <div>
-                  <span className="text-slate-500 text-[10px] block">MÃ TÀI NGUYÊN</span>
-                  <span className="font-bold text-emerald-400 text-sm">{resourceDetailModal.resourceCode}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">TRẠNG THÁI</span>
-                  <span className="font-bold text-slate-200">{resourceDetailModal.status}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">LOẠI DỊCH VỤ</span>
-                  <span className="text-indigo-300">{resourceDetailModal.resourceTypeName}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">VÙNG (EDGE NODE)</span>
-                  <span className="text-slate-300">{resourceDetailModal.edgeNodeName}</span>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-slate-500 text-[10px] block">ĐƠN VỊ CUNG CẤP (PROVIDER)</span>
-                <div className="font-medium text-slate-200">{resourceDetailModal.providerName}</div>
-              </div>
-
-              <div>
-                <span className="text-slate-500 text-[10px] block">TÀI XẾ HIỆN TẠI</span>
-                <div className="font-medium text-slate-200">{resourceDetailModal.currentDriverName || 'Chưa gán tài xế'}</div>
-              </div>
-
-              <div>
-                <span className="text-slate-500 text-[10px] block">TỌA ĐỘ VỊ TRÍ</span>
-                <div className="font-mono text-slate-300">
-                  {resourceDetailModal.latitude && resourceDetailModal.longitude ? `${resourceDetailModal.latitude}, ${resourceDetailModal.longitude}` : 'Chưa có dữ liệu GPS'}
-                </div>
-              </div>
-
-              {resourceDetailModal.extendedAttributes && (
-                <div>
-                  <span className="text-slate-500 text-[10px] block">THUỘC TÍNH MỞ RỘNG</span>
-                  <pre className="bg-slate-950 p-2 rounded text-[11px] text-slate-300 font-mono overflow-x-auto border border-slate-800">
-                    {JSON.stringify(resourceDetailModal.extendedAttributes, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end border-t border-slate-800 pt-3">
-              <button
-                onClick={() => setResourceDetailModal(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
-              >
-                Đóng
-              </button>
-            </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6">
+            <h3 className="font-bold text-base">Chi tiết Xe: {resourceDetailModal.resourceCode}</h3>
+            <button onClick={() => setResourceDetailModal(null)} className="mt-4 px-4 py-2 bg-slate-800 rounded-lg text-xs">Đóng</button>
           </div>
         </div>
       )}
-      {/* ── OSRM SIMULATION CONTROL MODAL ── */}
-      <SimulationControlModal
-        isOpen={isSimulationModalOpen}
-        onClose={() => setIsSimulationModalOpen(false)}
-        mission={simulatingMission}
-        onRequestRefresh={() => {
-          fetchRequestsAndCatalogs();
-          fetchResources();
-        }}
-      />
 
-      {/* ── TIMELINE MODAL ── */}
+           {/* ── TIMELINE MODAL (Normalized per contract) ── */}
       {timelineModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <FileText className="text-indigo-400" size={18} />
-                Lịch sử Timeline Xử lý Ca REQ-{timelineModal.requestId}
+                Lịch sử Timeline REQ-{timelineModal.requestId}
               </h3>
               <button onClick={() => setTimelineModal(null)} className="text-slate-400 hover:text-white">
                 <X size={18} />
@@ -1466,10 +1127,10 @@ const EmergencyIntakeDispatch = () => {
                 timelineModal.items.map((item, idx) => (
                   <div key={idx} className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1">
                     <div className="flex items-center justify-between font-mono text-[11px]">
-                      <span className="font-bold text-indigo-300">{item.status || item.action || 'Sự kiện'}</span>
-                      <span className="text-slate-500">{item.timestamp ? new Date(item.timestamp).toLocaleString() : 'N/A'}</span>
+                      <span className="font-bold text-indigo-300">{item.type}</span>
+                      <span className="text-slate-500">{item.occurredAt ? new Date(item.occurredAt).toLocaleString() : 'N/A'}</span>
                     </div>
-                    <p className="text-slate-400 text-[11px]">{item.description || item.notes || 'Thao tác điều phối'}</p>
+                    <p className="text-slate-400 text-[11px] font-sans">{item.description}</p>
                   </div>
                 ))
               )}
@@ -1487,9 +1148,9 @@ const EmergencyIntakeDispatch = () => {
         </div>
       )}
 
-      {/* ── RECOMMENDATIONS MODAL ── */}
+      {/* ── RECOMMENDATIONS MODAL (Top 3 xe) ── */}
       {recsModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
@@ -1505,34 +1166,46 @@ const EmergencyIntakeDispatch = () => {
               {recsModal.items.length === 0 ? (
                 <div className="text-slate-500 text-center py-6">Không tìm thấy xe cứu thương khả thi phù hợp tiêu chí.</div>
               ) : (
-                recsModal.items.map((rec, idx) => (
-                  <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 font-mono">
-                        <span className="font-bold text-emerald-400 text-sm">{rec.resourceCode || `Xe #${rec.id}`}</span>
-                        <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded">{rec.providerName || 'Provider'}</span>
+                recsModal.items.map((rec, idx) => {
+                  const rId = rec.resourceId ?? rec.id;
+                  const rCode = rec.resourceCode ?? `AMB-${rId}`;
+                  const rank = rec.rank ?? (idx + 1);
+
+                  return (
+                    <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold flex items-center justify-center border border-amber-500/40">
+                            #{rank}
+                          </span>
+                          <span className="font-bold text-emerald-400 text-sm">{rCode}</span>
+                          {rec.score && (
+                            <span className="text-[10px] bg-slate-800 text-indigo-300 px-1.5 py-0.2 rounded font-mono">
+                              Score: {rec.score.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-sans mt-0.5">
+                          Khoảng cách: <strong className="text-slate-200 font-mono">{rec.distanceKm != null ? `${rec.distanceKm} km` : 'N/A'}</strong> • ETA: <strong className="text-amber-300 font-mono">{rec.etaSeconds != null ? `${Math.round(rec.etaSeconds / 60)} phút (${rec.etaSeconds}s)` : 'N/A'}</strong>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-400 font-sans">
-                        Khoảng cách: <strong className="text-slate-200 font-mono">{rec.distanceKm ? `${rec.distanceKm} km` : 'N/A'}</strong> • Thời gian tới: <strong className="text-amber-300 font-mono">{rec.etaMinutes ? `${rec.etaMinutes} phút` : 'N/A'}</strong>
-                      </div>
+                      <button
+                        onClick={() => {
+                          const targetRes = resources.find(r => r.id === rId || r.resourceCode === rCode);
+                          if (targetRes) {
+                            setSelectedResource(targetRes);
+                          } else {
+                            setSelectedResource({ id: rId, resourceCode: rCode, status: 'AVAILABLE' });
+                          }
+                          setRecsModal(null);
+                        }}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shrink-0 cursor-pointer"
+                      >
+                        Chọn xe này
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        const targetRes = resources.find(r => r.id === rec.id || r.resourceCode === rec.resourceCode);
-                        if (targetRes) {
-                          setSelectedResource(targetRes);
-                          setRecsModal(null);
-                        } else {
-                          alert(`Đã chọn xe ${rec.resourceCode || rec.id}`);
-                          setRecsModal(null);
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shrink-0"
-                    >
-                      Chọn xe này
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -1543,6 +1216,142 @@ const EmergencyIntakeDispatch = () => {
               >
                 Đóng
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SimulationControlModal
+        isOpen={isSimulationModalOpen}
+        onClose={() => setIsSimulationModalOpen(false)}
+        mission={simulatingMission}
+        onRequestRefresh={() => {
+          fetchRequestsAndCatalogs();
+          fetchResources();
+        }}
+      />
+
+      {/* ── FULL SCREEN / ENLARGED MAP MODAL ── */}
+      {isFullMapOpen && selectedRequest && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl h-[88vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="bg-slate-950 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500">
+                  <MapPin size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
+                    Bản đồ Toàn cảnh Vị trí Sự cố REQ-{selectedRequest.id}
+                    <span className={`text-[10px] px-2 py-0.5 rounded border ${getStatusBadge(selectedRequest.status)}`}>
+                      {selectedRequest.status}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono">
+                    {selectedRequest.address || selectedRequest.callerAddress || 'Hà Nội'} • Tọa độ: {selectedRequest.latitude?.toFixed(5)}, {selectedRequest.longitude?.toFixed(5)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4 text-xs font-mono bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                  <span className="flex items-center gap-1.5 text-red-400">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Hiện trường
+                  </span>
+                  <span className="flex items-center gap-1.5 text-blue-400">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Xe Cứu thương ({resources.filter(r => r.latitude && r.longitude).length})
+                  </span>
+                  <span className="flex items-center gap-1.5 text-emerald-400">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Bệnh viện ({hospitals.filter(h => h.latitude && h.longitude).length})
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => setIsFullMapOpen(false)}
+                  className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 relative z-0">
+              <MapContainer
+                key={`full-map-${selectedRequest.id}`}
+                center={[selectedRequest.latitude || 21.0285, selectedRequest.longitude || 105.8542]}
+                zoom={14}
+                className="w-full h-full"
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                />
+
+                {/* Incident Marker (Red) */}
+                {selectedRequest.latitude != null && selectedRequest.longitude != null && (
+                  <Marker
+                    position={[selectedRequest.latitude, selectedRequest.longitude]}
+                    icon={reqMarkerIcon}
+                  >
+                    <Popup>
+                      <div className="text-xs font-sans text-slate-900 space-y-1">
+                        <strong className="text-red-600 font-bold">REQ-{selectedRequest.id}: {selectedRequest.serviceTypeName}</strong>
+                        <div>{selectedRequest.address || 'Hà Nội'}</div>
+                        <div className="font-mono text-[11px]">Mức độ: {selectedRequest.urgencyLevel}</div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Ambulance Markers (Blue) */}
+                {resources
+                  .filter(res => res.latitude != null && res.longitude != null)
+                  .map(res => (
+                    <Marker
+                      key={`amb-${res.id}`}
+                      position={[res.latitude, res.longitude]}
+                      icon={ambMarkerIcon}
+                    >
+                      <Popup>
+                        <div className="text-xs font-sans text-slate-900 space-y-1">
+                          <strong className="text-blue-600 font-bold">{res.resourceCode}</strong>
+                          <div>Trạng thái: <strong>{res.status}</strong></div>
+                          <div>Tài xế: {res.currentDriverName || res.driverName || 'Chưa gán'}</div>
+                          {res.status === 'AVAILABLE' && (
+                            <button
+                              onClick={() => {
+                                setSelectedResource(res);
+                                setIsFullMapOpen(false);
+                              }}
+                              className="mt-1 w-full px-2 py-1 bg-emerald-600 text-white rounded text-[11px] font-bold cursor-pointer"
+                            >
+                              Chọn xe này
+                            </button>
+                          )}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+
+                {/* Hospital Markers (Green) */}
+                {hospitals
+                  .filter(h => h.latitude != null && h.longitude != null)
+                  .map(h => (
+                    <Marker
+                      key={`hosp-${h.id}`}
+                      position={[h.latitude, h.longitude]}
+                      icon={hospMarkerIcon}
+                    >
+                      <Popup>
+                        <div className="text-xs font-sans text-slate-900 space-y-1">
+                          <strong className="text-emerald-700 font-bold">{h.hospitalName || h.name}</strong>
+                          <div>{h.hospitalAddress || 'Hà Nội'}</div>
+                          <div>Hotline: {h.contactPhone || '115'}</div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+              </MapContainer>
             </div>
           </div>
         </div>

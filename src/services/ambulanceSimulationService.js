@@ -33,6 +33,16 @@ export const ambulanceSimulationService = {
   },
 
   /**
+   * Tiếp tục chặng di chuyển về bệnh viện sau khi tại hiện trường
+   * POST /api/v1/ambulance-simulations/{id}/continue
+   * @param {number|string} id Simulation ID
+   */
+  continue: async (id) => {
+    const response = await api.post(`/v1/ambulance-simulations/${id}/continue`);
+    return unwrapBaseResponse(response);
+  },
+
+  /**
    * Lấy chi tiết thông tin phiên mô phỏng
    * GET /api/v1/ambulance-simulations/{id}
    * @param {number|string} id Simulation ID

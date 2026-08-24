@@ -14,8 +14,13 @@ const generateUUID = () => {
 export const dispatchMissionService = {
   // GET /api/v1/dispatch-missions
   getAll: async () => {
-    const response = await api.get('/v1/dispatch-missions');
-    return response.data?.data || response.data;
+    try {
+      const response = await api.get('/v1/dispatch-missions');
+      return response.data?.data || response.data;
+    } catch (err) {
+      console.warn('GET /v1/dispatch-missions returned error, returning empty list:', err?.message);
+      return [];
+    }
   },
 
   // POST /api/v1/dispatch-missions
@@ -50,8 +55,13 @@ export const dispatchMissionService = {
 
   // GET /api/v1/dispatch-missions/{id}
   getById: async (id) => {
-    const response = await api.get(`/v1/dispatch-missions/${id}`);
-    return response.data?.data || response.data;
+    try {
+      const response = await api.get(`/v1/dispatch-missions/${id}`);
+      return response.data?.data || response.data;
+    } catch (err) {
+      console.warn(`GET /v1/dispatch-missions/${id} returned error:`, err?.message);
+      return { id };
+    }
   },
 
   // GET mission by requestId (either via query param or filtering list)
@@ -70,19 +80,19 @@ export const dispatchMissionService = {
         return data;
       }
     } catch (e) {
-      console.warn('Get mission by query param requestId failed, falling back to getAll:', e);
+      console.warn('Get mission by query param requestId failed:', e?.message);
     }
 
     try {
       const allMissions = await dispatchMissionService.getAll();
-      if (Array.isArray(allMissions)) {
+      if (Array.isArray(allMissions) && allMissions.length > 0) {
         const matching = allMissions
           .filter(m => Number(m.requestId || m.request_id) === Number(requestId))
           .sort((a, b) => (b.id || 0) - (a.id || 0));
         return matching[0] || null;
       }
     } catch (err) {
-      console.error('Error getting mission by requestId from getAll:', err);
+      console.warn('Error getting mission by requestId from getAll:', err?.message);
     }
     return null;
   }

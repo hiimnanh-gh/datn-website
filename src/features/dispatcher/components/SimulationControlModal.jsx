@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, Play, Square, Gauge, Clock, MapPin, Building2, 
   AlertTriangle, CheckCircle2, RefreshCw, Zap, ShieldCheck, 
-  Navigation, Navigation2, Activity
+  Navigation, Navigation2, Activity, FastForward
 } from 'lucide-react';
 import ambulanceSimulationService from '../../../services/ambulanceSimulationService';
-import { providerService } from '../../../services/providerService';
+import { medicalHospitalService } from '../../../services/medicalHospitalService';
 import useAmbulanceTracking from '../../../hooks/useAmbulanceTracking';
 
 const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) => {
@@ -21,6 +21,7 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
   const [isCreating, setIsCreating] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
+  const [isContinuing, setIsContinuing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [errorCode, setErrorCode] = useState('');
 
@@ -33,7 +34,7 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
   // Fetch Hospitals list
   useEffect(() => {
     if (isOpen) {
-      providerService.getAll()
+      medicalHospitalService.getAll()
         .then((res) => {
           const list = Array.isArray(res) ? res : [];
           setHospitals(list);
@@ -128,6 +129,24 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
       setErrorMessage(err.response?.data?.message || 'Không thể tạm dừng mô phỏng!');
     } finally {
       setIsStopping(false);
+    }
+  };
+
+  // Handle Continue Simulation (Leg 2: TO_HOSPITAL)
+  const handleContinueSimulation = async () => {
+    if (!simulation?.id) return;
+    setIsContinuing(true);
+    setErrorMessage('');
+    try {
+      await ambulanceSimulationService.continue(simulation.id);
+      setSimulation(prev => ({ ...prev, status: 'RUNNING', phase: 'TO_HOSPITAL' }));
+      refreshSnapshot();
+      if (onRequestRefresh) onRequestRefresh();
+    } catch (err) {
+      console.error('Continue simulation error:', err);
+      setErrorMessage(err.response?.data?.message || 'Không thể tiếp tục chặng bệnh viện!');
+    } finally {
+      setIsContinuing(false);
     }
   };
 
@@ -263,7 +282,7 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
                   <option value="">-- Chọn bệnh viện đích --</option>
                   {hospitals.map(h => (
                     <option key={h.id} value={h.id}>
-                      {h.providerName || h.name || `Hospital #${h.id}`} ({h.contactAddress || 'Hà Nội'})
+                      {h.hospitalName || h.name || `Bệnh viện #${h.id}`} ({h.hospitalAddress || 'Hà Nội'})
                     </option>
                   ))}
                 </select>
@@ -417,7 +436,16 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
               </button>
             ) : (
               <>
-                {activeStatus === 'RUNNING' ? (
+                {activePhase === 'AT_SCENE' ? (
+                  <button
+                    onClick={handleContinueSimulation}
+                    disabled={isContinuing}
+                    className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isContinuing ? <RefreshCw size={15} className="animate-spin" /> : <FastForward size={15} />}
+                    <span>Tiếp tục chặng Bệnh viện (/continue)</span>
+                  </button>
+                ) : activeStatus === 'RUNNING' ? (
                   <button
                     onClick={handleStopSimulation}
                     disabled={isStopping}
