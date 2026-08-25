@@ -61,6 +61,7 @@ const DEFAULT_CENTER = [21.0285, 105.8542]; // Hà Nội Center
 const getCallerInfo = (req) => {
   if (!req) return { phone: null, name: null, display: 'N/A' };
   const phone = 
+    req.reporterPhone ||
     req.callerPhone ||
     req.phoneNumber ||
     req.phone ||
@@ -83,6 +84,7 @@ const getCallerInfo = (req) => {
     null;
 
   const name = 
+    req.reporterName ||
     req.callerName ||
     req.contactName ||
     req.victimName ||

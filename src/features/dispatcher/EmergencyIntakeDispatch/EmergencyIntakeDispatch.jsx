@@ -93,6 +93,7 @@ const getStatusBadge = (status) => {
 const getCallerInfo = (req) => {
   if (!req) return { phone: null, name: null, display: 'N/A' };
   const phone = 
+    req.reporterPhone ||
     req.callerPhone ||
     req.phoneNumber ||
     req.phone ||
@@ -115,6 +116,7 @@ const getCallerInfo = (req) => {
     null;
 
   const name = 
+    req.reporterName ||
     req.callerName ||
     req.contactName ||
     req.victimName ||
