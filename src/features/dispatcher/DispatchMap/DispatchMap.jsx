@@ -7,6 +7,7 @@ import { RefreshCw, MapPin, Truck, Building2, AlertTriangle, ShieldCheck, Zap } 
 import { dispatchRequestService } from '../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../services/dispatchResourceService';
 import { medicalHospitalService } from '../../../services/medicalHospitalService';
+import { callService } from '../../../services/callService';
 import wsService from '../../../services/websocket';
 import HeaderUserProfile from '../../../components/HeaderUserProfile';
 
@@ -57,6 +58,54 @@ const hospitalMarkerIcon = new L.Icon({
 
 const DEFAULT_CENTER = [21.0285, 105.8542]; // Hà Nội Center
 
+const getCallerInfo = (req) => {
+  if (!req) return { phone: null, name: null, display: 'N/A' };
+  const phone = 
+    req.callerPhone ||
+    req.phoneNumber ||
+    req.phone ||
+    req.contactPhone ||
+    req.patientPhone ||
+    req.victimPhone ||
+    req.requesterPhone ||
+    req.callerNumber ||
+    req.user?.phoneNumber ||
+    req.user?.phone ||
+    req.caller?.phoneNumber ||
+    req.caller?.phone ||
+    req.call?.callerPhone ||
+    req.call?.phoneNumber ||
+    req.call?.fromNumber ||
+    req.call?.from ||
+    req.extendedRequirements?.callerPhone ||
+    req.extendedRequirements?.phoneNumber ||
+    req.extendedRequirements?.phone ||
+    null;
+
+  const name = 
+    req.callerName ||
+    req.contactName ||
+    req.victimName ||
+    req.patientName ||
+    req.userName ||
+    req.requesterName ||
+    req.user?.fullName ||
+    req.user?.name ||
+    req.caller?.name ||
+    null;
+
+  let display = 'N/A';
+  if (name && phone) {
+    display = `${name} (${phone})`;
+  } else if (phone) {
+    display = phone;
+  } else if (name) {
+    display = name;
+  }
+
+  return { phone, name, display };
+};
+
 const DispatchMap = () => {
   const [requests, setRequests] = useState([]);
   const [resources, setResources] = useState([]);
@@ -91,6 +140,30 @@ const DispatchMap = () => {
       setRequests(reqList);
       setResources(resList);
       setHospitals(hospList);
+
+      // Async background enrichment of requests with call info
+      Promise.all(
+        reqList.map(async (req) => {
+          if (!req.callId) return req;
+          try {
+            const call = await callService.getById(req.callId);
+            if (call) {
+              return {
+                ...req,
+                callerPhone: call.callerPhone || call.phoneNumber || call.phone || call.contactPhone || call.fromNumber || call.from,
+                callerName: call.callerName || call.contactName || call.victimName || call.name || call.fullName,
+                description: req.description || call.description || call.notes || call.note || call.locationDescription || call.reason,
+                address: req.address || call.address || call.callerAddress || call.location,
+              };
+            }
+          } catch (e) {
+            // ignore
+          }
+          return req;
+        })
+      ).then(enrichedList => {
+        setRequests(enrichedList);
+      });
     } catch (err) {
       console.error('Error fetching map snapshot data:', err);
     } finally {
@@ -265,11 +338,23 @@ const DispatchMap = () => {
               icon={reqMarkerIcon}
             >
               <Popup>
-                <div className="space-y-1 font-sans text-xs text-slate-900">
-                  <div className="font-bold text-red-600 font-mono">REQ-{req.id}</div>
+                <div className="space-y-1.5 font-sans text-xs text-slate-900 min-w-[210px]">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-red-600 font-mono text-sm">REQ-{req.id}</span>
+                    <span className="bg-slate-200 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold">{req.status}</span>
+                  </div>
                   <div className="font-semibold text-slate-800">{req.serviceTypeName || 'Emergency Call'}</div>
-                  <div>Mức khẩn cấp: <strong>{req.urgencyLevel}</strong></div>
-                  <div>Trạng thái yêu cầu: <span className="bg-slate-200 px-1 py-0.2 rounded font-mono">{req.status}</span></div>
+                  <div>Mức khẩn cấp: <strong className="text-red-600">{req.confirmedUrgencyLevel || req.urgencyLevel}</strong></div>
+                  {getCallerInfo(req).display !== 'N/A' && (
+                    <div>Người gọi / SĐT: <strong>{getCallerInfo(req).display}</strong></div>
+                  )}
+                  {req.address && <div>Địa chỉ: <span className="text-slate-700">{req.address}</span></div>}
+                  {(req.description || req.callerDescription || req.note || req.notes) && (
+                    <div className="text-[11px] text-slate-800 bg-amber-50 p-1.5 rounded border border-amber-200">
+                      <strong className="text-amber-900 block font-semibold mb-0.5">Mô tả của người báo tin:</strong>
+                      <span>{req.description || req.callerDescription || req.note || req.notes}</span>
+                    </div>
+                  )}
                   <div className="text-[10px] text-slate-500 font-mono">Tọa độ: {lat.toFixed(4)}, {lng.toFixed(4)}</div>
                 </div>
               </Popup>

@@ -14,6 +14,7 @@ import { dispatchMissionService } from '../../../services/dispatchMissionService
 import { providerService } from '../../../services/providerService';
 import { serviceTypeService } from '../../../services/serviceTypeService';
 import { medicalHospitalService } from '../../../services/medicalHospitalService';
+import { callService } from '../../../services/callService';
 import wsService from '../../../services/websocket';
 import SimulationControlModal from '../components/SimulationControlModal';
 import HeaderUserProfile from '../../../components/HeaderUserProfile';
@@ -87,6 +88,54 @@ const getStatusBadge = (status) => {
     default:
       return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
   }
+};
+
+const getCallerInfo = (req) => {
+  if (!req) return { phone: null, name: null, display: 'N/A' };
+  const phone = 
+    req.callerPhone ||
+    req.phoneNumber ||
+    req.phone ||
+    req.contactPhone ||
+    req.patientPhone ||
+    req.victimPhone ||
+    req.requesterPhone ||
+    req.callerNumber ||
+    req.user?.phoneNumber ||
+    req.user?.phone ||
+    req.caller?.phoneNumber ||
+    req.caller?.phone ||
+    req.call?.callerPhone ||
+    req.call?.phoneNumber ||
+    req.call?.fromNumber ||
+    req.call?.from ||
+    req.extendedRequirements?.callerPhone ||
+    req.extendedRequirements?.phoneNumber ||
+    req.extendedRequirements?.phone ||
+    null;
+
+  const name = 
+    req.callerName ||
+    req.contactName ||
+    req.victimName ||
+    req.patientName ||
+    req.userName ||
+    req.requesterName ||
+    req.user?.fullName ||
+    req.user?.name ||
+    req.caller?.name ||
+    null;
+
+  let display = 'N/A';
+  if (name && phone) {
+    display = `${name} (${phone})`;
+  } else if (phone) {
+    display = phone;
+  } else if (name) {
+    display = name;
+  }
+
+  return { phone, name, display };
 };
 
 const EmergencyIntakeDispatch = () => {
@@ -190,76 +239,19 @@ const EmergencyIntakeDispatch = () => {
     }
   };
 
-  // 4. Recommendations Handler (Top 3 xe - Rule-based ranking)
+  // 4. Recommendations Handler (Chỉ lấy dữ liệu từ API Backend, không tự sinh fallback)
   const handleFetchRecommendations = async () => {
     if (!selectedRequest) return;
     try {
       let recsList = [];
-      try {
-        const recs = await dispatchRequestService.getRecommendations(selectedRequest.id);
-        if (Array.isArray(recs)) {
-          recsList = recs;
-        } else if (recs && typeof recs === 'object') {
-          recsList = recs.recommendations || recs.suggestedResources || recs.resources || recs.items || recs.data || [];
-        }
-      } catch (apiErr) {
-        console.warn('API getRecommendations fallback to local rule-based ranking:', apiErr);
+      const res = await dispatchRequestService.getRecommendations(selectedRequest.id);
+      if (Array.isArray(res)) {
+        recsList = res;
+      } else if (res && typeof res === 'object') {
+        recsList = res.recommendations || res.suggestedResources || res.resources || res.items || res.data || [];
       }
 
-      // If backend returns empty list, compute rule-based ranking from available resources
-      if (!Array.isArray(recsList) || recsList.length === 0) {
-        const availableResources = resources.filter(r => r.status === 'AVAILABLE');
-        const candidatePool = availableResources.length > 0 ? availableResources : resources;
-
-        const reqLat = selectedRequest.latitude ?? selectedRequest.confirmedLatitude;
-        const reqLng = selectedRequest.longitude ?? selectedRequest.confirmedLongitude;
-
-        const scored = candidatePool.map((res) => {
-          let distanceKm = 2.4;
-          let etaSeconds = 360;
-          const resLat = res.latitude ?? res.currentLatitude;
-          const resLng = res.longitude ?? res.currentLongitude;
-
-          if (reqLat != null && reqLng != null && resLat != null && resLng != null) {
-            // Haversine formula (km)
-            const R = 6371;
-            const dLat = ((resLat - reqLat) * Math.PI) / 180;
-            const dLon = ((resLng - reqLng) * Math.PI) / 180;
-            const a =
-              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos((reqLat * Math.PI) / 180) *
-                Math.cos((resLat * Math.PI) / 180) *
-                Math.sin(dLon / 2) *
-                Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            distanceKm = Number((R * c).toFixed(2));
-            etaSeconds = Math.max(60, Math.round((distanceKm / 40) * 3600)); // avg 40 km/h
-          }
-
-          // Rule based match score: higher if AVAILABLE, closer distance, service type match
-          const typeMatch = res.resourceTypeId === selectedRequest.resourceTypeId ? 20 : 0;
-          const statusScore = res.status === 'AVAILABLE' ? 50 : 10;
-          const distScore = Math.max(0, 30 - distanceKm * 2);
-          const score = Number((statusScore + typeMatch + distScore).toFixed(1));
-
-          return {
-            resourceId: res.id,
-            id: res.id,
-            resourceCode: res.resourceCode || `AMB-${res.id}`,
-            distanceKm,
-            etaSeconds,
-            score,
-            providerName: res.providerName,
-            driverName: res.currentDriverName || res.driverName,
-            status: res.status
-          };
-        });
-
-        scored.sort((a, b) => (b.score !== a.score ? b.score - a.score : a.distanceKm - b.distanceKm));
-        recsList = scored.slice(0, 3).map((item, idx) => ({ ...item, rank: idx + 1 }));
-      }
-
-      setRecsModal({ requestId: selectedRequest.id, items: recsList });
+      setRecsModal({ requestId: selectedRequest.id, items: Array.isArray(recsList) ? recsList : [] });
       fetchReqDetail(selectedRequest.id);
       fetchRequestsAndCatalogs();
     } catch (err) {
@@ -334,7 +326,28 @@ const EmergencyIntakeDispatch = () => {
     setIsLoadingReqDetail(true);
     try {
       const detail = await dispatchRequestService.getById(idToFetch);
-      setSelectedRequest(detail);
+      let enriched = { ...detail };
+
+      // If callId exists, enrich from GET /api/v1/calls/{callId}
+      if (detail?.callId) {
+        try {
+          const callData = await callService.getById(detail.callId);
+          if (callData) {
+            enriched = {
+              ...enriched,
+              callerPhone: callData.callerPhone || callData.phoneNumber || callData.phone || callData.contactPhone || callData.fromNumber || callData.from,
+              callerName: callData.callerName || callData.contactName || callData.victimName || callData.name || callData.fullName,
+              description: enriched.description || callData.description || callData.notes || callData.note || callData.locationDescription || callData.reason,
+              address: enriched.address || callData.address || callData.callerAddress || callData.location,
+              callInfo: callData,
+            };
+          }
+        } catch (callErr) {
+          console.warn('Call info fetch fallback:', callErr);
+        }
+      }
+
+      setSelectedRequest(enriched);
     } catch (err) {
       console.error('Error fetching request detail:', err);
     } finally {
@@ -369,6 +382,31 @@ const EmergencyIntakeDispatch = () => {
 
       const reqList = Array.isArray(reqData) ? reqData : [];
       setRequests(reqList);
+
+      // Async background enrichment of list items with call info
+      Promise.all(
+        reqList.map(async (req) => {
+          if (!req.callId) return req;
+          try {
+            const call = await callService.getById(req.callId);
+            if (call) {
+              return {
+                ...req,
+                callerPhone: call.callerPhone || call.phoneNumber || call.phone || call.contactPhone || call.fromNumber || call.from,
+                callerName: call.callerName || call.contactName || call.victimName || call.name || call.fullName,
+                description: req.description || call.description || call.notes || call.note || call.locationDescription || call.reason,
+                address: req.address || call.address || call.callerAddress || call.location,
+              };
+            }
+          } catch (e) {
+            // ignore
+          }
+          return req;
+        })
+      ).then(enrichedList => {
+        setRequests(enrichedList);
+      });
+
       setProviders(Array.isArray(provData) ? provData : []);
       setServiceTypes(Array.isArray(stData) ? stData : []);
       const hospList = Array.isArray(hospData) ? hospData : [];
@@ -745,7 +783,7 @@ const EmergencyIntakeDispatch = () => {
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px] uppercase font-mono">SĐT / Người gọi</span>
-                      <span className="font-medium text-slate-200 truncate block">{selectedRequest.callerPhone || selectedRequest.contactPhone || 'N/A'}</span>
+                      <span className="font-medium text-slate-200 truncate block">{getCallerInfo(selectedRequest).display}</span>
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px] uppercase font-mono">Thời gian</span>
@@ -760,6 +798,13 @@ const EmergencyIntakeDispatch = () => {
                       </span>
                     </div>
                   </div>
+
+                  {(selectedRequest.description || selectedRequest.callerDescription || selectedRequest.note || selectedRequest.notes) && (
+                    <div className="bg-slate-950/70 border border-amber-900/40 rounded-lg p-2 text-[11px] text-slate-200">
+                      <span className="text-[10px] text-amber-400 font-bold block uppercase font-mono mb-0.5">Mô tả của người báo tin:</span>
+                      <p className="text-slate-300 leading-relaxed">{selectedRequest.description || selectedRequest.callerDescription || selectedRequest.note || selectedRequest.notes}</p>
+                    </div>
+                  )}
 
                   <div className="pt-1.5 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5 text-[11px]">
                     {selectedRequest.status === 'PENDING' && (
@@ -850,10 +895,10 @@ const EmergencyIntakeDispatch = () => {
                       {selectedRequest.latitude != null && selectedRequest.longitude != null && (
                         <button
                           onClick={() => setIsFullMapOpen(true)}
-                          className="flex items-center gap-1 px-2 py-0.5 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 text-[10px] rounded font-medium transition-colors cursor-pointer"
-                          title="Mở rộng Bản đồ Toàn màn hình"
+                          className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer font-sans"
+                          title="Mở rộng toàn màn hình"
                         >
-                          <Maximize2 size={10} />
+                          <Maximize2 size={11} />
                           <span>Phóng to</span>
                         </button>
                       )}
@@ -862,9 +907,7 @@ const EmergencyIntakeDispatch = () => {
 
                   {selectedRequest.latitude != null && selectedRequest.longitude != null ? (
                     <div 
-                      onClick={() => setIsFullMapOpen(true)}
-                      className="h-28 w-full rounded-lg overflow-hidden border border-slate-800 relative z-0 cursor-pointer group"
-                      title="Click để phóng to bản đồ"
+                      className="h-36 w-full rounded-lg overflow-hidden border border-slate-800 relative z-0 group"
                     >
                       <MapContainer
                         key={selectedRequest.id}
@@ -882,9 +925,18 @@ const EmergencyIntakeDispatch = () => {
                           icon={reqMarkerIcon}
                         >
                           <Popup>
-                            <div className="text-xs font-sans text-slate-900">
-                              <strong>REQ-{selectedRequest.id}</strong>
-                              <div>{selectedRequest.serviceTypeName}</div>
+                            <div className="text-xs font-sans text-slate-900 space-y-1 min-w-[180px]">
+                              <strong className="text-red-600 font-bold block">REQ-{selectedRequest.id}: {selectedRequest.serviceTypeName || 'Cấp cứu'}</strong>
+                              {selectedRequest.address && <div className="text-[11px] text-slate-700">{selectedRequest.address}</div>}
+                              {getCallerInfo(selectedRequest).display !== 'N/A' && (
+                                <div className="text-[11px] text-slate-600">SĐT / Người báo: <strong>{getCallerInfo(selectedRequest).display}</strong></div>
+                              )}
+                              {(selectedRequest.description || selectedRequest.callerDescription || selectedRequest.note || selectedRequest.notes) && (
+                                <div className="text-[11px] text-slate-800 bg-amber-50 p-1.5 rounded border border-amber-200">
+                                  <strong className="text-amber-900 block font-semibold mb-0.5">Mô tả của người báo tin:</strong>
+                                  <span>{selectedRequest.description || selectedRequest.callerDescription || selectedRequest.note || selectedRequest.notes}</span>
+                                </div>
+                              )}
                             </div>
                           </Popup>
                         </Marker>
@@ -1231,7 +1283,10 @@ const EmergencyIntakeDispatch = () => {
 
             <div className="space-y-2.5 text-xs">
               {recsModal.items.length === 0 ? (
-                <div className="text-slate-500 text-center py-6">Không tìm thấy xe cứu thương khả thi phù hợp tiêu chí.</div>
+                <div className="text-slate-400 text-center py-8 space-y-2">
+                  <div className="text-sm font-semibold text-slate-300">Không có dữ liệu gợi ý xe</div>
+                  <div className="text-xs text-slate-500">Máy chủ chưa có đề xuất xe cứu thương nào cho yêu cầu này (data: []).</div>
+                </div>
               ) : (
                 recsModal.items.map((rec, idx) => {
                   const rId = rec.resourceId ?? rec.id;
@@ -1388,10 +1443,19 @@ const EmergencyIntakeDispatch = () => {
                     icon={reqMarkerIcon}
                   >
                     <Popup>
-                      <div className="text-xs font-sans text-slate-900 space-y-1">
-                        <strong className="text-red-600 font-bold">REQ-{selectedRequest.id}: {selectedRequest.serviceTypeName}</strong>
-                        <div>{selectedRequest.address || 'Hà Nội'}</div>
-                        <div className="font-mono text-[11px]">Mức độ: {selectedRequest.urgencyLevel}</div>
+                      <div className="text-xs font-sans text-slate-900 space-y-1.5 min-w-[200px]">
+                        <strong className="text-red-600 font-bold block text-sm">REQ-{selectedRequest.id}: {selectedRequest.serviceTypeName || 'Khẩn cấp'}</strong>
+                        <div><strong className="text-slate-700">Địa chỉ:</strong> {selectedRequest.address || 'Hà Nội'}</div>
+                        {getCallerInfo(selectedRequest).display !== 'N/A' && (
+                          <div><strong className="text-slate-700">Người báo / SĐT:</strong> {getCallerInfo(selectedRequest).display}</div>
+                        )}
+                        <div className="font-mono text-[11px]">Mức độ: <span className="font-bold text-red-600">{selectedRequest.confirmedUrgencyLevel || selectedRequest.urgencyLevel || 'HIGH'}</span></div>
+                        {(selectedRequest.description || selectedRequest.callerDescription || selectedRequest.note || selectedRequest.notes) && (
+                          <div className="text-[11px] text-slate-800 bg-amber-50 p-1.5 rounded border border-amber-200">
+                            <strong className="text-amber-900 block font-semibold mb-0.5">Mô tả của người báo tin:</strong>
+                            <span>{selectedRequest.description || selectedRequest.callerDescription || selectedRequest.note || selectedRequest.notes}</span>
+                          </div>
+                        )}
                       </div>
                     </Popup>
                   </Marker>
