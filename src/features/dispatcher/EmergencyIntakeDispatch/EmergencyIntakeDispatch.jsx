@@ -778,24 +778,31 @@ const EmergencyIntakeDispatch = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2 text-[11px] text-slate-300">
+                  <div className="grid grid-cols-2 gap-2.5 text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Dịch vụ</span>
-                      <span className="font-semibold text-indigo-300 truncate block">{selectedRequest.serviceTypeName || `ID: ${selectedRequest.serviceTypeId}`}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">SĐT / Người gọi</span>
-                      <span className="font-medium text-slate-200 truncate block">{getCallerInfo(selectedRequest).display}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Thời gian</span>
-                      <span className="font-mono text-slate-400 truncate block">
-                        {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                      <span className="text-slate-500 block text-[10px] uppercase font-mono font-medium">Dịch vụ yêu cầu</span>
+                      <span className="font-semibold text-indigo-300 text-[12px] block leading-snug break-words">
+                        {selectedRequest.serviceTypeName || `ID: ${selectedRequest.serviceTypeId}`}
                       </span>
                     </div>
+
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-mono">Mức độ</span>
-                      <span className="font-semibold text-amber-400 truncate block">
+                      <span className="text-slate-500 block text-[10px] uppercase font-mono font-medium">Người báo tin / SĐT</span>
+                      <span className="font-semibold text-emerald-400 text-[12px] block leading-snug break-words">
+                        {getCallerInfo(selectedRequest).display}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-mono font-medium">Thời gian tiếp nhận</span>
+                      <span className="font-mono text-slate-300 text-[11px] block leading-snug">
+                        {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + new Date(selectedRequest.createdAt).toLocaleDateString() + ')' : 'N/A'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-mono font-medium">Mức độ khẩn cấp</span>
+                      <span className={`inline-block font-mono text-[10px] font-bold px-2 py-0.5 rounded border mt-0.5 ${getUrgencyBadge(selectedRequest.confirmedUrgencyLevel || selectedRequest.urgencyLevel || 'HIGH').bg}`}>
                         {selectedRequest.confirmedUrgencyLevel || selectedRequest.urgencyLevel || 'HIGH'}
                       </span>
                     </div>
