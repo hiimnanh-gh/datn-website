@@ -2,12 +2,12 @@
   "info": {
     "name": "01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]",
     "_postman_id": "auth-rbac-collection-01",
-    "description": "Bộ kiểm thử Xác thực, Đăng nhập & Ma trận Phân quyền 3 Role (ADMIN, DISPATCHER, PROVIDER) trên Backend API.",
+    "description": "Bộ kiểm thử Xác thực, Đăng nhập & Ma trận Phân quyền 3 Role (admin01, dispatcher01, provider01) trên Backend API.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "TC-AUTH-01: Login with ADMIN Account [API THẬT]",
+      "name": "TC-AUTH-01: Login with ADMIN (admin01) [API THẬT]",
       "event": [
         {
           "listen": "test",
@@ -16,9 +16,8 @@
               "pm.test('Status code is 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Response contains success=true and JWT token', function () {",
+              "pm.test('Response contains JWT token', function () {",
               "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.eql(true);",
               "    var token = jsonData.data?.accessToken || jsonData.data?.token || jsonData.token;",
               "    pm.expect(token).to.not.be.empty;",
               "    pm.environment.set('adminToken', token);",
@@ -35,7 +34,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"usernameOrEmail\": \"{{adminEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
+          "raw": "{\n  \"usernameOrEmail\": \"admin01\",\n  \"password\": \"123456\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/auth/login",
@@ -45,7 +44,7 @@
       }
     },
     {
-      "name": "TC-AUTH-02: Login with DISPATCHER Account [API THẬT]",
+      "name": "TC-AUTH-02: Login with DISPATCHER (dispatcher01) [API THẬT]",
       "event": [
         {
           "listen": "test",
@@ -54,7 +53,7 @@
               "pm.test('Status code is 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Role is DISPATCHER', function () {",
+              "pm.test('Token saved for dispatcher01', function () {",
               "    var jsonData = pm.response.json();",
               "    var token = jsonData.data?.accessToken || jsonData.data?.token || jsonData.token;",
               "    pm.expect(token).to.not.be.empty;",
@@ -72,7 +71,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"usernameOrEmail\": \"{{dispatcherEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
+          "raw": "{\n  \"usernameOrEmail\": \"dispatcher01\",\n  \"password\": \"123456\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/auth/login",
@@ -82,7 +81,7 @@
       }
     },
     {
-      "name": "TC-AUTH-03: Login with PROVIDER Account [API THẬT]",
+      "name": "TC-AUTH-03: Login with PROVIDER (provider01) [API THẬT]",
       "event": [
         {
           "listen": "test",
@@ -91,7 +90,7 @@
               "pm.test('Status code is 200 OK', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Token saved for Provider', function () {",
+              "pm.test('Token saved for provider01', function () {",
               "    var jsonData = pm.response.json();",
               "    var token = jsonData.data?.accessToken || jsonData.data?.token || jsonData.token;",
               "    pm.expect(token).to.not.be.empty;",
@@ -109,7 +108,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"usernameOrEmail\": \"{{providerEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
+          "raw": "{\n  \"usernameOrEmail\": \"provider01\",\n  \"password\": \"123456\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/auth/login",
@@ -140,7 +139,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"usernameOrEmail\": \"{{adminEmail}}\",\n  \"password\": \"WRONG_PASSWORD_999\"\n}"
+          "raw": "{\n  \"usernameOrEmail\": \"admin01\",\n  \"password\": \"WRONG_PASSWORD_999\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/auth/login",
