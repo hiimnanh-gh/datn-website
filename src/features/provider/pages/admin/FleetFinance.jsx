@@ -20,10 +20,14 @@ import {
   ChevronRight,
   ShieldCheck,
   Zap,
-  Info
+  Info,
+  DollarSign,
+  Receipt,
+  Eye
 } from 'lucide-react';
 import useFinanceStore from '../../../../store/useFinanceStore';
 import useAuthStore from '../../../../store/useAuthStore';
+import { paymentTransactions, providerRevenueSummary, formatVND } from '../../../../mock/paymentMockData';
 
 const FleetFinance = () => {
   const { user } = useAuthStore();
@@ -35,9 +39,14 @@ const FleetFinance = () => {
     calculateFareEstimate 
   } = useFinanceStore();
 
-  const [activeTab, setActiveTab] = useState('wallets'); // 'wallets' | 'transactions' | 'calculator'
+  const [activeTab, setActiveTab] = useState('payments'); // 'payments' | 'wallets' | 'transactions' | 'calculator'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
+
+  // Payment Feature State
+  const [paymentDetailModal, setPaymentDetailModal] = useState(null);
+  const [paymentFilterStatus, setPaymentFilterStatus] = useState('ALL');
+  const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
 
   // Topup Modal State
   const [topUpModal, setTopUpModal] = useState(null);
@@ -268,13 +277,25 @@ const FleetFinance = () => {
 
       {/* ── Navigation Tabs ── */}
       <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+              activeTab === 'payments'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Receipt size={15} />
+            Thanh toán & Doanh thu ({paymentTransactions.length})
+          </button>
+
           <button
             onClick={() => {
               setActiveTab('wallets');
               setFilterStatus('ALL');
             }}
-            className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
               activeTab === 'wallets'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -286,7 +307,7 @@ const FleetFinance = () => {
 
           <button
             onClick={() => setActiveTab('transactions')}
-            className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
               activeTab === 'transactions'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -298,7 +319,7 @@ const FleetFinance = () => {
 
           <button
             onClick={() => setActiveTab('calculator')}
-            className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
               activeTab === 'calculator'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -310,7 +331,171 @@ const FleetFinance = () => {
         </div>
       </div>
 
-      {/* ── TAB 1: DRIVER WALLETS MANAGEMENT ── */}
+      {/* ── TAB 0: THANH TOÁN & DOANH THU (ESTIMATED PAYMENT TRANSACTIONS) ── */}
+      {activeTab === 'payments' && (
+        <div className="space-y-4">
+          {/* Revenue Summary Sub-cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Tổng doanh thu dự kiến</span>
+                <span className="text-xl font-bold font-mono text-emerald-400 mt-1 block">
+                  {formatVND(providerRevenueSummary.estimatedRevenue)}
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <TrendingUp size={20} />
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Chờ thanh toán (Pending)</span>
+                <span className="text-xl font-bold font-mono text-amber-400 mt-1 block">
+                  {formatVND(providerRevenueSummary.pendingPayment)}
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Clock size={20} />
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Đã thanh toán (Paid)</span>
+                <span className="text-xl font-bold font-mono text-blue-400 mt-1 block">
+                  {formatVND(providerRevenueSummary.paid)}
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                <CheckCircle2 size={20} />
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+            <div className="relative w-full sm:w-80">
+              <Search size={15} className="absolute left-3.5 top-3 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Tìm theo Mission ID, loại xe (ALS/BLS)..."
+                value={paymentSearchTerm}
+                onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={paymentFilterStatus}
+                onChange={(e) => setPaymentFilterStatus(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 focus:outline-none w-full sm:w-auto cursor-pointer"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="PENDING">Chờ thanh toán</option>
+                <option value="SUCCESS">Đã thanh toán</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Payment Transactions Table */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
+                  <tr>
+                    <th className="py-4 px-5">Mission ID</th>
+                    <th className="py-4 px-4">Loại dịch vụ</th>
+                    <th className="py-4 px-4">Quãng đường</th>
+                    <th className="py-4 px-4">Chi phí</th>
+                    <th className="py-4 px-4">Trạng thái</th>
+                    <th className="py-4 px-4">Ngày hoàn thành</th>
+                    <th className="py-4 px-5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-sans">
+                  {paymentTransactions
+                    .filter((p) => {
+                      const matchSearch =
+                        p.missionId.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+                        p.serviceType.toLowerCase().includes(paymentSearchTerm.toLowerCase());
+                      if (paymentFilterStatus === 'PENDING') return matchSearch && p.status === 'PENDING';
+                      if (paymentFilterStatus === 'SUCCESS') return matchSearch && p.status === 'SUCCESS';
+                      return matchSearch;
+                    })
+                    .map((item) => (
+                      <tr
+                        key={item.id}
+                        onClick={() => setPaymentDetailModal(item)}
+                        className="hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                      >
+                        <td className="py-3.5 px-5 font-mono font-bold text-indigo-300">
+                          {item.missionId}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`font-mono font-bold text-[10px] px-2 py-0.5 rounded border ${
+                              item.serviceType === 'ALS'
+                                ? 'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
+                                : 'bg-blue-950/80 text-blue-300 border-blue-800/60'
+                            }`}
+                          >
+                            {item.serviceType}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-slate-300">
+                          {item.distanceKm.toFixed(1).replace('.', ',')} km
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-white">
+                          {formatVND(item.amount)}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {item.status === 'PENDING' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60">
+                              <Clock size={11} />
+                              Chờ thanh toán
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
+                              <CheckCircle2 size={11} />
+                              Đã thanh toán
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
+                          {item.completedAt}
+                        </td>
+                        <td className="py-3.5 px-5 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPaymentDetailModal(item);
+                            }}
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Eye size={13} />
+                            <span>Xem chi tiết</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                  {paymentTransactions.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-500 italic">
+                        Chưa có giao dịch thanh toán.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 1: DRIVER WALLETS & ADVANCE DEPOSIT ── */}
       {activeTab === 'wallets' && (
         <div className="space-y-4">
           {/* Filters Bar */}
@@ -858,6 +1043,100 @@ const FleetFinance = () => {
             <div className="flex justify-end pt-2 border-t border-slate-800">
               <button
                 onClick={() => setInvoiceModal(null)}
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium cursor-pointer transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PAYMENT DETAIL MODAL (FEATURE: ESTIMATED PAYMENT & REVENUE) ── */}
+      {paymentDetailModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
+              <h3 className="font-bold text-base text-white flex items-center gap-2.5">
+                <Receipt className="text-emerald-400" size={20} />
+                CHI TIẾT CHI PHÍ
+              </h3>
+              <button 
+                onClick={() => setPaymentDetailModal(null)} 
+                className="text-slate-400 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs font-sans">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Mission:</span>
+                  <span className="font-mono font-bold text-indigo-300 text-sm">{paymentDetailModal.missionId}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Loại dịch vụ:</span>
+                  <span className="font-mono font-bold text-slate-200 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+                    {paymentDetailModal.serviceType}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Quãng đường vận chuyển:</span>
+                  <span className="font-mono font-bold text-slate-200">
+                    {paymentDetailModal.distanceKm.toFixed(1).replace('.', ',')} km
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Ngày hoàn thành:</span>
+                  <span className="font-mono text-slate-400">{paymentDetailModal.completedAt}</span>
+                </div>
+              </div>
+
+              {/* Fare Breakdown */}
+              <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 space-y-2.5">
+                <div className="flex justify-between text-slate-300">
+                  <span>Phí cơ bản:</span>
+                  <span className="font-mono font-semibold text-slate-200">{formatVND(paymentDetailModal.baseFare)}</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span>Phí theo quãng đường:</span>
+                  <span className="font-mono font-semibold text-slate-200">{formatVND(paymentDetailModal.distanceFare)}</span>
+                </div>
+
+                <div className="pt-2.5 border-t border-slate-800 flex justify-between items-baseline text-white font-bold">
+                  <span className="uppercase text-[11px] tracking-wider text-slate-400">TỔNG CHI PHÍ</span>
+                  <span className="font-mono text-lg text-emerald-400">{formatVND(paymentDetailModal.amount)}</span>
+                </div>
+
+                <div className="pt-2 flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Trạng thái:</span>
+                  {paymentDetailModal.status === 'PENDING' ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60">
+                      <Clock size={11} />
+                      Chờ thanh toán
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
+                      <CheckCircle2 size={11} />
+                      Đã thanh toán
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Notice Banner */}
+              <div className="p-3 bg-amber-950/30 border border-amber-800/40 rounded-xl flex items-start gap-2.5 text-amber-300 text-[11px]">
+                <Info size={16} className="shrink-0 mt-0.5 text-amber-400" />
+                <p className="leading-relaxed">
+                  Đây là khoản chi phí dự kiến cần thanh toán. Hệ thống chưa thực hiện thanh toán thực tế.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setPaymentDetailModal(null)}
                 className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium cursor-pointer transition-colors"
               >
                 Đóng

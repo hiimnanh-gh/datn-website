@@ -16,6 +16,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { dashboardService } from '../../../../services/dashboardService';
+import { providerRevenueSummary, formatVND } from '../../../../mock/paymentMockData';
 import './ProviderDashboard.css';
 
 const ProviderDashboard = () => {
@@ -195,18 +196,59 @@ const ProviderDashboard = () => {
                 <CheckCircle size={18} className="text-blue-500" />
               </div>
             </div>
+          </div>
 
-            {/* 8. Fleet Utilization */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-indigo-400 block">Hiệu Suất Đội Xe</span>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-indigo-300">
-                  {kpis.fleetUtilization != null ? `${Number(kpis.fleetUtilization).toFixed(1)}%` : '0%'}
+          {/* ── Section: Doanh thu dự kiến & Tài chính (Feature Ước tính thanh toán) ── */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 hover:border-emerald-500/30 p-5 rounded-2xl shadow-xl transition-all text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <DollarSign size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                    Doanh thu dự kiến
+                    <span className="text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full">
+                      ESTIMATED REVENUE
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Ước tính tổng chi phí phát sinh từ các chuyến cấp cứu đã và đang thực hiện
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-baseline gap-2 bg-slate-950/60 px-4 py-2 rounded-xl border border-slate-800">
+                <span className="text-xs text-slate-400 font-medium">Tổng dự kiến:</span>
+                <span className="text-xl font-bold font-mono text-emerald-400">
+                  {formatVND(providerRevenueSummary.estimatedRevenue)}
                 </span>
-                <Percent size={18} className="text-indigo-400" />
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+              {/* Pending Payment */}
+              <div className="bg-slate-950/60 border border-amber-500/20 p-3.5 rounded-xl flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Chờ thanh toán (Pending)</span>
+                  <span className="text-xs text-slate-500">Các ca đang đợi đối soát thanh toán</span>
+                </div>
+                <span className="text-base font-bold font-mono text-amber-400 bg-amber-950/50 px-2.5 py-1 rounded-lg border border-amber-800/40">
+                  {formatVND(providerRevenueSummary.pendingPayment)}
+                </span>
+              </div>
+
+              {/* Paid */}
+              <div className="bg-slate-950/60 border border-blue-500/20 p-3.5 rounded-xl flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Đã thanh toán (Paid)</span>
+                  <span className="text-xs text-slate-500">Doanh thu các chuyến đã hoàn tất thanh toán</span>
+                </div>
+                <span className="text-base font-bold font-mono text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded-lg border border-blue-800/40">
+                  {formatVND(providerRevenueSummary.paid)}
+                </span>
+              </div>
+            </div>
           </div>
         </>
       )}
