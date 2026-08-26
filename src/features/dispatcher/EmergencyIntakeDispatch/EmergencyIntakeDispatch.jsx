@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import { 
   RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle2, ShieldAlert, 
-  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles, Zap, Maximize2, Building2
+  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles, Zap, Maximize2, Building2,
+  Receipt, DollarSign, Clock
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 import useAuthStore from '../../../store/useAuthStore';
+import { missionPayment, formatVND, calculateEstimatedFare } from '../../../mock/paymentMockData';
 import { dispatchRequestService } from '../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../services/dispatchResourceService';
 import { dispatchMissionService } from '../../../services/dispatchMissionService';
@@ -189,6 +190,7 @@ const EmergencyIntakeDispatch = () => {
   const [timelineModal, setTimelineModal] = useState(null);
   const [recsModal, setRecsModal] = useState(null);
   const [isFullMapOpen, setIsFullMapOpen] = useState(false);
+  const [paymentDetailModal, setPaymentDetailModal] = useState(null);
 
   // 1. Verify Request Handler
   const handleVerifyRequest = async () => {
@@ -1000,6 +1002,56 @@ const EmergencyIntakeDispatch = () => {
                     </p>
                   )}
                 </div>
+
+                {/* 5. Service Fee / Payment Section (Feature: Chi phí dịch vụ dự kiến) */}
+                {(() => {
+                  const reqServiceType = selectedRequest.serviceTypeName || selectedRequest.serviceType || (selectedRequest.urgencyLevel === 'CRITICAL' ? 'ALS' : 'BLS');
+                  const reqDistance = selectedRequest.distanceKm || (selectedRequest.id ? Number((((selectedRequest.id * 3.7) % 15) + 4).toFixed(1)) : 8.0);
+                  const fareInfo = calculateEstimatedFare(reqServiceType, reqDistance);
+                  const finalFare = selectedRequest.estimatedFare || fareInfo.amount;
+
+                  return (
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                        <span className="font-bold text-[11px] text-emerald-300 flex items-center gap-1.5 uppercase tracking-wider">
+                          <Receipt size={13} className="text-emerald-400" />
+                          Chi phí dịch vụ dự kiến
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60 font-mono">
+                          <Clock size={10} />
+                          Chờ thanh toán
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                          <div className="space-y-0.5">
+                            <span className="text-slate-400 text-[11px] block">Ước tính ({fareInfo.serviceType} • {fareInfo.distanceKm} km):</span>
+                            <span className="font-mono font-bold text-emerald-400 text-sm">
+                              {formatVND(finalFare)}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentDetailModal({
+                              missionId: `REQ-${selectedRequest.id}`,
+                              serviceType: fareInfo.serviceType,
+                              distanceKm: fareInfo.distanceKm,
+                              baseFare: fareInfo.baseFare,
+                              distanceFare: fareInfo.distanceFare,
+                              amount: finalFare,
+                              status: 'PENDING',
+                              completedAt: selectedRequest.completedAt || selectedRequest.updatedAt || 'Vừa cập nhật'
+                            })}
+                            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[11px] font-medium transition-colors cursor-pointer border border-slate-700"
+                          >
+                            Bóc tách cước
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>
@@ -1046,6 +1098,46 @@ const EmergencyIntakeDispatch = () => {
                       <span className="text-amber-400 font-bold">{selectedRequest.urgencyLevel}</span>
                     </div>
                   </div>
+
+                  {/* Estimated Cost summary in column 3 */}
+                  {(() => {
+                    const reqServiceType = selectedRequest.serviceTypeName || selectedRequest.serviceType || (selectedRequest.urgencyLevel === 'CRITICAL' ? 'ALS' : 'BLS');
+                    const reqDistance = selectedRequest.distanceKm || (selectedRequest.id ? Number((((selectedRequest.id * 3.7) % 15) + 4).toFixed(1)) : 8.0);
+                    const fareInfo = calculateEstimatedFare(reqServiceType, reqDistance);
+                    const finalFare = selectedRequest.estimatedFare || fareInfo.amount;
+
+                    return (
+                      <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono block">Chi phí dịch vụ dự kiến ({fareInfo.serviceType} • {fareInfo.distanceKm} km)</span>
+                          <span className="text-xs font-mono font-bold text-emerald-400">
+                            {formatVND(finalFare)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentDetailModal({
+                              missionId: `REQ-${selectedRequest.id}`,
+                              serviceType: fareInfo.serviceType,
+                              distanceKm: fareInfo.distanceKm,
+                              baseFare: fareInfo.baseFare,
+                              distanceFare: fareInfo.distanceFare,
+                              amount: finalFare,
+                              status: 'PENDING',
+                              completedAt: selectedRequest.completedAt || selectedRequest.updatedAt || 'Vừa cập nhật'
+                            })}
+                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[10px] font-medium transition-colors cursor-pointer border border-slate-700"
+                          >
+                            Chi tiết
+                          </button>
+                          <span className="text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60 px-2 py-0.5 rounded">
+                            Chờ thanh toán
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <button
                     onClick={() => handleOpenSimulationForRequest(selectedRequest)}
@@ -1519,6 +1611,93 @@ const EmergencyIntakeDispatch = () => {
                     </Marker>
                   ))}
               </MapContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DISPATCHER FARE BREAKDOWN DETAIL MODAL (READ-ONLY) ── */}
+      {paymentDetailModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
+              <h3 className="font-bold text-base text-white flex items-center gap-2.5">
+                <Receipt className="text-emerald-400" size={20} />
+                BÓC TÁCH CHI PHÍ DỰ KIẾN
+              </h3>
+              <button 
+                onClick={() => setPaymentDetailModal(null)} 
+                className="text-slate-400 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs font-sans">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Mã yêu cầu / Ca cấp cứu:</span>
+                  <span className="font-mono font-bold text-indigo-300 text-sm">{paymentDetailModal.missionId}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Loại dịch vụ xe:</span>
+                  <span className="font-mono font-bold text-slate-200 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+                    {paymentDetailModal.serviceType}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Quãng đường dự kiến:</span>
+                  <span className="font-mono font-bold text-slate-200">
+                    {paymentDetailModal.distanceKm} km
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Thời gian cập nhật:</span>
+                  <span className="font-mono text-slate-400">{paymentDetailModal.completedAt}</span>
+                </div>
+              </div>
+
+              {/* Breakdown */}
+              <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 space-y-2.5">
+                <div className="flex justify-between text-slate-300">
+                  <span>Phí cơ bản mở cửa:</span>
+                  <span className="font-mono font-semibold text-slate-200">{formatVND(paymentDetailModal.baseFare)}</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span>Phí theo quãng đường ({paymentDetailModal.distanceKm} km):</span>
+                  <span className="font-mono font-semibold text-slate-200">{formatVND(paymentDetailModal.distanceFare)}</span>
+                </div>
+
+                <div className="pt-2.5 border-t border-slate-800 flex justify-between items-baseline text-white font-bold">
+                  <span className="uppercase text-[11px] tracking-wider text-slate-400">TỔNG CHI PHÍ DỰ KIẾN</span>
+                  <span className="font-mono text-lg text-emerald-400">{formatVND(paymentDetailModal.amount)}</span>
+                </div>
+
+                <div className="pt-2 flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Trạng thái:</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60">
+                    <Clock size={11} />
+                    Chờ thanh toán (PENDING)
+                  </span>
+                </div>
+              </div>
+
+              {/* Readonly info notice */}
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-start gap-2.5 text-slate-400 text-[11px]">
+                <Info size={16} className="shrink-0 mt-0.5 text-emerald-400" />
+                <p className="leading-relaxed">
+                  Đây là khoản cước dự tính phục vụ theo dõi điều phối. Điều phối viên không thực hiện thu tiền hoặc thanh toán.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setPaymentDetailModal(null)}
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium cursor-pointer transition-colors"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>
