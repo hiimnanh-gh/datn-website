@@ -14,10 +14,12 @@ import {
   Search, 
   Percent, 
   Clock, 
-  CreditCard,
-  ShieldCheck
+  CreditCard, 
+  ShieldCheck,
+  Receipt
 } from 'lucide-react';
 import useFinanceStore from '../../../../store/useFinanceStore';
+import { adminPaymentSummary, formatVND } from '../../../../mock/paymentMockData';
 
 const FinancialRevenue = () => {
   const { 
@@ -204,6 +206,81 @@ const FinancialRevenue = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* ── Section: Tổng Doanh Thu Dự Kiến Toàn Nền Tảng (Feature: Estimated Payment) ── */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 hover:border-emerald-500/30 p-5 rounded-2xl shadow-xl transition-all space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Receipt size={20} />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                Tổng doanh thu dự kiến toàn sàn
+                <span className="text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full">
+                  PLATFORM ESTIMATED REVENUE
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Thống kê ước tính doanh thu và công nợ phát sinh từ các đơn vị Provider
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-baseline gap-2 bg-slate-950/60 px-4 py-2 rounded-xl border border-slate-800">
+            <span className="text-xs text-slate-400 font-medium">Tổng ước tính:</span>
+            <span className="text-xl font-bold font-mono text-emerald-400">
+              {formatVND(adminPaymentSummary.estimatedRevenue)}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-slate-950/60 border border-blue-500/20 p-3.5 rounded-xl flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Đã thanh toán (Paid)</span>
+              <span className="text-xs text-slate-500">Các khoản cước đã hoàn tất đối soát</span>
+            </div>
+            <span className="text-base font-bold font-mono text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded-lg border border-blue-800/40">
+              {formatVND(adminPaymentSummary.paid)}
+            </span>
+          </div>
+
+          <div className="bg-slate-950/60 border border-amber-500/20 p-3.5 rounded-xl flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Chờ thanh toán (Pending)</span>
+              <span className="text-xs text-slate-500">Các khoản cước đang chờ thanh toán</span>
+            </div>
+            <span className="text-base font-bold font-mono text-amber-400 bg-amber-950/50 px-2.5 py-1 rounded-lg border border-amber-800/40">
+              {formatVND(adminPaymentSummary.pending)}
+            </span>
+          </div>
+        </div>
+
+        {/* Mini Provider Summary Table */}
+        <div className="bg-slate-950/70 rounded-xl border border-slate-800/80 overflow-hidden">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+              <tr>
+                <th className="py-2.5 px-4">Đơn vị Provider</th>
+                <th className="py-2.5 px-4 text-amber-400">Chờ thanh toán (Pending)</th>
+                <th className="py-2.5 px-4 text-blue-400">Đã thanh toán (Paid)</th>
+                <th className="py-2.5 px-4 text-right">Tổng phát sinh</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {adminPaymentSummary.providers.map(p => (
+                <tr key={p.id} className="hover:bg-slate-900/60 transition-colors">
+                  <td className="py-2.5 px-4 font-medium text-slate-200">{p.name}</td>
+                  <td className="py-2.5 px-4 font-mono text-amber-400">{formatVND(p.pending)}</td>
+                  <td className="py-2.5 px-4 font-mono text-blue-400">{formatVND(p.paid)}</td>
+                  <td className="py-2.5 px-4 font-mono font-bold text-right text-white">{formatVND(p.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ── Navigation Tabs ── */}

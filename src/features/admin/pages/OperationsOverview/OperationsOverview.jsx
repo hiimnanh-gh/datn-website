@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Activity, ShieldAlert, Truck, CheckCircle2, Clock, AlertTriangle, RefreshCw, BarChart2, Download
+  Activity, ShieldAlert, Truck, CheckCircle2, Clock, AlertTriangle, RefreshCw, BarChart2, Download, DollarSign, Receipt, ChevronRight
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { dispatchRequestService } from '../../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../../services/dispatchResourceService';
 import { dashboardService } from '../../../../services/dashboardService';
+import { adminPaymentSummary, formatVND } from '../../../../mock/paymentMockData';
 
 const OperationsOverview = () => {
   const [requests, setRequests] = useState([]);
@@ -167,6 +169,66 @@ const OperationsOverview = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* ── Platform Estimated Revenue Overview Widget ── */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 hover:border-emerald-500/30 p-5 rounded-2xl shadow-xl transition-all space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Receipt size={20} />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                Tổng doanh thu dự kiến toàn hệ thống
+                <span className="text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full">
+                  ESTIMATED REVENUE
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Ước tính cước phí phát sinh từ tất cả các đơn vị vận chuyển cấp cứu
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-2 bg-slate-950/60 px-4 py-2 rounded-xl border border-slate-800">
+              <span className="text-xs text-slate-400 font-medium">Tổng ước tính:</span>
+              <span className="text-xl font-bold font-mono text-emerald-400">
+                {formatVND(adminPaymentSummary.estimatedRevenue)}
+              </span>
+            </div>
+            <Link
+              to="/admin/finance"
+              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
+            >
+              <span>Xem chi tiết tài chính</span>
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-slate-950/60 border border-amber-500/20 p-3.5 rounded-xl flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Chờ thanh toán (Pending)</span>
+              <span className="text-xs text-slate-500">Các khoản cước đang chờ đối soát</span>
+            </div>
+            <span className="text-base font-bold font-mono text-amber-400 bg-amber-950/50 px-2.5 py-1 rounded-lg border border-amber-800/40">
+              {formatVND(adminPaymentSummary.pending)}
+            </span>
+          </div>
+
+          <div className="bg-slate-950/60 border border-blue-500/20 p-3.5 rounded-xl flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Đã thanh toán (Paid)</span>
+              <span className="text-xs text-slate-500">Doanh thu các chuyến đã hoàn tất thanh toán</span>
+            </div>
+            <span className="text-base font-bold font-mono text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded-lg border border-blue-800/40">
+              {formatVND(adminPaymentSummary.paid)}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Breakdown Tables / Sections */}
