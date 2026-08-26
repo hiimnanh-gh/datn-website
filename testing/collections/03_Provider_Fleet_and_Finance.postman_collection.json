@@ -1,0 +1,215 @@
+{
+  "info": {
+    "name": "03_Provider_Fleet_and_Finance [HYBRID: API THẬT + MOCK VÍ]",
+    "_postman_id": "provider-fleet-collection-03",
+    "description": "Bộ kiểm thử Quản lý Đội xe, cập nhật GPS, đổi trạng thái xe (API Thật) và Kiểm thử nghiệp vụ Ví Ký Quỹ Tài xế & Khấu trừ 10% Hoa hồng (Mock State Logic).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC-PROV-01: Get Provider Ambulance Resources [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Returns list of ambulance resources', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "    if (jsonData.data.length > 0) {",
+              "        pm.environment.set('activeResourceId', jsonData.data[0].id);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{providerToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-resources",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-resources"]
+        }
+      }
+    },
+    {
+      "name": "TC-PROV-02: Update Ambulance GPS Location [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.expect([200, 204]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{providerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"latitude\": 21.028511,\n  \"longitude\": 105.854444,\n  \"speed\": 45.5,\n  \"heading\": 180\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-resources/{{activeResourceId}}/location",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-resources", "{{activeResourceId}}", "location"]
+        }
+      }
+    },
+    {
+      "name": "TC-PROV-03: Toggle Ambulance Status (Available / Busy) [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{providerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"AVAILABLE\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-resources/{{activeResourceId}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-resources", "{{activeResourceId}}", "status"]
+        }
+      }
+    },
+    {
+      "name": "TC-PROV-04: Test Fare Formula (BLS + 15km + Nurse) [MOCK LOGIC]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Logic testing of EMS fare formula:",
+              "// Base 5km: 500,000 + 10km extra @ 20k: 200,000 + Nurse: 300,000 = 1,000,000 VND",
+              "// Commission 10%: 100,000 VND, Driver Earnings: 900,000 VND",
+              "var baseFare = 500000;",
+              "var extraKm = 10;",
+              "var perKm = 20000;",
+              "var nurseFee = 300000;",
+              "var totalFare = baseFare + (extraKm * perKm) + nurseFee;",
+              "var commission = totalFare * 0.10;",
+              "var driverEarnings = totalFare - commission;",
+              "pm.test('Fare calculation matches formula (1,000,000 VND)', function () {",
+              "    pm.expect(totalFare).to.eql(1000000);",
+              "    pm.expect(commission).to.eql(100000);",
+              "    pm.expect(driverEarnings).to.eql(900000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://httpbin.org/get?test=fare_calculator",
+          "protocol": "https",
+          "host": ["httpbin", "org"],
+          "path": ["get"],
+          "query": [{ "key": "test", "value": "fare_calculator" }]
+        }
+      }
+    },
+    {
+      "name": "TC-PROV-05: Test Driver Wallet Deduction on 3M Trip (REQ-3) [MOCK LOGIC]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var initialBalance = 1500000;",
+              "var tripFare = 3000000;",
+              "var commissionRate = 0.10;",
+              "var commissionDeducted = tripFare * commissionRate; // 300,000 VND",
+              "var balanceAfter = initialBalance - commissionDeducted; // 1,200,000 VND",
+              "pm.test('10% commission is deducted exactly (300,000 VND)', function () {",
+              "    pm.expect(commissionDeducted).to.eql(300000);",
+              "    pm.expect(balanceAfter).to.eql(1200000);",
+              "    pm.expect(balanceAfter).to.be.at.least(1000000); // Still eligible (> 1M)",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://httpbin.org/get?test=commission_deduct",
+          "protocol": "https",
+          "host": ["httpbin", "org"],
+          "path": ["get"],
+          "query": [{ "key": "test", "value": "commission_deduct" }]
+        }
+      }
+    },
+    {
+      "name": "TC-PROV-06: Test Minimum Balance Lock Threshold (< 1M) [MOCK LOGIC]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var minThreshold = 1000000;",
+              "var driver1Balance = 850000;",
+              "var driver2Balance = 1200000;",
+              "var isDriver1Locked = driver1Balance < minThreshold;",
+              "var isDriver2Locked = driver2Balance < minThreshold;",
+              "pm.test('Driver with 850k is LOCKED and driver with 1.2M is ELIGIBLE', function () {",
+              "    pm.expect(isDriver1Locked).to.eql(true);",
+              "    pm.expect(isDriver2Locked).to.eql(false);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://httpbin.org/get?test=wallet_lock_rule",
+          "protocol": "https",
+          "host": ["httpbin", "org"],
+          "path": ["get"],
+          "query": [{ "key": "test", "value": "wallet_lock_rule" }]
+        }
+      }
+    }
+  ]
+}

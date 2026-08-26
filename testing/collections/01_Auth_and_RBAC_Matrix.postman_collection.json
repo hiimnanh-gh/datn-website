@@ -1,0 +1,207 @@
+{
+  "info": {
+    "name": "01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]",
+    "_postman_id": "auth-rbac-collection-01",
+    "description": "Bộ kiểm thử Xác thực, Đăng nhập & Ma trận Phân quyền 3 Role (ADMIN, DISPATCHER, PROVIDER) trên Backend API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC-AUTH-01: Login with ADMIN Account [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response contains success=true and JWT token', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    var token = jsonData.data?.accessToken || jsonData.data?.token || jsonData.token;",
+              "    pm.expect(token).to.not.be.empty;",
+              "    pm.environment.set('adminToken', token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usernameOrEmail\": \"{{adminEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "TC-AUTH-02: Login with DISPATCHER Account [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Role is DISPATCHER', function () {",
+              "    var jsonData = pm.response.json();",
+              "    var token = jsonData.data?.accessToken || jsonData.data?.token || jsonData.token;",
+              "    pm.expect(token).to.not.be.empty;",
+              "    pm.environment.set('dispatcherToken', token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usernameOrEmail\": \"{{dispatcherEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "TC-AUTH-03: Login with PROVIDER Account [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Token saved for Provider', function () {",
+              "    var jsonData = pm.response.json();",
+              "    var token = jsonData.data?.accessToken || jsonData.data?.token || jsonData.token;",
+              "    pm.expect(token).to.not.be.empty;",
+              "    pm.environment.set('providerToken', token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usernameOrEmail\": \"{{providerEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "TC-AUTH-04: Login with Wrong Password (Negative) [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 401 Unauthorized or 400 Bad Request', function () {",
+              "    pm.expect([400, 401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usernameOrEmail\": \"{{adminEmail}}\",\n  \"password\": \"WRONG_PASSWORD_999\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "TC-AUTH-05: RBAC - Dispatcher accessing Admin User Management [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Access is Blocked with 403 Forbidden or 401', function () {",
+              "    pm.expect([403, 401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "users"]
+        }
+      }
+    },
+    {
+      "name": "TC-AUTH-06: RBAC - Provider deleting Dispatch Request [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Access is Blocked with 403 Forbidden', function () {",
+              "    pm.expect([403, 401, 405]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{providerToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests", "1"]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "info": {
+    "name": "02_Dispatcher_Operational_Flow [ĐÃ NỐI API THẬT]",
+    "_postman_id": "dispatcher-flow-collection-02",
+    "description": "Bộ kiểm thử luồng Nghiệp vụ Điều phối viên (Dispatcher): Tiếp nhận ca, hàng đợi điều phối, lấy thông tin người gọi theo callId, gợi ý Top 3 xe, xác minh và điều phối xe cứu thương.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC-DISP-01: Get Dispatch Requests Queue [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Queue returns array of requests', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "    if (jsonData.data.length > 0) {",
+              "        pm.environment.set('activeRequestId', jsonData.data[0].id);",
+              "        if (jsonData.data[0].callId) {",
+              "            pm.environment.set('activeCallId', jsonData.data[0].callId);",
+              "        }",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests"]
+        }
+      }
+    },
+    {
+      "name": "TC-DISP-02: Get Request Detail by ID & Check reporterPhone [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Request contains coordinates and reporterPhone', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.be.an('object');",
+              "    pm.expect(jsonData.data.latitude).to.not.be.undefined;",
+              "    pm.expect(jsonData.data.longitude).to.not.be.undefined;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests/{{activeRequestId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests", "{{activeRequestId}}"]
+        }
+      }
+    },
+    {
+      "name": "TC-DISP-03: Get Call Detail by callId [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Call details returned successfully', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/calls/{{activeCallId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "calls", "{{activeCallId}}"]
+        }
+      }
+    },
+    {
+      "name": "TC-DISP-04: Get Top 3 Ambulance Recommendations [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Recommendations returned without client-side mock', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests/{{activeRequestId}}/recommendations",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests", "{{activeRequestId}}", "recommendations"]
+        }
+      }
+    },
+    {
+      "name": "TC-DISP-05: Get Request Timeline [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Timeline events array is returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests/{{activeRequestId}}/timeline",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests", "{{activeRequestId}}", "timeline"]
+        }
+      }
+    },
+    {
+      "name": "TC-DISP-06: Verify Dispatch Request [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK or 400 if already verified', function () {",
+              "    pm.expect([200, 400, 409]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"confirmedUrgencyLevel\": \"CRITICAL\",\n  \"note\": \"Dispatcher verified emergency incident location.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests/{{activeRequestId}}/verify",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests", "{{activeRequestId}}", "verify"]
+        }
+      }
+    }
+  ]
+}

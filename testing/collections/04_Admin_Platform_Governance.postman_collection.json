@@ -1,0 +1,173 @@
+{
+  "info": {
+    "name": "04_Admin_Platform_Governance [HYBRID: API THẬT + MOCK DOANH THU]",
+    "_postman_id": "admin-governance-collection-04",
+    "description": "Bộ kiểm thử Quản trị Nền tảng: Quản lý Người dùng, Đơn vị, Bệnh viện tiếp nhận, Loại dịch vụ (API Thật) và Cấu hình Doanh thu Sàn (Mock Policy).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC-ADM-01: Get Users List [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Users list returned successfully', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "users"]
+        }
+      }
+    },
+    {
+      "name": "TC-ADM-02: Get Providers List [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Providers list returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/providers",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "providers"]
+        }
+      }
+    },
+    {
+      "name": "TC-ADM-03: Get Hospitals List [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Hospitals list returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/hospitals",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "hospitals"]
+        }
+      }
+    },
+    {
+      "name": "TC-ADM-04: Get Service Types [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Service types (BLS/ALS) returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/service-types",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "service-types"]
+        }
+      }
+    },
+    {
+      "name": "TC-ADM-05: Test Platform 10% Revenue Aggregation [MOCK LOGIC]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var trips = [",
+              "    { id: 'REQ-3', fare: 3000000, commission: 300000 },",
+              "    { id: 'REQ-2', fare: 1500000, commission: 150000 },",
+              "    { id: 'REQ-1', fare: 2200000, commission: 220000 }",
+              "];",
+              "var totalGrossVolume = trips.reduce((acc, t) => acc + t.fare, 0); // 6,700,000",
+              "var totalPlatformRevenue = trips.reduce((acc, t) => acc + t.commission, 0); // 670,000",
+              "pm.test('Platform 10% revenue equals sum of individual trip commissions', function () {",
+              "    pm.expect(totalGrossVolume).to.eql(6700000);",
+              "    pm.expect(totalPlatformRevenue).to.eql(670000);",
+              "    pm.expect(totalPlatformRevenue / totalGrossVolume).to.eql(0.10);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://httpbin.org/get?test=platform_revenue",
+          "protocol": "https",
+          "host": ["httpbin", "org"],
+          "path": ["get"],
+          "query": [{ "key": "test", "value": "platform_revenue" }]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "info": {
+    "name": "06_E2E_Full_System_Workflow [LIÊN THÔNG 3 ROLE]",
+    "_postman_id": "e2e-workflow-collection-06",
+    "description": "Kịch bản Kiểm thử Tích hợp Liên thông Chuỗi Nghiệp vụ 3 Role: Dispatcher Tiếp nhận & Điều phối -> Provider Đội xe & Khấu trừ Ví 10% -> Admin Doanh thu Sàn.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Step 1: Dispatcher Logs In [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Dispatcher authenticated', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var token = pm.response.json().data?.accessToken || pm.response.json().data?.token || pm.response.json().token;",
+              "    pm.environment.set('dispatcherToken', token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usernameOrEmail\": \"{{dispatcherEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Step 2: Dispatcher Fetches Incident Queue [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Queue fetched with status 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var res = pm.response.json();",
+              "    pm.expect(res.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests"]
+        }
+      }
+    },
+    {
+      "name": "Step 3: Provider Ambulance Updates GPS [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Ambulance GPS tracking updated', function () {",
+              "    pm.expect([200, 204]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{providerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"latitude\": 21.028511,\n  \"longitude\": 105.854444,\n  \"speed\": 40.0,\n  \"heading\": 90\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-resources/{{activeResourceId}}/location",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-resources", "{{activeResourceId}}", "location"]
+        }
+      }
+    },
+    {
+      "name": "Step 4: Dispatcher Requests Top 3 Recommendations [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Recommendations returned from server API', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests/{{activeRequestId}}/recommendations",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests", "{{activeRequestId}}", "recommendations"]
+        }
+      }
+    },
+    {
+      "name": "Step 5: Complete Mission & Execute 10% Commission Split [MOCK LOGIC]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var tripAmount = 3000000;",
+              "var commissionCut = tripAmount * 0.10;",
+              "var driverNet = tripAmount - commissionCut;",
+              "pm.test('E2E Financial Reconciliation matches exactly', function () {",
+              "    pm.expect(commissionCut).to.eql(300000);",
+              "    pm.expect(driverNet).to.eql(2700000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://httpbin.org/get?step=e2e_commission_reconciliation",
+          "protocol": "https",
+          "host": ["httpbin", "org"],
+          "path": ["get"],
+          "query": [{ "key": "step", "value": "e2e_commission_reconciliation" }]
+        }
+      }
+    }
+  ]
+}

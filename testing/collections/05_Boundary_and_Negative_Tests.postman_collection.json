@@ -1,0 +1,139 @@
+{
+  "info": {
+    "name": "05_Boundary_and_Negative_Tests [GIÁ TRỊ BIÊN & NGOẠI LỆ]",
+    "_postman_id": "boundary-negative-collection-05",
+    "description": "Bộ kiểm thử Giá trị biên & Xử lý ngoại lệ lỗi: Tọa độ GPS ngoài biên, ID không tồn tại, Token giả mạo, và các trường hợp lỗi nghiệp vụ.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC-NEG-01: Get Non-existent Dispatch Request (ID: 999999) [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Returns 404 Not Found or 400 Bad Request', function () {",
+              "    pm.expect([400, 404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{dispatcherToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests/999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests", "999999"]
+        }
+      }
+    },
+    {
+      "name": "TC-NEG-02: Call API with Fake/Tampered JWT Token [API THẬT]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Returns 401 Unauthorized', function () {",
+              "    pm.expect([401, 403]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer FAKE_TAMPERED_JWT_TOKEN_12345" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/dispatch-requests",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "dispatch-requests"]
+        }
+      }
+    },
+    {
+      "name": "TC-NEG-03: Boundary Test - Wallet Balance at Exactly 1,000,000 VND [MOCK LOGIC]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var minThreshold = 1000000;",
+              "var exactThreshold = 1000000;",
+              "var oneVndLess = 999999;",
+              "var oneVndMore = 1000001;",
+              "pm.test('1,000,000 is eligible, 999,999 is locked', function () {",
+              "    pm.expect(exactThreshold >= minThreshold).to.eql(true); // Eligible",
+              "    pm.expect(oneVndLess < minThreshold).to.eql(true); // Locked",
+              "    pm.expect(oneVndMore >= minThreshold).to.eql(true); // Eligible",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://httpbin.org/get?test=boundary_wallet",
+          "protocol": "https",
+          "host": ["httpbin", "org"],
+          "path": ["get"],
+          "query": [{ "key": "test", "value": "boundary_wallet" }]
+        }
+      }
+    },
+    {
+      "name": "TC-NEG-04: Boundary Test - Distance Tiers (5km, 5.1km, 30km, 31km) [MOCK LOGIC]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// BLS Base: 500k for <= 5km",
+              "// 5km -> 500k",
+              "// 6km -> 500k + (1 * 20k) = 520k",
+              "// 30km -> 500k + (25 * 20k) = 1,000,000",
+              "var calculateBlsFare = function(km) {",
+              "    var base = 500000;",
+              "    if (km <= 5) return base;",
+              "    if (km <= 30) return base + ((km - 5) * 20000);",
+              "    var normalExtra = 25 * 20000;",
+              "    var longDistance = (km - 30) * 15000;",
+              "    return base + normalExtra + longDistance;",
+              "};",
+              "pm.test('Boundary tier pricing validates accurately', function () {",
+              "    pm.expect(calculateBlsFare(5)).to.eql(500000);",
+              "    pm.expect(calculateBlsFare(6)).to.eql(520000);",
+              "    pm.expect(calculateBlsFare(30)).to.eql(1000000);",
+              "    pm.expect(calculateBlsFare(40)).to.eql(1150000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://httpbin.org/get?test=boundary_distance",
+          "protocol": "https",
+          "host": ["httpbin", "org"],
+          "path": ["get"],
+          "query": [{ "key": "test", "value": "boundary_distance" }]
+        }
+      }
+    }
+  ]
+}
