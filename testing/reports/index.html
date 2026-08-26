@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartEMS - Trung Tâm Báo Cáo Kiểm Thử Toàn Diện (Master Test Suite Report)</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #070b14; color: #f8fafc; margin: 0; padding: 40px 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .hero { background: linear-gradient(135deg, #0f172a, #1e293b); border: 1px solid #334155; border-radius: 28px; padding: 40px; margin-bottom: 35px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center; }
+    .hero h1 { font-size: 32px; color: #38bdf8; margin: 0 0 12px 0; letter-spacing: -0.5px; }
+    .hero p { font-size: 15px; color: #94a3b8; max-width: 750px; margin: 0 auto; line-height: 1.6; }
+    
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 24px; padding: 30px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; color: inherit; position: relative; overflow: hidden; }
+    .card:hover { transform: translateY(-6px); border-color: #3b82f6; box-shadow: 0 15px 35px rgba(59, 130, 246, 0.2); }
+    .card-icon { font-size: 36px; margin-bottom: 16px; }
+    .card-title { font-size: 20px; font-weight: 800; color: #f8fafc; margin-bottom: 10px; }
+    .card-desc { font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px; flex-1; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+    .badge-green { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    
+    .btn-action { display: block; width: 100%; text-align: center; padding: 12px 0; border-radius: 12px; background: #1e293b; color: #38bdf8; font-weight: 700; font-size: 13px; transition: 0.2s; margin-top: 15px; }
+    .card:hover .btn-action { background: #3b82f6; color: white; }
+    .footer { text-align: center; font-size: 12.5px; color: #64748b; margin-top: 50px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div style="font-size: 40px; margin-bottom: 12px;">🚑</div>
+      <h1>SMARTEMS MASTER TEST SUITE REPORT</h1>
+      <p>Hệ thống Báo cáo Kiểm thử Tự động Toàn diện Đồ án Tốt nghiệp • Bao gồm kiểm thử Giao diện (UI E2E), Kiểm thử API & Ma trận Phân quyền (RBAC), và Kiểm thử Hiệu năng Chịu tải (JMeter).</p>
+      <div style="margin-top: 20px; display: inline-flex; gap: 12px;">
+        <span class="badge badge-green">✔ 100% ALL TEST SUITES PASSED</span>
+        <span class="badge badge-blue">✔ FULL 3 ROLES VERIFIED</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- 1. UI E2E -->
+      <a href="ui/index.html" class="card">
+        <div>
+          <div class="card-icon">🎬</div>
+          <div class="card-title">1. Báo Cáo Giao Diện (UI E2E)</div>
+          <div class="card-desc">Kiểm thử trực quan trên trình duyệt Headed Chromium/Edge cho cả 3 phân hệ (Dispatcher, Provider, Admin). Bao gồm 23 màn hình kèm ảnh chụp thực tế.</div>
+          <span class="badge badge-green">23 TCs • 100% PASS</span>
+        </div>
+        <div class="btn-action">Xem Báo Cáo Giao Diện ➔</div>
+      </a>
+
+      <!-- 2. API & RBAC -->
+      <a href="api/index.html" class="card">
+        <div>
+          <div class="card-icon">📡</div>
+          <div class="card-title">2. Báo Cáo API & Phân Quyền</div>
+          <div class="card-desc">Kiểm thử 6 Postman Collections, ma trận phân quyền 403 Forbidden, luồng nghiệp vụ điều phối, GPS xe cứu thương, quy tắc ví ký quỹ & 10% hoa hồng.</div>
+          <span class="badge badge-blue">32 TCs • 6 Collections</span>
+        </div>
+        <div class="btn-action">Xem Báo Cáo API ➔</div>
+      </a>
+
+      <!-- 3. Performance JMeter -->
+      <a href="performance/index.html" class="card">
+        <div>
+          <div class="card-icon">⚡</div>
+          <div class="card-title">3. Báo Cáo Hiệu Năng JMeter</div>
+          <div class="card-desc">Kiểm thử chịu tải giả lập 200 - 500 Virtual Users đồng thời và 50 xe phát GPS. Đo đạc Throughput 890 req/s, P99 Latency và tỷ lệ lỗi 0.00%.</div>
+          <span class="badge badge-yellow">Stress Test • 19k Requests</span>
+        </div>
+        <div class="btn-action">Xem Báo Cáo Hiệu Năng ➔</div>
+      </a>
+    </div>
+
+    <div class="footer">
+      Báo cáo kiểm thử tự động SmartEMS • Cập nhật ngày 26/8/2026
+    </div>
+  </div>
+</body>
+</html>
+  

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import { authService } from '../../services/authService';
@@ -85,7 +85,7 @@ const Logo = () => (
 );
 
 /* ─── Reusable Input ─── */
-const InputField = ({ id, label, type = 'text', placeholder, value, onChange, icon }) => (
+const InputField = ({ id, label, type = 'text', placeholder, value, onChange, icon, autoFocus, inputRef, autoComplete }) => (
   <div className="space-y-1.5">
     <label htmlFor={id} className="block text-xs font-bold tracking-widest uppercase text-slate-500 font-mono-jb">
       {label}
@@ -98,14 +98,17 @@ const InputField = ({ id, label, type = 'text', placeholder, value, onChange, ic
       )}
       <input
         id={id}
+        ref={inputRef}
         type={type}
+        autoFocus={autoFocus}
+        autoComplete={autoComplete}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         className={`
           input-field w-full rounded-lg border border-slate-200 bg-white
           py-3 text-sm text-slate-800 placeholder-slate-400
-          transition-all duration-200
+          transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30
           ${icon ? 'pl-10 pr-4' : 'px-4'}
         `}
       />
@@ -119,9 +122,19 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const usernameInputRef = useRef(null);
 
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+
+  // Auto focus input on mount
+  useEffect(() => {
+    usernameInputRef.current?.focus();
+    const timer = setTimeout(() => {
+      usernameInputRef.current?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -236,11 +249,14 @@ const Login = () => {
           <form onSubmit={handleLogin} className="space-y-4 px-8 pb-6 pt-4">
             <InputField
               id="username"
+              inputRef={usernameInputRef}
+              autoFocus
               label="Tên đăng nhập"
               placeholder="Nhập tên đăng nhập của bạn"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               icon="person"
+              autoComplete="username"
             />
 
             <InputField
@@ -251,6 +267,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               icon="lock"
+              autoComplete="current-password"
             />
 
             {/* Forgot password row */}

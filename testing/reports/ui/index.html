@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartEMS - Báo Cáo Kiểm Thử Giao Diện E2E</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #070b14; color: #e2e8f0; margin: 0; padding: 30px; }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .nav-bar { display: flex; gap: 12px; margin-bottom: 25px; }
+    .nav-link { padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none; transition: 0.2s; }
+    .nav-link.active { background: #3b82f6; color: white; }
+    .nav-link.inactive { background: #1e293b; color: #94a3b8; }
+    .nav-link.inactive:hover { background: #334155; color: white; }
+    .header { background: linear-gradient(135deg, #0f172a, #1e293b); border: 1px solid #334155; padding: 25px 35px; border-radius: 24px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
+    .kpi-card { background: #0f172a; border: 1px solid #1e293b; padding: 22px; border-radius: 18px; text-align: center; }
+    .val { font-size: 28px; font-weight: 800; margin-top: 6px; font-family: monospace; }
+    .tc-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 20px; padding: 24px; margin-bottom: 24px; }
+    .tc-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 14px; margin-bottom: 16px; }
+    .tc-img { margin-top: 16px; border-radius: 14px; border: 1px solid #334155; width: 100%; display: block; box-shadow: 0 6px 25px rgba(0,0,0,0.6); }
+    .badge-pass { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.5); padding: 8px 18px; border-radius: 99px; font-size: 14px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-bar">
+      <a href="../index.html" class="nav-link inactive">🏠 Master Dashboard</a>
+      <a href="../api/index.html" class="nav-link inactive">📡 API & RBAC Test</a>
+      <a href="./index.html" class="nav-link active">🎬 UI E2E Test</a>
+      <a href="../performance/index.html" class="nav-link inactive">⚡ JMeter Performance</a>
+    </div>
+
+    <div class="header">
+      <div>
+        <h1 style="margin: 0 0 8px 0; font-size: 24px; color: #38bdf8;">🎬 BÁO CÁO KIỂM THỬ GIAO DIỆN TRỰC QUAN TOÀN DIỆN (3 ROLES)</h1>
+        <p style="margin: 0; font-size: 13.5px; color: #94a3b8;">Tài khoản: admin01, dispatcher01, provider01 (123456) • Thời gian: 123s</p>
+      </div>
+      <div><span class="badge-pass">100% PASS (23/23)</span></div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Tổng Ca Kiểm Thử</div>
+        <div class="val" style="color: #38bdf8;">23 TCs</div>
+      </div>
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Thành Công</div>
+        <div class="val" style="color: #4ade80;">100%</div>
+      </div>
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Phân Hệ Đã Test</div>
+        <div class="val" style="color: #c084fc;">3 / 3 Roles</div>
+      </div>
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Thời Gian Chạy</div>
+        <div class="val" style="color: #fbbf24;">123s</div>
+      </div>
+    </div>
+
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[DISPATCHER] TC-DISP-01</span> - Giao diện Điều phối Vận hành 3 Cột
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/dispatcher/dispatch-requests</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Hàng đợi ca (Cột 1), Chi tiết ca (Cột 2), Bản đồ mini & danh sách xe (Cột 3).</p>
+        <img class="tc-img" src="screenshots/tc-disp-01_dispatcher.png" alt="Giao diện Điều phối Vận hành 3 Cột" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[DISPATCHER] TC-DISP-02</span> - Modal Đề xuất Top 3 Xe Cứu Thương
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/dispatcher/dispatch-requests</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Gợi ý top 3 xe cứu thương gần nhất theo OSRM routing.</p>
+        <img class="tc-img" src="screenshots/tc-disp-02_dispatcher.png" alt="Modal Đề xuất Top 3 Xe Cứu Thương" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[DISPATCHER] TC-DISP-03</span> - Modal Xem Timeline Diễn biến Ca cấp cứu
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/dispatcher/dispatch-requests</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Lịch sử tiếp nhận, xác minh và điều phối ca.</p>
+        <img class="tc-img" src="screenshots/tc-disp-03_dispatcher.png" alt="Modal Xem Timeline Diễn biến Ca cấp cứu" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[DISPATCHER] TC-DISP-04</span> - Quản lý Tài nguyên Xe Cứu Thương
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/dispatcher/dispatch-resources</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Danh sách xe cứu thương, trạng thái sẵn sàng và loại trang thiết bị.</p>
+        <img class="tc-img" src="screenshots/tc-disp-04_dispatcher.png" alt="Quản lý Tài nguyên Xe Cứu Thương" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[DISPATCHER] TC-DISP-05</span> - Bản đồ Radar Toàn cảnh Thời gian thực
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/dispatcher/dispatch-map</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Bản đồ Leaflet toàn màn hình hiển thị toàn bộ xe và hiện trường.</p>
+        <img class="tc-img" src="screenshots/tc-disp-05_dispatcher.png" alt="Bản đồ Radar Toàn cảnh Thời gian thực" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[DISPATCHER] TC-DISP-06</span> - Hồ sơ Cá nhân Điều phối viên
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/dispatcher/profile</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Xem thông tin ca trực và cấu hình bảo mật.</p>
+        <img class="tc-img" src="screenshots/tc-disp-06_dispatcher.png" alt="Hồ sơ Cá nhân Điều phối viên" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[PROVIDER] TC-PROV-01</span> - Quản lý Đội xe Cấp cứu (Fleet Management)
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/provider/fleet</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Danh sách phương tiện, tài xế và trạng thái hoạt động của đội xe.</p>
+        <img class="tc-img" src="screenshots/tc-prov-01_provider.png" alt="Quản lý Đội xe Cấp cứu (Fleet Management)" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[PROVIDER] TC-PROV-02</span> - Tổng quan Vận hành Đơn vị (Provider Dashboard)
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/provider/dashboard</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Chỉ số KPI vận hành, tỷ lệ xe sẵn sàng, số chuyến hoàn thành.</p>
+        <img class="tc-img" src="screenshots/tc-prov-02_provider.png" alt="Tổng quan Vận hành Đơn vị (Provider Dashboard)" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[PROVIDER] TC-PROV-03</span> - Quản lý Ví Tài xế & Cảnh báo Số dư < 1 triệu
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/provider/finance</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Danh sách ví tài xế, cảnh báo đỏ khi ví dưới 1 triệu.</p>
+        <img class="tc-img" src="screenshots/tc-prov-03_provider.png" alt="Quản lý Ví Tài xế & Cảnh báo Số dư < 1 triệu" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[PROVIDER] TC-PROV-04</span> - Modal Nạp tiền Ký quỹ Ví Tài xế VietQR
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/provider/finance</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Chọn số tiền 1.000k đ, quét mã VietQR và xác nhận nạp tiền.</p>
+        <img class="tc-img" src="screenshots/tc-prov-04_provider.png" alt="Modal Nạp tiền Ký quỹ Ví Tài xế VietQR" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[PROVIDER] TC-PROV-05</span> - Nhật ký Khấu trừ 10% Hoa hồng Cuốc xe
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/provider/finance</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Danh sách các cuốc xe đã chạy và khoản 10% bị trừ vào ví.</p>
+        <img class="tc-img" src="screenshots/tc-prov-05_provider.png" alt="Nhật ký Khấu trừ 10% Hoa hồng Cuốc xe" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[PROVIDER] TC-PROV-06</span> - Công cụ Ước tính Cước xe Cấp cứu
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/provider/finance</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Tính cước theo loại xe BLS/ALS, khoảng cách GPS và phụ phí kíp y tế.</p>
+        <img class="tc-img" src="screenshots/tc-prov-06_provider.png" alt="Công cụ Ước tính Cước xe Cấp cứu" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[PROVIDER] TC-PROV-07</span> - Thông tin Đơn vị & Tài khoản Provider
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/provider/profile</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Xem thông tin pháp nhân đơn vị cấp cứu và người đại diện.</p>
+        <img class="tc-img" src="screenshots/tc-prov-07_provider.png" alt="Thông tin Đơn vị & Tài khoản Provider" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-01</span> - Tổng quan Vận hành Toàn Hệ thống
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/dashboard</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Biểu đồ thống kê số ca cấp cứu, thời gian phản hồi và hiệu suất.</p>
+        <img class="tc-img" src="screenshots/tc-adm-01_admin.png" alt="Tổng quan Vận hành Toàn Hệ thống" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-02</span> - Lịch sử Ca Cấp cứu & Báo cáo Sự cố
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/incidents</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Tra cứu lịch sử các ca cấp cứu và xuất dữ liệu báo cáo.</p>
+        <img class="tc-img" src="screenshots/tc-adm-02_admin.png" alt="Lịch sử Ca Cấp cứu & Báo cáo Sự cố" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-03</span> - Quản trị Doanh thu Hoa hồng Sàn 10%
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/finance</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Thống kê tổng hoa hồng sàn đã thu từ các đơn vị Provider.</p>
+        <img class="tc-img" src="screenshots/tc-adm-03_admin.png" alt="Quản trị Doanh thu Hoa hồng Sàn 10%" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-04</span> - Cấu hình Chính sách Ký quỹ & Bảng giá Sàn
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/finance</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Cấu hình mức ký quỹ tối thiểu (1.000.000 đ) và chiết khấu sàn 10%.</p>
+        <img class="tc-img" src="screenshots/tc-adm-04_admin.png" alt="Cấu hình Chính sách Ký quỹ & Bảng giá Sàn" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-05</span> - Quản lý Tài khoản Người dùng & Phân quyền
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/users</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Danh sách người dùng, cấp quyền ADMIN, DISPATCHER, PROVIDER.</p>
+        <img class="tc-img" src="screenshots/tc-adm-05_admin.png" alt="Quản lý Tài khoản Người dùng & Phân quyền" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-06</span> - Quản lý Đơn vị & Nhà Cung cấp Dịch vụ
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/providers</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Danh mục trung tâm cấp cứu 115, bệnh viện và đơn vị vận chuyển.</p>
+        <img class="tc-img" src="screenshots/tc-adm-06_admin.png" alt="Quản lý Đơn vị & Nhà Cung cấp Dịch vụ" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-07</span> - Danh mục Bệnh viện & Cơ sở Cấp cứu
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/hospitals</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Quản lý bệnh viện tiếp nhận, khoa cấp cứu và số giường trống.</p>
+        <img class="tc-img" src="screenshots/tc-adm-07_admin.png" alt="Danh mục Bệnh viện & Cơ sở Cấp cứu" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-08</span> - Cấu hình Loại Phương tiện & Dịch vụ Y tế
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/service-types</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Cấu hình danh mục xe BLS, ALS, xe chuyên dụng và bảng giá cơ sở.</p>
+        <img class="tc-img" src="screenshots/tc-adm-08_admin.png" alt="Cấu hình Loại Phương tiện & Dịch vụ Y tế" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-09</span> - Quản lý Lưu trữ Tệp tin Hệ thống MinIO
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/files</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Quản lý tài liệu đính kèm, hình ảnh hiện trường và file ghi âm.</p>
+        <img class="tc-img" src="screenshots/tc-adm-09_admin.png" alt="Quản lý Lưu trữ Tệp tin Hệ thống MinIO" />
+      </div>
+    
+      <div class="tc-card">
+        <div class="tc-header">
+          <div style="font-size: 16px; font-weight: bold; color: #f8fafc;">
+            <span style="color: #38bdf8; font-family: monospace;">[ADMIN] TC-ADM-10</span> - Hồ sơ Quản trị viên Tối cao
+          </div>
+          <span class="badge-pass" style="font-size: 11px; padding: 4px 12px;">PASS</span>
+        </div>
+        <p style="margin: 0 0 8px 0; font-size: 13.5px;"><strong>URL:</strong> <code style="color: #93c5fd; background: #1e293b; padding: 2px 6px; border-radius: 4px;">http://localhost:5173/admin/profile</code></p>
+        <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #cbd5e1;"><strong>Mô tả:</strong> Xem thông tin tài khoản quản trị hệ thống và cấu hình bảo mật.</p>
+        <img class="tc-img" src="screenshots/tc-adm-10_admin.png" alt="Hồ sơ Quản trị viên Tối cao" />
+      </div>
+    
+  </div>
+</body>
+</html>
+  

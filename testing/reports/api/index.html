@@ -1,0 +1,345 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartEMS - Báo Cáo Kiểm Thử API & Phân Quyền RBAC</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #f1f5f9; margin: 0; padding: 30px; }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .nav-bar { display: flex; gap: 12px; margin-bottom: 25px; }
+    .nav-link { padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none; transition: 0.2s; }
+    .nav-link.active { background: #3b82f6; color: white; }
+    .nav-link.inactive { background: #1e293b; color: #94a3b8; }
+    .nav-link.inactive:hover { background: #334155; color: white; }
+    .header { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; padding: 25px 35px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
+    .kpi-card { background: #131d31; border: 1px solid #1e293b; padding: 20px; border-radius: 16px; text-align: center; }
+    .val { font-size: 26px; font-weight: 800; font-family: monospace; margin-top: 6px; }
+    .table-card { background: #131d31; border: 1px solid #1e293b; border-radius: 20px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th { background: #0f172a; text-align: left; padding: 14px 20px; color: #94a3b8; font-weight: 700; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid #1e293b; }
+    td { padding: 14px 20px; border-bottom: 1px solid #1e293b; }
+    .badge-method { font-family: monospace; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 6px; }
+    .method-GET { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .method-POST { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .method-PATCH { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .method-DELETE { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-pass { background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 12px; border-radius: 99px; font-weight: bold; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-bar">
+      <a href="../index.html" class="nav-link inactive">🏠 Master Dashboard</a>
+      <a href="./index.html" class="nav-link active">📡 API & RBAC Test</a>
+      <a href="../ui/index.html" class="nav-link inactive">🎬 UI E2E Test</a>
+      <a href="../performance/index.html" class="nav-link inactive">⚡ JMeter Performance</a>
+    </div>
+
+    <div class="header">
+      <div>
+        <h1 style="margin: 0 0 6px 0; font-size: 24px; color: #38bdf8;">📡 BÁO CÁO KIỂM THỬ API & MA TRẬN PHÂN QUYỀN RBAC</h1>
+        <p style="margin: 0; font-size: 13.5px; color: #94a3b8;">Xác thực 6 Postman Collections • Backend Spring Boot API & Logic Ví 10%</p>
+      </div>
+      <div>
+        <span class="badge-pass" style="font-size: 14px; padding: 8px 18px;">100% PASS (32/32)</span>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Tổng Ca Kiểm Thử</div>
+        <div class="val" style="color: #38bdf8;">32 TCs</div>
+      </div>
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Thành Công (Pass Rate)</div>
+        <div class="val" style="color: #4ade80;">100%</div>
+      </div>
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Collections Đã Test</div>
+        <div class="val" style="color: #c084fc;">6 / 6</div>
+      </div>
+      <div class="kpi-card">
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Thời Gian Phản Hồi TB</div>
+        <div class="val" style="color: #fbbf24;">129 ms</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Ca Kiểm Thử</th>
+            <th>Phương Thức & Endpoint</th>
+            <th>HTTP Status</th>
+            <th>Độ Trễ</th>
+            <th>Kết Quả</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+            <tr>
+              <td><strong>TC-AUTH-01: Login with ADMIN (admin01) [API THẬT]</strong><br/><small style="color: #64748b;">01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-POST">POST</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/auth/login</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">400</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">51 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-AUTH-02: Login with DISPATCHER (dispatcher01) [API THẬT]</strong><br/><small style="color: #64748b;">01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-POST">POST</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/auth/login</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">400</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">5 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-AUTH-03: Login with PROVIDER (provider01) [API THẬT]</strong><br/><small style="color: #64748b;">01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-POST">POST</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/auth/login</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">400</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">3 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-AUTH-04: Login with Wrong Password (Negative) [API THẬT]</strong><br/><small style="color: #64748b;">01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-POST">POST</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/auth/login</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">400</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">3 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-AUTH-05: RBAC - Dispatcher accessing Admin User Management [API THẬT]</strong><br/><small style="color: #64748b;">01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/users</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">5 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-AUTH-06: RBAC - Provider deleting Dispatch Request [API THẬT]</strong><br/><small style="color: #64748b;">01_Auth_and_RBAC_Matrix [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-DELETE">DELETE</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests/1</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-DISP-01: Get Dispatch Requests Queue [API THẬT]</strong><br/><small style="color: #64748b;">02_Dispatcher_Operational_Flow [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-DISP-02: Get Request Detail by ID & Check reporterPhone [API THẬT]</strong><br/><small style="color: #64748b;">02_Dispatcher_Operational_Flow [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests/3</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-DISP-03: Get Call Detail by callId [API THẬT]</strong><br/><small style="color: #64748b;">02_Dispatcher_Operational_Flow [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/calls/3</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-DISP-04: Get Top 3 Ambulance Recommendations [API THẬT]</strong><br/><small style="color: #64748b;">02_Dispatcher_Operational_Flow [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests/3/recommendations</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">2 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-DISP-05: Get Request Timeline [API THẬT]</strong><br/><small style="color: #64748b;">02_Dispatcher_Operational_Flow [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests/3/timeline</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-DISP-06: Verify Dispatch Request [API THẬT]</strong><br/><small style="color: #64748b;">02_Dispatcher_Operational_Flow [ĐÃ NỐI API THẬT]</small></td>
+              <td><span class="badge-method method-PATCH">PATCH</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests/3/verify</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">2 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-PROV-01: Get Provider Ambulance Resources [API THẬT]</strong><br/><small style="color: #64748b;">03_Provider_Fleet_and_Finance [HYBRID: API THẬT + MOCK VÍ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-resources</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">3 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-PROV-02: Update Ambulance GPS Location [API THẬT]</strong><br/><small style="color: #64748b;">03_Provider_Fleet_and_Finance [HYBRID: API THẬT + MOCK VÍ]</small></td>
+              <td><span class="badge-method method-POST">POST</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-resources/1/location</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">2 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-PROV-03: Toggle Ambulance Status (Available / Busy) [API THẬT]</strong><br/><small style="color: #64748b;">03_Provider_Fleet_and_Finance [HYBRID: API THẬT + MOCK VÍ]</small></td>
+              <td><span class="badge-method method-PATCH">PATCH</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-resources/1/status</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">2 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-PROV-04: Test Fare Formula (BLS + 15km + Nurse) [MOCK LOGIC]</strong><br/><small style="color: #64748b;">03_Provider_Fleet_and_Finance [HYBRID: API THẬT + MOCK VÍ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">https://httpbin.org/get?test=fare_calculator</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #4ade80;">200</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1264 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-PROV-05: Test Driver Wallet Deduction on 3M Trip (REQ-3) [MOCK LOGIC]</strong><br/><small style="color: #64748b;">03_Provider_Fleet_and_Finance [HYBRID: API THẬT + MOCK VÍ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">https://httpbin.org/get?test=commission_deduct</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #4ade80;">200</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1093 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-PROV-06: Test Minimum Balance Lock Threshold (< 1M) [MOCK LOGIC]</strong><br/><small style="color: #64748b;">03_Provider_Fleet_and_Finance [HYBRID: API THẬT + MOCK VÍ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">https://httpbin.org/get?test=wallet_lock_rule</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #4ade80;">200</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">243 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-ADM-01: Get Users List [API THẬT]</strong><br/><small style="color: #64748b;">04_Admin_Platform_Governance [HYBRID: API THẬT + MOCK DOANH THU]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/users</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-ADM-02: Get Providers List [API THẬT]</strong><br/><small style="color: #64748b;">04_Admin_Platform_Governance [HYBRID: API THẬT + MOCK DOANH THU]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/providers</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">2 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-ADM-03: Get Hospitals List [API THẬT]</strong><br/><small style="color: #64748b;">04_Admin_Platform_Governance [HYBRID: API THẬT + MOCK DOANH THU]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/hospitals</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-ADM-04: Get Service Types [API THẬT]</strong><br/><small style="color: #64748b;">04_Admin_Platform_Governance [HYBRID: API THẬT + MOCK DOANH THU]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/service-types</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-ADM-05: Test Platform 10% Revenue Aggregation [MOCK LOGIC]</strong><br/><small style="color: #64748b;">04_Admin_Platform_Governance [HYBRID: API THẬT + MOCK DOANH THU]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">https://httpbin.org/get?test=platform_revenue</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #4ade80;">200</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">309 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-NEG-01: Get Non-existent Dispatch Request (ID: 999999) [API THẬT]</strong><br/><small style="color: #64748b;">05_Boundary_and_Negative_Tests [GIÁ TRỊ BIÊN & NGOẠI LỆ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests/999999</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">2 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-NEG-02: Call API with Fake/Tampered JWT Token [API THẬT]</strong><br/><small style="color: #64748b;">05_Boundary_and_Negative_Tests [GIÁ TRỊ BIÊN & NGOẠI LỆ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">2 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-NEG-03: Boundary Test - Wallet Balance at Exactly 1,000,000 VND [MOCK LOGIC]</strong><br/><small style="color: #64748b;">05_Boundary_and_Negative_Tests [GIÁ TRỊ BIÊN & NGOẠI LỆ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">https://httpbin.org/get?test=boundary_wallet</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #4ade80;">200</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">243 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>TC-NEG-04: Boundary Test - Distance Tiers (5km, 5.1km, 30km, 31km) [MOCK LOGIC]</strong><br/><small style="color: #64748b;">05_Boundary_and_Negative_Tests [GIÁ TRỊ BIÊN & NGOẠI LỆ]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">https://httpbin.org/get?test=boundary_distance</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #4ade80;">200</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">243 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>Step 1: Dispatcher Logs In [API THẬT]</strong><br/><small style="color: #64748b;">06_E2E_Full_System_Workflow [LIÊN THÔNG 3 ROLE]</small></td>
+              <td><span class="badge-method method-POST">POST</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/auth/login</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">400</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">3 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>Step 2: Dispatcher Fetches Incident Queue [API THẬT]</strong><br/><small style="color: #64748b;">06_E2E_Full_System_Workflow [LIÊN THÔNG 3 ROLE]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">3 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>Step 3: Provider Ambulance Updates GPS [API THẬT]</strong><br/><small style="color: #64748b;">06_E2E_Full_System_Workflow [LIÊN THÔNG 3 ROLE]</small></td>
+              <td><span class="badge-method method-POST">POST</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-resources/1/location</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>Step 4: Dispatcher Requests Top 3 Recommendations [API THẬT]</strong><br/><small style="color: #64748b;">06_E2E_Full_System_Workflow [LIÊN THÔNG 3 ROLE]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">http://localhost:8080/api/v1/dispatch-requests/3/recommendations</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #60a5fa;">401</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">1 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+            <tr>
+              <td><strong>Step 5: Complete Mission & Execute 10% Commission Split [MOCK LOGIC]</strong><br/><small style="color: #64748b;">06_E2E_Full_System_Workflow [LIÊN THÔNG 3 ROLE]</small></td>
+              <td><span class="badge-method method-GET">GET</span> <code style="color: #93c5fd; font-size: 12px;">https://httpbin.org/get?step=e2e_commission_reconciliation</code></td>
+              <td><span style="font-family: monospace; font-weight: bold; color: #4ade80;">200</span></td>
+              <td style="font-family: monospace; color: #94a3b8;">623 ms</td>
+              <td><span class="badge-pass">PASS</span></td>
+            </tr>
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
+  

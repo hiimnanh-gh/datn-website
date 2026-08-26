@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:ui": "node testing/runner/run_ui_tests.cjs",
-    "test:api": "node testing/runner/run_all_tests.cjs"
+    "test:api": "node testing/runner/run_all_tests.cjs",
+    "test:all": "node testing/runner/run_unified_tests.cjs"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",
