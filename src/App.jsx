@@ -20,6 +20,7 @@ import ProviderManagement from './features/admin/pages/ProviderManagement/Provid
 import HospitalManagement from './features/admin/pages/HospitalManagement/HospitalManagement';
 import ServiceTypeManagement from './features/admin/pages/ServiceTypeManagement/ServiceTypeManagement';
 import FileStorageManagement from './features/admin/pages/FileStorageManagement/FileStorageManagement';
+import FinancialRevenue from './features/admin/pages/FinancialRevenue/FinancialRevenue';
 import Profile from './features/admin/pages/Profile/Profile';
 
 // ── Dispatcher Layout ────────────────────────────────────
@@ -29,6 +30,7 @@ import DispatcherLayout from './features/dispatcher/DispatcherLayout';
 import ProviderLayout from './features/provider/ProviderLayout';
 import ProviderDashboard from './features/provider/pages/admin/ProviderDashboard';
 import FleetManagement from './features/provider/pages/admin/FleetManagement';
+import FleetFinance from './features/provider/pages/admin/FleetFinance';
 
 // ── Root redirect based on auth state + role ─────────────
 const RootRedirect = () => {
@@ -65,6 +67,8 @@ function App() {
           <Route path="providers" element={<ProviderManagement />} />
           <Route path="hospitals" element={<HospitalManagement />} />
           <Route path="service-types" element={<ServiceTypeManagement />} />
+          <Route path="finance" element={<FinancialRevenue />} />
+          <Route path="revenue" element={<Navigate to="/admin/finance" replace />} />
           <Route path="files" element={<FileStorageManagement />} />
           <Route path="profile" element={<Profile />} />
 
@@ -95,9 +99,11 @@ function App() {
           <Route index element={<Navigate to="fleet" replace />} />
           <Route path="dashboard" element={<ProviderDashboard />} />
           <Route path="fleet" element={<FleetManagement />} />
+          <Route path="finance" element={<FleetFinance />} />
+          <Route path="wallets" element={<Navigate to="/provider/finance" replace />} />
+          <Route path="commission" element={<Navigate to="/provider/finance" replace />} />
           <Route path="profile" element={<Profile />} />
           <Route path="drivers" element={<Navigate to="/provider/dashboard" replace />} />
-          <Route path="commission" element={<Navigate to="/provider/dashboard" replace />} />
           <Route path="*" element={<Navigate to="fleet" replace />} />
         </Route>
 

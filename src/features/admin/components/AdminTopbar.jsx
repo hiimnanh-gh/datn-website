@@ -10,6 +10,7 @@ const PAGE_META = {
   '/admin/users':         { title: 'Quản lý Người dùng',        desc: 'Danh sách và phân quyền tài khoản người dùng' },
   '/admin/providers':     { title: 'Quản lý Đơn vị',            desc: 'Danh sách các đơn vị và nhà cung cấp dịch vụ' },
   '/admin/hospitals':     { title: 'Bệnh viện & TT Cấp cứu',    desc: 'Danh mục cơ sở y tế và bệnh viện tiếp nhận' },
+  '/admin/finance':       { title: 'Doanh thu & Hoa hồng Sàn',  desc: 'Quản trị dòng tiền chiết khấu 10% và chính sách ký quỹ hệ thống' },
   '/admin/service-types': { title: 'Loại dịch vụ',              desc: 'Cấu hình các loại phương tiện và dịch vụ y tế' },
   '/admin/files':         { title: 'Lưu trữ Tệp (MinIO)',       desc: 'Quản lý tệp tin và dữ liệu đính kèm hệ thống' },
   '/admin/profile':       { title: 'Hồ sơ cá nhân',             desc: 'Thông tin tài khoản và đổi mật khẩu quản trị' },

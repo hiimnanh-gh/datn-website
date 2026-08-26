@@ -12,13 +12,15 @@ import {
   RadioTower,
   Building2,
   Layers,
-  HardDrive
+  HardDrive,
+  DollarSign
 } from 'lucide-react';
 import AppLogo from '../../../components/AppLogo';
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard',          icon: LayoutDashboard, label: 'Tổng quan vận hành' },
   { to: '/admin/incidents',          icon: History,         label: 'Lịch sử ca cấp cứu' },
+  { to: '/admin/finance',            icon: DollarSign,      label: 'Doanh thu & Hoa hồng' },
   { to: '/admin/users',              icon: Users,           label: 'Quản lý Người dùng' },
   { to: '/admin/providers',          icon: Building2,       label: 'Quản lý Đơn vị' },
   { to: '/admin/hospitals',         icon: Building2,       label: 'Bệnh viện & TT Cấp cứu' },

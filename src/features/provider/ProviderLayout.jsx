@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Truck,
   Building2,
+  Wallet,
   X,
 } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
@@ -12,6 +13,7 @@ import AppLogo from '../../components/AppLogo';
 
 const NAV_ITEMS = [
   { to: '/provider/fleet',     icon: Truck,           label: 'Quản lý Đội xe (Fleet)' },
+  { to: '/provider/finance',   icon: Wallet,          label: 'Tài chính & Ví tài xế' },
   { to: '/provider/dashboard', icon: LayoutDashboard, label: 'Tổng quan Vận hành' },
 ];
 
@@ -26,6 +28,7 @@ const ProviderLayout = () => {
 
   const getPageTitle = () => {
     if (location.pathname.includes('/provider/fleet')) return 'Quản lý Đội xe Cấp cứu';
+    if (location.pathname.includes('/provider/finance')) return 'Tài chính & Quản lý Ví Đội xe';
     if (location.pathname.includes('/provider/dashboard')) return 'Tổng quan Vận hành Đơn vị';
     if (location.pathname.includes('/provider/profile')) return 'Thông tin Đơn vị & Tài khoản';
     return 'Cổng Thông tin Đơn vị Cấp cứu';
