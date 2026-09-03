@@ -22,7 +22,11 @@ const ProviderLayout = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (!isAuthenticated || (user?.role !== 'PROVIDER' && user?.role !== 'PROVIDER_ADMIN' && user?.role !== 'ADMIN')) {
+  const userRole = user?.role || (Array.isArray(user?.roles) ? user.roles[0] : '');
+  const userRoles = Array.isArray(user?.roles) ? user.roles : [userRole];
+  const isProvider = userRoles.some(r => ['PROVIDER', 'PROVIDER_ADMIN', 'ADMIN'].includes(r?.toUpperCase()));
+
+  if (!isAuthenticated || !isProvider) {
     return <Navigate to="/login" replace />;
   }
 

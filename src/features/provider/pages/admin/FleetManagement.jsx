@@ -5,6 +5,7 @@ import {
 import { dispatchResourceService } from '../../../../services/dispatchResourceService';
 import { providerService } from '../../../../services/providerService';
 import { serviceTypeService } from '../../../../services/serviceTypeService';
+import useAuthStore from '../../../../store/useAuthStore';
 
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
@@ -28,6 +29,7 @@ const getStatusBadge = (status) => {
 };
 
 const FleetManagement = () => {
+  const { user } = useAuthStore();
   const [resources, setResources] = useState([]);
   const [providers, setProviders] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
@@ -109,8 +111,8 @@ const FleetManagement = () => {
         id: null,
         resourceCode: '',
         resourceTypeId: serviceTypes.length > 0 ? serviceTypes[0].id : '',
-        providerId: providers.length > 0 ? providers[0].id : '',
-        zoneId: zones.length > 0 ? zones[0].id : '',
+        providerId: providers.length > 0 ? providers[0].id : (user?.providerId || ''),
+        zoneId: null,
         status: 'AVAILABLE'
       });
       setIsEditing(false);
