@@ -23,6 +23,7 @@ import { callService } from '../../../services/callService';
 import wsService from '../../../services/websocket';
 import SimulationControlModal from '../components/SimulationControlModal';
 import HeaderUserProfile from '../../../components/HeaderUserProfile';
+import { calculateEstimatedFare } from '../../../mock/paymentMockData';
 
 // Leaflet default icon fix
 delete L.Icon.Default.prototype._getIconUrl;
