@@ -13,7 +13,11 @@ const NAV_ITEMS = [
 const DispatcherLayout = () => {
   const { user, isAuthenticated } = useAuthStore();
 
-  if (!isAuthenticated || (user?.role !== 'DISPATCHER' && user?.role !== 'ADMIN')) {
+  const userRole = user?.role || (Array.isArray(user?.roles) ? user.roles[0] : '');
+  const userRoles = Array.isArray(user?.roles) ? user.roles : [userRole];
+  const isDispatcher = userRoles.some(r => ['DISPATCHER', 'ADMIN'].includes(r?.toUpperCase()));
+
+  if (!isAuthenticated || !isDispatcher) {
     return <Navigate to="/login" replace />;
   }
 

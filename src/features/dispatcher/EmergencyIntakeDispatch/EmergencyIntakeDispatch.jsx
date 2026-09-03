@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle2, ShieldAlert, 
   MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles, Zap, Maximize2, Building2,
@@ -8,7 +9,10 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 import useAuthStore from '../../../store/useAuthStore';
-import { missionPayment, formatVND, calculateEstimatedFare } from '../../../mock/paymentMockData';
+const formatVND = (val) => {
+  if (val === null || val === undefined || isNaN(val)) return '0 ₫';
+  return Number(val).toLocaleString('vi-VN') + ' ₫';
+};
 import { dispatchRequestService } from '../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../services/dispatchResourceService';
 import { dispatchMissionService } from '../../../services/dispatchMissionService';
@@ -191,6 +195,26 @@ const EmergencyIntakeDispatch = () => {
   const [recsModal, setRecsModal] = useState(null);
   const [isFullMapOpen, setIsFullMapOpen] = useState(false);
   const [paymentDetailModal, setPaymentDetailModal] = useState(null);
+  const [isUpdatingSeverity, setIsUpdatingSeverity] = useState(false);
+
+  // 0. Update Severity / Urgency Handler
+  const handleUpdateSeverity = async (newSeverity) => {
+    if (!selectedRequest || !newSeverity) return;
+    setIsUpdatingSeverity(true);
+    try {
+      await dispatchRequestService.updateSeverity(selectedRequest.id, newSeverity);
+      // Immediately refresh detail and requests queue
+      await Promise.all([
+        fetchReqDetail(selectedRequest.id),
+        fetchRequestsAndCatalogs()
+      ]);
+    } catch (err) {
+      console.error('Error updating severity:', err);
+      alert('Cập nhật mức độ khẩn cấp thất bại: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsUpdatingSeverity(false);
+    }
+  };
 
   // 1. Verify Request Handler
   const handleVerifyRequest = async () => {
@@ -198,7 +222,7 @@ const EmergencyIntakeDispatch = () => {
     try {
       const payload = {
         verificationNote: 'Đã xác minh bởi điều phối viên',
-        confirmedUrgencyLevel: selectedRequest.urgencyLevel || 'HIGH',
+        confirmedUrgencyLevel: selectedRequest.confirmedUrgencyLevel || selectedRequest.urgencyLevel || 'HIGH',
         confirmedAddress: selectedRequest.address || selectedRequest.callerAddress || 'Hà Nội',
         confirmedLatitude: selectedRequest.latitude,
         confirmedLongitude: selectedRequest.longitude
@@ -803,10 +827,28 @@ const EmergencyIntakeDispatch = () => {
                     </div>
 
                     <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-mono font-medium">Mức độ khẩn cấp</span>
-                      <span className={`inline-block font-mono text-[10px] font-bold px-2 py-0.5 rounded border mt-0.5 ${getUrgencyBadge(selectedRequest.confirmedUrgencyLevel || selectedRequest.urgencyLevel || 'HIGH').bg}`}>
-                        {selectedRequest.confirmedUrgencyLevel || selectedRequest.urgencyLevel || 'HIGH'}
+                      <span className="text-slate-500 block text-[10px] uppercase font-mono font-medium mb-1">
+                        Mức độ khẩn cấp (Triage)
                       </span>
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={selectedRequest.urgencyLevel || selectedRequest.confirmedUrgencyLevel || 'HIGH'}
+                          onChange={(e) => handleUpdateSeverity(e.target.value)}
+                          disabled={isUpdatingSeverity}
+                          className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border cursor-pointer focus:outline-none transition-all ${
+                            getUrgencyBadge(selectedRequest.urgencyLevel || selectedRequest.confirmedUrgencyLevel || 'HIGH').bg
+                          } bg-slate-900 hover:brightness-110`}
+                          title="Bấm để thay đổi mức độ khẩn cấp của ca cấp cứu"
+                        >
+                          <option value="CRITICAL" className="bg-slate-950 text-red-400 font-bold">CRITICAL - Cực kỳ khẩn cấp</option>
+                          <option value="HIGH" className="bg-slate-950 text-amber-400 font-bold">HIGH - Khẩn cấp cao</option>
+                          <option value="MEDIUM" className="bg-slate-950 text-yellow-400 font-bold">MEDIUM - Khẩn cấp vừa</option>
+                          <option value="LOW" className="bg-slate-950 text-slate-300 font-bold">LOW - Mức độ thấp</option>
+                        </select>
+                        {isUpdatingSeverity && (
+                          <RefreshCw size={12} className="animate-spin text-blue-400" />
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -928,8 +970,8 @@ const EmergencyIntakeDispatch = () => {
                         zoomControl={false}
                       >
                         <TileLayer
-                          attribution='&copy; OpenStreetMap'
-                          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
                         <Marker
                           position={[selectedRequest.latitude, selectedRequest.longitude]}
@@ -1003,49 +1045,49 @@ const EmergencyIntakeDispatch = () => {
                   )}
                 </div>
 
-                {/* 5. Service Fee / Payment Section (Feature: Chi phí dịch vụ dự kiến) */}
+                {/* 5. Service Fee / Payment Section (Thông tin Dịch vụ & Dự kiến Cước) */}
                 {(() => {
                   const reqServiceType = selectedRequest.serviceTypeName || selectedRequest.serviceType || (selectedRequest.urgencyLevel === 'CRITICAL' ? 'ALS' : 'BLS');
-                  const reqDistance = selectedRequest.distanceKm || (selectedRequest.id ? Number((((selectedRequest.id * 3.7) % 15) + 4).toFixed(1)) : 8.0);
-                  const fareInfo = calculateEstimatedFare(reqServiceType, reqDistance);
-                  const finalFare = selectedRequest.estimatedFare || fareInfo.amount;
+                  const finalFare = selectedRequest.estimatedFare || selectedRequest.fare || 0;
+                  const isCompleted = selectedRequest.status === 'COMPLETED';
 
                   return (
                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
                       <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
                         <span className="font-bold text-[11px] text-emerald-300 flex items-center gap-1.5 uppercase tracking-wider">
                           <Receipt size={13} className="text-emerald-400" />
-                          Chi phí dịch vụ dự kiến
+                          Thông tin Dịch vụ & Cước phát sinh
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60 font-mono">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border font-mono ${
+                          isCompleted 
+                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60' 
+                            : 'bg-amber-950/60 text-amber-300 border-amber-800/60'
+                        }`}>
                           <Clock size={10} />
-                          Chờ thanh toán
+                          {isCompleted ? 'Đã thanh toán' : 'Chờ đối soát'}
                         </span>
                       </div>
 
                       <div className="space-y-1.5 text-xs">
                         <div className="flex items-center justify-between bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
                           <div className="space-y-0.5">
-                            <span className="text-slate-400 text-[11px] block">Ước tính ({fareInfo.serviceType} • {fareInfo.distanceKm} km):</span>
+                            <span className="text-slate-400 text-[11px] block">Dịch vụ: <strong className="text-indigo-300">{reqServiceType}</strong></span>
                             <span className="font-mono font-bold text-emerald-400 text-sm">
-                              {formatVND(finalFare)}
+                              {finalFare > 0 ? formatVND(finalFare) : 'Quyết toán tự động'}
                             </span>
                           </div>
                           <button
                             type="button"
                             onClick={() => setPaymentDetailModal({
                               missionId: `REQ-${selectedRequest.id}`,
-                              serviceType: fareInfo.serviceType,
-                              distanceKm: fareInfo.distanceKm,
-                              baseFare: fareInfo.baseFare,
-                              distanceFare: fareInfo.distanceFare,
+                              serviceType: reqServiceType,
                               amount: finalFare,
-                              status: 'PENDING',
-                              completedAt: selectedRequest.completedAt || selectedRequest.updatedAt || 'Vừa cập nhật'
+                              status: isCompleted ? 'SUCCESS' : 'PENDING',
+                              completedAt: selectedRequest.completedAt || selectedRequest.updatedAt || 'Hệ thống ghi nhận'
                             })}
                             className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[11px] font-medium transition-colors cursor-pointer border border-slate-700"
                           >
-                            Bóc tách cước
+                            Chi tiết cước
                           </button>
                         </div>
                       </div>
@@ -1533,8 +1575,8 @@ const EmergencyIntakeDispatch = () => {
                 className="w-full h-full"
               >
                 <TileLayer
-                  attribution='&copy; OpenStreetMap'
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
                 {/* Incident Marker (Red) */}
@@ -1648,7 +1690,7 @@ const EmergencyIntakeDispatch = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Quãng đường dự kiến:</span>
                   <span className="font-mono font-bold text-slate-200">
-                    {paymentDetailModal.distanceKm} km
+                    {paymentDetailModal.distanceKm ? `${paymentDetailModal.distanceKm} km` : 'Theo lộ trình điều xe'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -1659,25 +1701,22 @@ const EmergencyIntakeDispatch = () => {
 
               {/* Breakdown */}
               <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 space-y-2.5">
-                <div className="flex justify-between text-slate-300">
-                  <span>Phí cơ bản mở cửa:</span>
-                  <span className="font-mono font-semibold text-slate-200">{formatVND(paymentDetailModal.baseFare)}</span>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span>Phí theo quãng đường ({paymentDetailModal.distanceKm} km):</span>
-                  <span className="font-mono font-semibold text-slate-200">{formatVND(paymentDetailModal.distanceFare)}</span>
-                </div>
-
-                <div className="pt-2.5 border-t border-slate-800 flex justify-between items-baseline text-white font-bold">
-                  <span className="uppercase text-[11px] tracking-wider text-slate-400">TỔNG CHI PHÍ DỰ KIẾN</span>
-                  <span className="font-mono text-lg text-emerald-400">{formatVND(paymentDetailModal.amount)}</span>
+                <div className="flex justify-between items-baseline text-white font-bold">
+                  <span className="uppercase text-[11px] tracking-wider text-slate-400">TỔNG CHI PHÍ GHI NHẬN</span>
+                  <span className="font-mono text-lg text-emerald-400">
+                    {paymentDetailModal.amount > 0 ? formatVND(paymentDetailModal.amount) : 'Quyết toán sau khi kết thúc ca'}
+                  </span>
                 </div>
 
                 <div className="pt-2 flex justify-between items-center text-xs">
                   <span className="text-slate-400">Trạng thái:</span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                    paymentDetailModal.status === 'SUCCESS' 
+                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60' 
+                      : 'bg-amber-950/60 text-amber-300 border-amber-800/60'
+                  }`}>
                     <Clock size={11} />
-                    Chờ thanh toán (PENDING)
+                    {paymentDetailModal.status === 'SUCCESS' ? 'Đã thanh toán' : 'Chờ đối soát'}
                   </span>
                 </div>
               </div>

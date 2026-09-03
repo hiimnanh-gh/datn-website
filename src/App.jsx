@@ -38,10 +38,12 @@ const RootRedirect = () => {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const userRole = user?.role?.toUpperCase() || '';
-  if (userRole.includes('PROVIDER')) return <Navigate to="/provider/fleet" replace />;
-  if (userRole === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
-  if (userRole === 'DISPATCHER') return <Navigate to="/dispatcher/dispatch-requests" replace />;
+  const userRole = user?.role?.toUpperCase() || (Array.isArray(user?.roles) ? user.roles[0]?.toUpperCase() : '');
+  const userRoles = Array.isArray(user?.roles) ? user.roles.map(r => r.toUpperCase()) : [userRole];
+
+  if (userRoles.some(r => r.includes('PROVIDER'))) return <Navigate to="/provider/fleet" replace />;
+  if (userRoles.some(r => r.includes('ADMIN'))) return <Navigate to="/admin/dashboard" replace />;
+  if (userRoles.some(r => r.includes('DISPATCHER'))) return <Navigate to="/dispatcher/dispatch-requests" replace />;
 
   return <Navigate to="/login" replace />;
 };
