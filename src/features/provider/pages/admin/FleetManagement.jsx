@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Truck, RefreshCw, Search, Edit3, X, MapPin, Plus, Trash2, Check
 } from 'lucide-react';
@@ -16,7 +16,7 @@ const getStatusBadge = (status) => {
     case 'ON_MISSION':
       return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
     case 'RETURNING':
-      return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40';
+      return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40';
     case 'OFFLINE':
       return 'bg-slate-500/20 text-slate-400 border-slate-500/40';
     case 'MAINTENANCE':
@@ -33,6 +33,17 @@ const FleetManagement = () => {
   const [resources, setResources] = useState([]);
   const [providers, setProviders] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
+
+  const userRoles = useMemo(() => {
+    if (Array.isArray(user?.roles)) {
+      return user.roles.map(r => (typeof r === 'string' ? r.toUpperCase() : r?.name?.toUpperCase() || ''));
+    }
+    return [user?.role?.toUpperCase()].filter(Boolean);
+  }, [user]);
+
+  const isGlobalAdminOrDispatcher = useMemo(() => {
+    return userRoles.some(r => ['ADMIN', 'DISPATCHER'].includes(r));
+  }, [userRoles]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,21 +69,37 @@ const FleetManagement = () => {
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
     try {
+      let fetchProvidersPromise;
+      if (isGlobalAdminOrDispatcher) {
+        fetchProvidersPromise = providerService.getAll().catch(() => []);
+      } else if (user?.providerId) {
+        fetchProvidersPromise = providerService.getById(user.providerId)
+          .then(res => (res ? [res] : []))
+          .catch(() => []);
+      } else {
+        fetchProvidersPromise = Promise.resolve([]);
+      }
+
       const [resList, provList, stList] = await Promise.all([
         dispatchResourceService.getAll(),
-        providerService.getAll().catch(() => []),
+        fetchProvidersPromise,
         serviceTypeService.getAll().catch(() => []),
       ]);
 
+      let finalProviders = Array.isArray(provList) ? provList : [];
+      if (finalProviders.length === 0 && user?.providerId) {
+        finalProviders = [{ id: user.providerId, providerName: user.providerName || `Đơn vị #${user.providerId}` }];
+      }
+
       setResources(Array.isArray(resList) ? resList : []);
-      setProviders(Array.isArray(provList) ? provList : []);
+      setProviders(finalProviders);
       setServiceTypes(Array.isArray(stList) ? stList : []);
     } catch (err) {
       console.error('Error fetching fleet resources data:', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isGlobalAdminOrDispatcher, user]);
 
   useEffect(() => {
     fetchAllData();
@@ -111,7 +138,7 @@ const FleetManagement = () => {
         id: null,
         resourceCode: '',
         resourceTypeId: serviceTypes.length > 0 ? serviceTypes[0].id : '',
-        providerId: providers.length > 0 ? providers[0].id : (user?.providerId || ''),
+        providerId: user?.providerId || (providers.length > 0 ? providers[0].id : ''),
         zoneId: null,
         status: 'AVAILABLE'
       });
@@ -360,13 +387,17 @@ const FleetManagement = () => {
                   name="providerId"
                   value={formData.providerId}
                   onChange={handleFormChange}
+                  disabled={!isGlobalAdminOrDispatcher && !!user?.providerId}
                   required
-                  className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-800 text-sm text-white rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="" disabled>-- Chọn Đơn Vị --</option>
                   {providers.map(p => (
                     <option key={p.id} value={p.id}>{p.providerName}</option>
                   ))}
+                  {providers.length === 0 && user?.providerId && (
+                    <option value={user.providerId}>{user.providerName || `Đơn vị #${user.providerId}`}</option>
+                  )}
                 </select>
               </div>
 
