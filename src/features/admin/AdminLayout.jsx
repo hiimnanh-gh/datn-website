@@ -8,7 +8,10 @@ const AdminLayout = () => {
   const { user, isAuthenticated } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') {
+  const userRole = user?.role || (Array.isArray(user?.roles) ? user.roles[0] : '');
+  const isAdmin = userRole === 'ADMIN' || (Array.isArray(user?.roles) && user.roles.includes('ADMIN'));
+
+  if (!isAuthenticated || !isAdmin) {
     return <Navigate to="/login" replace />;
   }
 

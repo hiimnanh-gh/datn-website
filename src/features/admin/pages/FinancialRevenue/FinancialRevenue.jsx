@@ -1,116 +1,155 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
-  ArrowDownLeft, 
-  Wallet, 
   Building2, 
   FileText, 
-  Sliders, 
-  Save, 
-  CheckCircle2, 
-  AlertTriangle, 
   RefreshCw, 
   Search, 
-  Percent, 
   Clock, 
-  CreditCard, 
+  CheckCircle2, 
   ShieldCheck,
-  Receipt
+  Receipt,
+  Filter,
+  Eye,
+  X,
+  AlertCircle,
+  Download,
+  Truck
 } from 'lucide-react';
-import useFinanceStore from '../../../../store/useFinanceStore';
-import { adminPaymentSummary, formatVND } from '../../../../mock/paymentMockData';
+import { dashboardService } from '../../../../services/dashboardService';
+import { providerService } from '../../../../services/providerService';
+
+const formatVND = (val) => {
+  if (val === null || val === undefined || isNaN(val)) return '0 đ';
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+};
+
+const getPaymentStatusBadge = (status) => {
+  switch (status?.toUpperCase()) {
+    case 'SUCCESS':
+    case 'COMPLETED':
+    case 'PAID':
+      return {
+        bg: 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80',
+        label: 'Đã thanh toán',
+        icon: CheckCircle2
+      };
+    case 'PENDING':
+    default:
+      return {
+        bg: 'bg-amber-950/60 text-amber-400 border-amber-800/80',
+        label: 'Chờ thanh toán / đối soát',
+        icon: Clock
+      };
+  }
+};
 
 const FinancialRevenue = () => {
-  const { 
-    driverWallets, 
-    transactions, 
-    settings, 
-    updateSettings 
-  } = useFinanceStore();
-
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'providers' | 'ledger' | 'settings'
+  const [dashData, setDashData] = useState(null);
+  const [providers, setProviders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'transactions'
+  
+  // Filters
+  const [selectedProviderId, setSelectedProviderId] = useState('');
+  const [timeRange, setTimeRange] = useState('TODAY'); // 'TODAY' | 'WEEK' | 'MONTH' | 'ALL'
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'SUCCESS'
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Policy Settings Form State
-  const [minBalanceInput, setMinBalanceInput] = useState(settings.minWalletBalance || 1000000);
-  const [commissionRateInput, setCommissionRateInput] = useState(Math.round((settings.commissionRate || 0.10) * 100));
-  const [blsBaseInput, setBlsBaseInput] = useState(settings.blsBasePrice || 500000);
-  const [blsPerKmInput, setBlsPerKmInput] = useState(settings.blsPerKmPrice || 20000);
-  const [alsBaseInput, setAlsBaseInput] = useState(settings.alsBasePrice || 1200000);
-  const [alsPerKmInput, setAlsPerKmInput] = useState(settings.alsPerKmPrice || 30000);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  // Selected Detail Modal
+  const [selectedDetail, setSelectedDetail] = useState(null);
 
-  // Platform Metrics
-  const minThreshold = settings.minWalletBalance || 1000000;
-  const totalPlatformTripVolume = driverWallets.reduce((acc, d) => acc + (d.totalTripRevenue || 0), 0);
-  const totalCommissionRevenue = transactions
-    .filter(t => t.type === 'COMMISSION_DEDUCT')
-    .reduce((acc, t) => acc + (t.amount || 0), 0);
-  const totalDriverEscrowBalance = driverWallets.reduce((acc, d) => acc + (d.balance || 0), 0);
-  const lockedDriversCount = driverWallets.filter(d => d.balance < minThreshold).length;
+  const getFilterParams = useCallback(() => {
+    const params = {};
+    if (selectedProviderId) {
+      params.providerId = Number(selectedProviderId);
+    }
+    const now = new Date();
+    if (timeRange === 'TODAY') {
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      params.from = startOfDay.toISOString();
+      params.to = now.toISOString();
+      params.granularity = 'HOUR';
+    } else if (timeRange === 'WEEK') {
+      const pastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      params.from = pastWeek.toISOString();
+      params.to = now.toISOString();
+      params.granularity = 'DAY';
+    } else if (timeRange === 'MONTH') {
+      const pastMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      params.from = pastMonth.toISOString();
+      params.to = now.toISOString();
+      params.granularity = 'DAY';
+    }
+    return params;
+  }, [selectedProviderId, timeRange]);
 
-  // Group revenue by Provider
-  const providerStats = [
-    {
-      id: 1,
-      name: 'Trung tâm Cấp cứu 115 Hoàn Kiếm',
-      code: 'PROV-HK-01',
-      totalDrivers: 2,
-      completedTrips: 26,
-      grossTripVolume: 60000000,
-      commissionPaid: 6000000,
-      escrowBalance: 1950000,
-      status: 'ACTIVE',
-    },
-    {
-      id: 2,
-      name: 'Trung tâm Cấp cứu 115 Hai Bà Trưng',
-      code: 'PROV-HBT-02',
-      totalDrivers: 1,
-      completedTrips: 12,
-      grossTripVolume: 28000000,
-      commissionPaid: 2800000,
-      escrowBalance: 850000, // < 1tr
-      status: 'WARNING',
-    },
-    {
-      id: 3,
-      name: 'Trung tâm Cấp cứu 115 Cầu Giấy',
-      code: 'PROV-CG-03',
-      totalDrivers: 1,
-      completedTrips: 24,
-      grossTripVolume: 75000000,
-      commissionPaid: 7500000,
-      escrowBalance: 2800000,
-      status: 'ACTIVE',
-    },
-    {
-      id: 4,
-      name: 'Trung tâm Cấp cứu 115 Thanh Xuân',
-      code: 'PROV-TX-04',
-      totalDrivers: 1,
-      completedTrips: 15,
-      grossTripVolume: 48000000,
-      commissionPaid: 4800000,
-      escrowBalance: 1950000,
-      status: 'ACTIVE',
-    },
-  ];
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = getFilterParams();
+      const [dashRes, provRes] = await Promise.all([
+        dashboardService.getAdminDashboard(params).catch(() => null),
+        providerService.getAll().catch(() => [])
+      ]);
 
-  const handleSavePolicySettings = (e) => {
-    e.preventDefault();
-    updateSettings({
-      minWalletBalance: Number(minBalanceInput),
-      commissionRate: Number(commissionRateInput) / 100,
-      blsBasePrice: Number(blsBaseInput),
-      blsPerKmPrice: Number(blsPerKmInput),
-      alsBasePrice: Number(alsBaseInput),
-      alsPerKmPrice: Number(alsPerKmInput),
-    });
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2000);
-  };
+      setDashData(dashRes);
+      setProviders(Array.isArray(provRes) ? provRes : []);
+    } catch (err) {
+      console.error('Error fetching financial dashboard:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getFilterParams]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Extract real metrics
+  const kpis = dashData?.kpis || {};
+  const platformRevenue = kpis.platformRevenue ?? 0;
+  const totalMissions = kpis.totalMissions ?? 0;
+  const missionSuccessRate = kpis.missionSuccessRate ?? 0;
+  
+  const providerPerformance = dashData?.details?.providerPerformance || [];
+  const rawMissionDetails = dashData?.details?.missionDetails || [];
+
+  // Map mission details to financial transactions
+  const transactions = rawMissionDetails.map(m => {
+    const isCompleted = m.status === 'COMPLETED';
+    const paymentStatus = isCompleted ? 'SUCCESS' : 'PENDING';
+    return {
+      missionId: m.missionId,
+      resourceCode: m.resourceCode || 'N/A',
+      driver: m.driver || 'Chưa gán',
+      destination: m.destination || 'Hiện trường',
+      urgency: m.urgency || 'HIGH',
+      status: m.status,
+      paymentStatus,
+      dispatchedAt: m.dispatchedAt,
+      acceptedAt: m.acceptedAt,
+      completedAt: m.completedAt,
+      paidAt: isCompleted ? m.completedAt : null,
+      providerName: providers.find(p => p.id === Number(selectedProviderId))?.providerName || 'Đơn vị liên kết'
+    };
+  });
+
+  // Filtered transactions
+  const filteredTransactions = transactions.filter(t => {
+    const matchesSearch = searchTerm
+      ? `MIS-${t.missionId}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.resourceCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.driver.toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+
+    const matchesStatus = statusFilter === 'ALL' || t.paymentStatus === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const pendingTransactionsCount = transactions.filter(t => t.paymentStatus === 'PENDING').length;
+  const successTransactionsCount = transactions.filter(t => t.paymentStatus === 'SUCCESS').length;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto font-sans text-slate-200">
@@ -120,268 +159,217 @@ const FinancialRevenue = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
             <DollarSign className="text-emerald-400" size={26} />
-            Quản trị Doanh thu & Hoa hồng Sàn (Platform Revenue & Commissions)
+            Quản trị Tài chính & Doanh thu Sàn (Financial & Revenue)
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Theo dõi dòng tiền chiết khấu 10% thu từ các cuốc xe cấp cứu và cấu hình chính sách ký quỹ toàn hệ thống SmartEMS.
+            Dữ liệu đối soát tài chính thực tế đồng bộ từ máy chủ SmartEMS Backend.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono text-slate-300 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Chiết khấu sàn: <strong className="text-emerald-400">{(settings.commissionRate * 100).toFixed(0)}%</strong></span>
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+          >
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            Làm mới
+          </button>
+        </div>
+      </div>
+
+      {/* ── Filters Toolbar ── */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Filter size={14} className="text-indigo-400 shrink-0" />
+          <span className="text-slate-400 font-medium">Khoảng thời gian:</span>
+
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            {[
+              { id: 'TODAY', label: 'Hôm nay' },
+              { id: 'WEEK', label: '7 ngày' },
+              { id: 'MONTH', label: '30 ngày' },
+              { id: 'ALL', label: 'Tất cả' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setTimeRange(tab.id)}
+                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                  timeRange === tab.id 
+                    ? 'bg-emerald-600 text-white shadow-sm' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Provider Filter */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Building2 size={14} className="text-slate-500" />
+          <select
+            value={selectedProviderId}
+            onChange={(e) => setSelectedProviderId(e.target.value)}
+            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 w-full sm:w-64"
+          >
+            <option value="">Tất cả Đơn vị Provider</option>
+            {providers.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.providerName || p.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Card 1: Doanh thu hoa hồng đã thu */}
+        {/* Platform Revenue Card */}
         <div className="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-4.5 space-y-2 shadow-xl relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-400 font-mono uppercase tracking-wider">Doanh thu Hoa hồng Sàn (10%)</span>
+            <span className="text-xs font-bold text-emerald-400 font-mono uppercase tracking-wider">Doanh thu Nền tảng (Platform)</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
               <TrendingUp size={16} />
             </div>
           </div>
           <div className="text-2xl font-black text-emerald-300 font-mono">
-            {totalCommissionRevenue.toLocaleString('vi-VN')} <span className="text-xs text-emerald-400/80 font-normal">đ</span>
+            {isLoading ? '...' : formatVND(platformRevenue)}
           </div>
           <p className="text-[11px] text-slate-400">
-            Doanh thu thực thu về sàn SmartEMS
+            Tổng doanh thu thực nhận ghi nhận từ Backend
           </p>
         </div>
 
-        {/* Card 2: Tổng giá trị cuốc xe toàn hệ thống */}
+        {/* Total Missions Monitored */}
         <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Tổng cước phát sinh toàn sàn</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-              <DollarSign size={16} />
+            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Nhiệm vụ Điều xe</span>
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+              <Truck size={16} />
             </div>
           </div>
           <div className="text-2xl font-black text-white font-mono">
-            {totalPlatformTripVolume.toLocaleString('vi-VN')} <span className="text-xs text-slate-400 font-normal">đ</span>
+            {isLoading ? '...' : totalMissions} <span className="text-xs text-slate-400 font-normal">chuyến</span>
           </div>
           <p className="text-[11px] text-slate-400">
-            Khách hàng thanh toán cho tài xế
+            Tỷ lệ hoàn tất: <strong className="text-emerald-400">{missionSuccessRate}%</strong>
           </p>
         </div>
 
-        {/* Card 3: Tiền ký quỹ đang quản lý */}
+        {/* Chờ thanh toán / đối soát */}
         <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Tổng quỹ ký quỹ tài xế</span>
+            <span className="text-xs font-medium text-amber-400 font-mono uppercase">Chờ thanh toán (Pending)</span>
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-              <Wallet size={16} />
+              <Clock size={16} />
             </div>
           </div>
           <div className="text-2xl font-black text-amber-400 font-mono">
-            {totalDriverEscrowBalance.toLocaleString('vi-VN')} <span className="text-xs text-slate-400 font-normal">đ</span>
+            {isLoading ? '...' : pendingTransactionsCount} <span className="text-xs text-slate-400 font-normal">ca</span>
           </div>
           <p className="text-[11px] text-slate-400">
-            Tiền nạp giữ chỗ của các đội xe
+            Các ca đang vận hành hoặc chờ đối soát
           </p>
         </div>
 
-        {/* Card 4: Tình trạng tài xế */}
+        {/* Đã thanh toán / hoàn tất */}
         <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Tài xế sẵn sàng nhận ca</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <ShieldCheck size={16} />
+            <span className="text-xs font-medium text-blue-400 font-mono uppercase">Đã thanh toán (Success)</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <CheckCircle2 size={16} />
             </div>
           </div>
-          <div className="text-2xl font-black text-indigo-300 font-mono">
-            {driverWallets.length - lockedDriversCount} / {driverWallets.length} <span className="text-xs text-slate-400 font-normal">tài xế</span>
+          <div className="text-2xl font-black text-blue-400 font-mono">
+            {isLoading ? '...' : successTransactionsCount} <span className="text-xs text-slate-400 font-normal">ca</span>
           </div>
-          <div className="text-[11px] flex items-center gap-1.5">
-            {lockedDriversCount > 0 ? (
-              <span className="text-rose-400 font-bold font-mono">⚠️ {lockedDriversCount} tài xế ví &lt; 1 triệu</span>
-            ) : (
-              <span className="text-emerald-400 font-bold">100% ví đủ điều kiện</span>
-            )}
-          </div>
+          <p className="text-[11px] text-slate-400">
+            Các ca đã hoàn thành nhiệm vụ cấp cứu
+          </p>
         </div>
 
-      </div>
-
-      {/* ── Section: Tổng Doanh Thu Dự Kiến Toàn Nền Tảng (Feature: Estimated Payment) ── */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 hover:border-emerald-500/30 p-5 rounded-2xl shadow-xl transition-all space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Receipt size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                Tổng doanh thu dự kiến toàn sàn
-                <span className="text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full">
-                  PLATFORM ESTIMATED REVENUE
-                </span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Thống kê ước tính doanh thu và công nợ phát sinh từ các đơn vị Provider
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-baseline gap-2 bg-slate-950/60 px-4 py-2 rounded-xl border border-slate-800">
-            <span className="text-xs text-slate-400 font-medium">Tổng ước tính:</span>
-            <span className="text-xl font-bold font-mono text-emerald-400">
-              {formatVND(adminPaymentSummary.estimatedRevenue)}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-slate-950/60 border border-blue-500/20 p-3.5 rounded-xl flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Đã thanh toán (Paid)</span>
-              <span className="text-xs text-slate-500">Các khoản cước đã hoàn tất đối soát</span>
-            </div>
-            <span className="text-base font-bold font-mono text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded-lg border border-blue-800/40">
-              {formatVND(adminPaymentSummary.paid)}
-            </span>
-          </div>
-
-          <div className="bg-slate-950/60 border border-amber-500/20 p-3.5 rounded-xl flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Chờ thanh toán (Pending)</span>
-              <span className="text-xs text-slate-500">Các khoản cước đang chờ thanh toán</span>
-            </div>
-            <span className="text-base font-bold font-mono text-amber-400 bg-amber-950/50 px-2.5 py-1 rounded-lg border border-amber-800/40">
-              {formatVND(adminPaymentSummary.pending)}
-            </span>
-          </div>
-        </div>
-
-        {/* Mini Provider Summary Table */}
-        <div className="bg-slate-950/70 rounded-xl border border-slate-800/80 overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="py-2.5 px-4">Đơn vị Provider</th>
-                <th className="py-2.5 px-4 text-amber-400">Chờ thanh toán (Pending)</th>
-                <th className="py-2.5 px-4 text-blue-400">Đã thanh toán (Paid)</th>
-                <th className="py-2.5 px-4 text-right">Tổng phát sinh</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {adminPaymentSummary.providers.map(p => (
-                <tr key={p.id} className="hover:bg-slate-900/60 transition-colors">
-                  <td className="py-2.5 px-4 font-medium text-slate-200">{p.name}</td>
-                  <td className="py-2.5 px-4 font-mono text-amber-400">{formatVND(p.pending)}</td>
-                  <td className="py-2.5 px-4 font-mono text-blue-400">{formatVND(p.paid)}</td>
-                  <td className="py-2.5 px-4 font-mono font-bold text-right text-white">{formatVND(p.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       {/* ── Navigation Tabs ── */}
-      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'overview'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
           <Building2 size={15} />
-          Doanh thu theo Đơn vị (Provider)
+          Hiệu suất Đơn vị Provider ({providerPerformance.length})
         </button>
 
         <button
-          onClick={() => setActiveTab('ledger')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
-            activeTab === 'ledger'
+          onClick={() => setActiveTab('transactions')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'transactions'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <FileText size={15} />
-          Nhật ký Hoa hồng Thời gian thực ({transactions.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
-            activeTab === 'settings'
-              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
-        >
-          <Sliders size={15} />
-          Cấu hình Ký quỹ & Bảng giá Sàn
+          <Receipt size={15} />
+          Danh sách Nhiệm vụ & Đối soát ({transactions.length})
         </button>
       </div>
 
-      {/* ── TAB 1: REVENUE BY PROVIDER ── */}
+      {/* ── TAB 1: PROVIDER PERFORMANCE ── */}
       {activeTab === 'overview' && (
         <div className="space-y-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm text-white">Hiệu suất vận hành theo Đơn vị Provider</h3>
+                <p className="text-xs text-slate-400">Thống kê số lượng chuyến và tiến độ hoàn thành</p>
+              </div>
+              <span className="text-xs text-emerald-400 font-mono font-bold bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800/50">
+                {providerPerformance.length} Đơn vị ghi nhận
+              </span>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
                   <tr>
-                    <th className="py-3.5 px-4">Đơn vị / Provider</th>
-                    <th className="py-3.5 px-4">Số lượng xe</th>
-                    <th className="py-3.5 px-4">Số chuyến hoàn thành</th>
-                    <th className="py-3.5 px-4">Tổng cước phát sinh</th>
-                    <th className="py-3.5 px-4">Hoa hồng sàn thu (10%)</th>
-                    <th className="py-3.5 px-4">Quỹ ký quỹ hiện tại</th>
-                    <th className="py-3.5 px-4">Trạng thái đội xe</th>
+                    <th className="py-3.5 px-4">Mã / Đơn vị Provider</th>
+                    <th className="py-3.5 px-4 text-center">Tổng ca điều phối</th>
+                    <th className="py-3.5 px-4 text-center text-emerald-400">Ca hoàn tất</th>
+                    <th className="py-3.5 px-4 text-right">Tỷ lệ hoàn thành</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-mono">
-                  {providerStats.map((prov) => (
-                    <tr key={prov.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-100 font-sans text-sm">{prov.name}</div>
-                        <div className="text-slate-500 text-[11px]">{prov.code}</div>
-                      </td>
-
-                      <td className="py-3 px-4 font-sans text-slate-300">
-                        {prov.totalDrivers} xe cứu thương
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <span className="font-bold text-slate-200">{prov.completedTrips}</span> chuyến
-                      </td>
-
-                      <td className="py-3 px-4 text-slate-200 font-bold">
-                        {prov.grossTripVolume.toLocaleString('vi-VN')} đ
-                      </td>
-
-                      <td className="py-3 px-4 text-emerald-400 font-bold text-sm">
-                        +{prov.commissionPaid.toLocaleString('vi-VN')} đ
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <div className={`font-bold ${prov.escrowBalance < minThreshold ? 'text-rose-400' : 'text-amber-400'}`}>
-                          {prov.escrowBalance.toLocaleString('vi-VN')} đ
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 font-sans">
-                        {prov.status === 'ACTIVE' ? (
-                          <span className="bg-emerald-950/70 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                            HOẠT ĐỘNG TỐT
-                          </span>
-                        ) : (
-                          <span className="bg-rose-950/70 text-rose-300 border border-rose-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                            CẦN NẠP THÊM VÍ
-                          </span>
-                        )}
+                  {providerPerformance.length > 0 ? (
+                    providerPerformance.map((p, idx) => {
+                      const rate = p.missions > 0 ? Math.round((p.completed / p.missions) * 100) : 0;
+                      return (
+                        <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="py-3.5 px-4">
+                            <div className="font-bold text-slate-100 font-sans text-sm">{p.providerName}</div>
+                            <div className="text-slate-500 text-[11px]">ID: {p.providerId}</div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center text-slate-200 text-sm font-bold">{p.missions}</td>
+                          <td className="py-3.5 px-4 text-center text-emerald-400 text-sm font-bold">{p.completed}</td>
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-950/60 text-indigo-300 border border-indigo-800/50">
+                              {rate}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="py-12 text-center text-slate-500 text-xs">
+                        Chưa có dữ liệu hiệu suất của Provider nào trong mốc thời gian đã chọn.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -389,212 +377,186 @@ const FinancialRevenue = () => {
         </div>
       )}
 
-      {/* ── TAB 2: COMMISSION TRANSACTION LEDGER ── */}
-      {activeTab === 'ledger' && (
+      {/* ── TAB 2: TRANSACTIONS & SETTLEMENTS ── */}
+      {activeTab === 'transactions' && (
         <div className="space-y-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            
+            {/* Table Search & Status Filter Toolbar */}
+            <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
+                <Search size={14} className="absolute left-3 top-3 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo Mã MIS, Xe, Tài xế..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-xs text-slate-400 font-medium">Trạng thái:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none"
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="PENDING">Chờ thanh toán / đối soát</option>
+                  <option value="SUCCESS">Đã thanh toán</option>
+                </select>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
                   <tr>
-                    <th className="py-3.5 px-4">Mã GD & Thời gian</th>
-                    <th className="py-3.5 px-4">Loại giao dịch</th>
-                    <th className="py-3.5 px-4">Ca cấp cứu</th>
-                    <th className="py-3.5 px-4">Tài xế & Đơn vị</th>
-                    <th className="py-3.5 px-4">Cước cuốc xe</th>
-                    <th className="py-3.5 px-4">Hoa hồng sàn nhận (+10%)</th>
-                    <th className="py-3.5 px-4">Ghi chú giao dịch</th>
+                    <th className="py-3 px-4">Mã Nhiệm vụ</th>
+                    <th className="py-3 px-4">Tài xế / Xe</th>
+                    <th className="py-3 px-4">Điểm đến</th>
+                    <th className="py-3 px-4">Mốc thời gian</th>
+                    <th className="py-3 px-4">Trạng thái thanh toán</th>
+                    <th className="py-3 px-4 text-center">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono">
-                  {transactions.map((txn) => {
-                    const isCommission = txn.type === 'COMMISSION_DEDUCT';
-                    return (
-                      <tr key={txn.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-indigo-400">{txn.id}</div>
-                          <div className="text-[10px] text-slate-500">{txn.timestamp}</div>
-                        </td>
+                <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                  {filteredTransactions.length > 0 ? (
+                    filteredTransactions.map((tx, idx) => {
+                      const badge = getPaymentStatusBadge(tx.paymentStatus);
+                      const BadgeIcon = badge.icon;
 
-                        <td className="py-3 px-4 font-sans">
-                          {isCommission ? (
-                            <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                              THU HOA HỒNG (10%)
+                      return (
+                        <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                          <td className="py-3 px-4 text-red-400 font-bold text-xs">
+                            MIS-{tx.missionId}
+                          </td>
+
+                          <td className="py-3 px-4 font-sans">
+                            <span className="font-semibold text-slate-100 block">{tx.resourceCode}</span>
+                            <span className="text-slate-400 text-[11px]">{tx.driver}</span>
+                          </td>
+
+                          <td className="py-3 px-4 font-sans text-slate-300 truncate max-w-[180px]" title={tx.destination}>
+                            {tx.destination}
+                          </td>
+
+                          <td className="py-3 px-4 text-slate-400 text-[10px]">
+                            <div>Điều xe: {tx.dispatchedAt ? new Date(tx.dispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
+                            {tx.completedAt && <div className="text-emerald-400">Xong: {new Date(tx.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>}
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${badge.bg}`}>
+                              <BadgeIcon size={11} />
+                              {badge.label}
                             </span>
-                          ) : (
-                            <span className="bg-blue-950/80 text-blue-300 border border-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                              NẠP KÝ QUỸ
-                            </span>
-                          )}
-                        </td>
+                          </td>
 
-                        <td className="py-3 px-4 font-bold text-amber-400">
-                          {txn.requestCode || '—'}
-                        </td>
-
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-slate-200 font-sans">{txn.driverName}</div>
-                          <div className="text-slate-400 text-[11px]">{txn.providerName}</div>
-                        </td>
-
-                        <td className="py-3 px-4 text-slate-300">
-                          {isCommission ? `${txn.totalTripFare?.toLocaleString('vi-VN')} đ` : '—'}
-                        </td>
-
-                        <td className="py-3 px-4 font-black text-sm">
-                          {isCommission ? (
-                            <span className="text-emerald-400">+{txn.amount?.toLocaleString('vi-VN')} đ</span>
-                          ) : (
-                            <span className="text-blue-400">+{txn.amount?.toLocaleString('vi-VN')} đ (Ký quỹ)</span>
-                          )}
-                        </td>
-
-                        <td className="py-3 px-4 font-sans text-slate-400 text-[11px] max-w-xs truncate">
-                          {txn.note}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() => setSelectedDetail(tx)}
+                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded text-[11px] font-sans font-medium transition-colors cursor-pointer"
+                            >
+                              Chi tiết
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-500 text-xs">
+                        Không có dữ liệu ca đối soát nào phù hợp với bộ lọc.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
+
           </div>
         </div>
       )}
 
-      {/* ── TAB 3: SYSTEM FINANCIAL POLICY SETTINGS ── */}
-      {activeTab === 'settings' && (
-        <form onSubmit={handleSavePolicySettings} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 max-w-3xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sliders className="text-emerald-400" size={18} />
-                Cấu hình Chính sách Ký quỹ & Tỷ lệ Chiết khấu Sàn
+      {/* ── Transaction Detail Modal ── */}
+      {selectedDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2 font-mono">
+                <Receipt size={16} className="text-emerald-400" />
+                Chi tiết ca đối soát MIS-{selectedDetail.missionId}
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Các quy định tài chính này áp dụng tự động cho toàn bộ hệ thống Dispatcher và Mobile App của Tài xế.
-              </p>
+              <button
+                onClick={() => setSelectedDetail(null)}
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <button
-              type="submit"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/30 flex items-center gap-1.5 cursor-pointer"
-            >
-              <Save size={14} />
-              Lưu chính sách
-            </button>
+            <div className="p-5 space-y-4 text-xs font-sans">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 font-mono">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Mã Nhiệm vụ:</span>
+                  <span className="text-red-400 font-bold">MIS-{selectedDetail.missionId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Mã Xe cứu thương:</span>
+                  <span className="text-slate-200 font-bold">{selectedDetail.resourceCode}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Tài xế tiếp nhận:</span>
+                  <span className="text-slate-200">{selectedDetail.driver}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Điểm đến / Bệnh viện:</span>
+                  <span className="text-indigo-300 truncate max-w-[200px]">{selectedDetail.destination}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 font-mono">
+                <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-slate-400">Trạng thái đối soát:</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getPaymentStatusBadge(selectedDetail.paymentStatus).bg}`}>
+                    {getPaymentStatusBadge(selectedDetail.paymentStatus).label}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-slate-400">Thời gian phát lệnh:</span>
+                  <span className="text-slate-300">{selectedDetail.dispatchedAt ? new Date(selectedDetail.dispatchedAt).toLocaleString() : 'N/A'}</span>
+                </div>
+
+                {selectedDetail.paidAt && (
+                  <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                    <span className="text-slate-400">Thời gian hoàn tất (PaidAt):</span>
+                    <span className="text-emerald-400">{new Date(selectedDetail.paidAt).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+                <p className="flex items-center gap-1.5 text-slate-300 font-medium mb-1">
+                  <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
+                  Xác thực hệ thống
+                </p>
+                Dữ liệu ca cấp cứu được xác thực trực tiếp từ hệ thống Backend SmartEMS. Không thực hiện can thiệp số dư trên máy khách.
+              </div>
+            </div>
+
+            <div className="p-3 border-t border-slate-800 bg-slate-950 flex justify-end">
+              <button
+                onClick={() => setSelectedDetail(null)}
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
-
-          {saveSuccess && (
-            <div className="p-3 bg-emerald-950/60 border border-emerald-800/80 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
-              <CheckCircle2 size={16} />
-              Đã cập nhật chính sách tài chính hệ thống thành công!
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            {/* Min Wallet Balance Threshold */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-              <label className="text-xs font-mono uppercase text-slate-300 font-bold block">
-                Mức ví ký quỹ tối thiểu để nhận ca (VND)
-              </label>
-              <p className="text-[11px] text-slate-400">
-                Nếu ví tài xế thấp hơn mức này, tài xế sẽ bị khóa nhận cuốc tự động trên Mobile App.
-              </p>
-              <div className="relative mt-2">
-                <input
-                  type="number"
-                  step="100000"
-                  value={minBalanceInput}
-                  onChange={(e) => setMinBalanceInput(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm text-white font-bold focus:outline-none focus:border-emerald-500"
-                />
-                <span className="absolute right-3 top-2 text-xs text-slate-500 font-mono">VNĐ</span>
-              </div>
-            </div>
-
-            {/* Commission Rate */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-              <label className="text-xs font-mono uppercase text-slate-300 font-bold block">
-                Tỷ lệ chiết khấu hoa hồng sàn (%)
-              </label>
-              <p className="text-[11px] text-slate-400">
-                Tỷ lệ % cước phí chuyến đi được tự động trừ từ ví tài xế khi hoàn thành ca.
-              </p>
-              <div className="relative mt-2">
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={commissionRateInput}
-                  onChange={(e) => setCommissionRateInput(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm text-white font-bold focus:outline-none focus:border-emerald-500"
-                />
-                <span className="absolute right-3 top-2 text-xs text-slate-500 font-mono">%</span>
-              </div>
-            </div>
-
-            {/* BLS Pricing */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-              <div className="font-bold text-xs text-indigo-300 font-mono uppercase">
-                Bảng giá: Xe Cấp cứu Cơ bản (BLS)
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">Giá mở cửa (5km đầu)</label>
-                  <input
-                    type="number"
-                    step="50000"
-                    value={blsBaseInput}
-                    onChange={(e) => setBlsBaseInput(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">Đơn giá / km sau 5km</label>
-                  <input
-                    type="number"
-                    step="5000"
-                    value={blsPerKmInput}
-                    onChange={(e) => setBlsPerKmInput(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ALS Pricing */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-              <div className="font-bold text-xs text-amber-300 font-mono uppercase">
-                Bảng giá: Xe Hồi sức Nâng cao (ALS)
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">Giá mở cửa (5km đầu)</label>
-                  <input
-                    type="number"
-                    step="50000"
-                    value={alsBaseInput}
-                    onChange={(e) => setAlsBaseInput(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">Đơn giá / km sau 5km</label>
-                  <input
-                    type="number"
-                    step="5000"
-                    value={alsPerKmInput}
-                    onChange={(e) => setAlsPerKmInput(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white"
-                  />
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </form>
+        </div>
       )}
 
     </div>
