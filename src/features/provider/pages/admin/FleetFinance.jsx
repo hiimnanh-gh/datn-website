@@ -6,23 +6,17 @@ import {
   TrendingUp, 
   AlertTriangle, 
   CheckCircle2, 
-  FileText, 
   Search, 
   X, 
   Truck, 
   Clock, 
-  Building2, 
   Receipt,
-  Eye,
   RefreshCw,
-  Filter,
-  ShieldCheck,
-  Zap,
-  Users
+  ShieldCheck
 } from 'lucide-react';
-import useAuthStore from '../../../../store/useAuthStore';
 import { dispatchResourceService } from '../../../../services/dispatchResourceService';
 import { dashboardService } from '../../../../services/dashboardService';
+import { providerService } from '../../../../services/providerService';
 
 const formatVND = (val) => {
   if (val === null || val === undefined || isNaN(val)) return '0 ₫';
@@ -32,27 +26,38 @@ const formatVND = (val) => {
 const getPaymentBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'SUCCESS':
-    case 'COMPLETED':
     case 'PAID':
       return {
         bg: 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80',
         label: 'Đã thanh toán',
         icon: CheckCircle2
       };
+    case 'FAILED':
+      return {
+        bg: 'bg-red-950/60 text-red-400 border-red-800/80',
+        label: 'Thất bại',
+        icon: AlertTriangle
+      };
+    case 'REFUNDED':
+      return {
+        bg: 'bg-purple-950/60 text-purple-400 border-purple-800/80',
+        label: 'Đã hoàn tiền',
+        icon: RefreshCw
+      };
     case 'PENDING':
     default:
       return {
         bg: 'bg-amber-950/60 text-amber-400 border-amber-800/80',
-        label: 'Chờ thanh toán/đối soát',
+        label: 'Chờ thanh toán',
         icon: Clock
       };
   }
 };
 
 const FleetFinance = () => {
-  const { user } = useAuthStore();
   const [resources, setResources] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
+  const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Active Tab: 'ledger' (Sổ cái đối soát) | 'fleet' (Tài xế & Đội xe)
@@ -66,9 +71,10 @@ const FleetFinance = () => {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [dashRes, resList] = await Promise.allSettled([
+      const [dashRes, resList, paymentsRes] = await Promise.allSettled([
         dashboardService.getProviderDashboard(),
-        dispatchResourceService.getAll()
+        dispatchResourceService.getAll(),
+        providerService.getPayments()
       ]);
 
       if (dashRes.status === 'fulfilled' && dashRes.value) {
@@ -82,6 +88,12 @@ const FleetFinance = () => {
       } else {
         setResources([]);
       }
+
+      if (paymentsRes.status === 'fulfilled' && Array.isArray(paymentsRes.value)) {
+        setPayments(paymentsRes.value);
+      } else {
+        setPayments([]);
+      }
     } catch (err) {
       console.error('Error fetching fleet finance data:', err);
     } finally {
@@ -93,68 +105,67 @@ const FleetFinance = () => {
     fetchData();
   }, [fetchData]);
 
-  // Extract financial data and map missions/transactions
+  // Extract financial data directly from real Backend Payment API or revenueLedger
   const kpis = dashboardData?.kpis || {};
-  const rawDetails = Array.isArray(dashboardData?.details) 
-    ? dashboardData.details 
-    : (dashboardData?.details?.missions || dashboardData?.details?.missionDetails || []);
+  const rawLedger = dashboardData?.details?.revenueLedger || [];
+  const rawMissions = dashboardData?.details?.missions || dashboardData?.details?.missionDetails || [];
+  const missionMap = new Map(rawMissions.map(m => [m.missionId, m]));
 
-  // Build real transaction records mapped to Backend specification
-  const transactions = rawDetails.length > 0 
-    ? rawDetails.map((m, idx) => {
-        const isCompleted = m.status === 'COMPLETED';
-        const paymentStatus = isCompleted ? 'SUCCESS' : 'PENDING';
-        return {
-          transactionId: m.transactionId || (idx + 101),
-          missionId: m.missionId || (idx + 1),
-          resourceCode: m.resourceCode || 'AMB-HK-001',
-          driver: m.driver || 'Bùi Văn Linh',
-          destination: m.destination || 'Bệnh viện Đa khoa',
-          amount: m.amount || m.grossFare || 0,
-          commission: m.commission || (m.amount ? Math.round(m.amount * 0.1) : 0),
-          driverAmount: m.driverAmount || (m.amount ? Math.round(m.amount * 0.7) : 0),
-          providerAmount: m.providerAmount || (m.amount ? Math.round(m.amount * 0.2) : 0),
-          status: paymentStatus,
-          dispatchedAt: m.dispatchedAt,
-          paidAt: isCompleted ? (m.completedAt || m.paidAt) : null,
-          completedAt: m.completedAt
-        };
-      })
-    : resources.map((r, idx) => {
-        // Map available resources as active dispatch accounts
-        const isCompleted = r.status === 'AVAILABLE';
-        const paymentStatus = isCompleted ? 'SUCCESS' : 'PENDING';
-        return {
-          transactionId: 100 + r.id,
-          missionId: r.id,
-          resourceCode: r.resourceCode,
-          driver: r.currentDriverName || 'Chưa gán tài xế',
-          destination: 'Hiện trường cấp cứu',
-          amount: 0,
-          commission: 0,
-          driverAmount: 0,
-          providerAmount: 0,
-          status: paymentStatus,
-          dispatchedAt: r.updatedAt,
-          paidAt: isCompleted ? r.updatedAt : null,
-          completedAt: isCompleted ? r.updatedAt : null
-        };
-      });
+  let transactions = [];
+  if (payments.length > 0) {
+    transactions = payments.map((p) => {
+      const relMission = missionMap.get(p.missionId) || {};
+      return {
+        transactionId: p.paymentId ?? null,
+        missionId: p.missionId || null,
+        resourceCode: relMission.resourceCode || (p.serviceTypeCode ? `Dịch vụ ${p.serviceTypeCode}` : (p.missionId ? `MIS-${p.missionId}` : 'N/A')),
+        driver: relMission.driver || 'Chưa gán',
+        destination: relMission.destination || 'Hiện trường / Bệnh viện',
+        amount: p.amount != null ? Number(p.amount) : null,
+        commission: p.platformCommission != null ? Number(p.platformCommission) : null,
+        driverAmount: p.driverAmount != null ? Number(p.driverAmount) : null,
+        providerAmount: p.providerAmount != null ? Number(p.providerAmount) : null,
+        status: p.status || 'PENDING',
+        paidAt: p.paidAt || null,
+        paymentMethod: p.paymentMethod || null,
+        dispatchedAt: relMission.dispatchedAt || null
+      };
+    });
+  } else if (rawLedger.length > 0) {
+    transactions = rawLedger.map((tx) => {
+      const relMission = missionMap.get(tx.missionId) || {};
+      return {
+        transactionId: tx.transactionId ?? null,
+        missionId: tx.missionId || null,
+        resourceCode: relMission.resourceCode || (tx.missionId ? `MIS-${tx.missionId}` : 'N/A'),
+        driver: relMission.driver || 'Chưa gán',
+        destination: relMission.destination || 'Hiện trường / Bệnh viện',
+        amount: tx.amount != null ? Number(tx.amount) : null,
+        commission: tx.commission != null ? Number(tx.commission) : null,
+        driverAmount: null,
+        providerAmount: null,
+        status: tx.status || 'PENDING',
+        paidAt: tx.paidAt || null,
+        paymentMethod: null,
+        dispatchedAt: relMission.dispatchedAt || null
+      };
+    });
+  }
 
-  // Calculate Revenue KPIs directly from backend or ledger
-  const grossRevenue = kpis.collectedRevenue ?? kpis.platformRevenue ?? transactions.reduce((acc, t) => acc + (t.amount || 0), 0);
-  const platformFee = kpis.platformFees ?? Math.round(grossRevenue * 0.1);
-  const netRevenue = kpis.netRevenue ?? (grossRevenue - platformFee);
+  // Revenue KPIs directly from backend without frontend calculation fallback
+  const grossRevenue = kpis.collectedRevenue ?? kpis.platformRevenue ?? null;
+  const platformFee = kpis.platformFees ?? null;
+  const netRevenue = kpis.netRevenue ?? null;
 
   const pendingCount = transactions.filter(t => t.status === 'PENDING').length;
-  const paidCount = transactions.filter(t => t.status === 'SUCCESS').length;
+  const paidCount = transactions.filter(t => t.status === 'SUCCESS' || t.status === 'PAID').length;
 
   // Filtered transactions
   const filteredTransactions = transactions.filter(t => {
     const term = searchTerm.toLowerCase();
     const matchSearch = term
-      ? `MIS-${t.missionId}`.toLowerCase().includes(term) ||
-        `TX-${t.transactionId}`.toLowerCase().includes(term) ||
+      ? (t.missionId ? `MIS-${t.missionId}` : '').toLowerCase().includes(term) ||
+        (t.transactionId ? `TX-${t.transactionId}` : '').toLowerCase().includes(term) ||
         t.resourceCode?.toLowerCase().includes(term) ||
         t.driver?.toLowerCase().includes(term)
       : true;
@@ -201,7 +212,7 @@ const FleetFinance = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-white font-mono">
-            {formatVND(grossRevenue)}
+            {grossRevenue != null ? formatVND(grossRevenue) : 'Chưa có dữ liệu'}
           </div>
           <p className="text-[11px] text-slate-400">
             Doanh thu ghi nhận từ các chuyến cấp cứu
@@ -211,13 +222,13 @@ const FleetFinance = () => {
         {/* Card 2: Platform Fee */}
         <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Phí nền tảng sàn (10%)</span>
+            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Phí nền tảng sàn (Commission)</span>
             <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
               <ArrowDownLeft size={16} />
             </div>
           </div>
           <div className="text-2xl font-black text-rose-400 font-mono">
-            -{formatVND(platformFee)}
+            {platformFee != null ? `-${formatVND(platformFee)}` : 'Chưa có dữ liệu'}
           </div>
           <p className="text-[11px] text-slate-400">
             Chiết khấu trích nộp cho hệ thống sàn
@@ -233,10 +244,10 @@ const FleetFinance = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-blue-300 font-mono">
-            {formatVND(netRevenue)}
+            {netRevenue != null ? formatVND(netRevenue) : 'Chưa có dữ liệu'}
           </div>
           <p className="text-[11px] text-slate-400">
-            90% cước thực nhận của đơn vị
+            Cước thực nhận của đơn vị theo đối soát
           </p>
         </div>
 
@@ -324,7 +335,7 @@ const FleetFinance = () => {
                     <th className="py-3 px-4">Giao dịch / Nhiệm vụ</th>
                     <th className="py-3 px-4">Xe / Tài xế</th>
                     <th className="py-3 px-4">Tổng cước (Gross)</th>
-                    <th className="py-3 px-4">Hoa hồng sàn (10%)</th>
+                    <th className="py-3 px-4">Hoa hồng sàn (Commission)</th>
                     <th className="py-3 px-4">Mốc thời gian</th>
                     <th className="py-3 px-4">Trạng thái thanh toán</th>
                     <th className="py-3 px-4 text-center">Thao tác</th>
@@ -340,7 +351,7 @@ const FleetFinance = () => {
                         <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
                           <td className="py-3 px-4">
                             <span className="text-red-400 font-bold block text-xs">MIS-{tx.missionId}</span>
-                            <span className="text-slate-500 text-[10px]">TX-{tx.transactionId}</span>
+                            <span className="text-slate-500 text-[10px]">{tx.transactionId ? `TX-${tx.transactionId}` : 'N/A'}</span>
                           </td>
 
                           <td className="py-3 px-4 font-sans">
@@ -349,16 +360,20 @@ const FleetFinance = () => {
                           </td>
 
                           <td className="py-3 px-4 font-bold text-emerald-400">
-                            {formatVND(tx.amount)}
+                            {tx.amount != null ? formatVND(tx.amount) : 'Chưa có dữ liệu'}
                           </td>
 
                           <td className="py-3 px-4 text-rose-400">
-                            -{formatVND(tx.commission)}
+                            {tx.commission != null ? `-${formatVND(tx.commission)}` : 'Chưa có dữ liệu'}
                           </td>
 
                           <td className="py-3 px-4 text-slate-400 text-[10px]">
                             <div>Phát lệnh: {tx.dispatchedAt ? new Date(tx.dispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
-                            {tx.paidAt && <div className="text-emerald-400">Thanh toán: {new Date(tx.paidAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>}
+                            {tx.paidAt ? (
+                              <div className="text-emerald-400">Thanh toán: {new Date(tx.paidAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            ) : (
+                              <div className="text-slate-500">Chưa thanh toán</div>
+                            )}
                           </td>
 
                           <td className="py-3 px-4">
@@ -382,7 +397,7 @@ const FleetFinance = () => {
                   ) : (
                     <tr>
                       <td colSpan={7} className="py-12 text-center text-slate-500 text-xs">
-                        Không có bản ghi đối soát nào phù hợp.
+                        Chưa có giao dịch đối soát nào ghi nhận từ hệ thống.
                       </td>
                     </tr>
                   )}
@@ -475,7 +490,7 @@ const FleetFinance = () => {
               <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2 font-mono">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Mã Giao dịch (Transaction ID):</span>
-                  <span className="text-slate-300 font-bold">TX-{selectedTx.transactionId}</span>
+                  <span className="text-slate-300 font-bold">{selectedTx.transactionId ? `TX-${selectedTx.transactionId}` : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Mã Nhiệm vụ (Mission ID):</span>
@@ -501,17 +516,38 @@ const FleetFinance = () => {
 
                 <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
                   <span className="text-slate-400">Tổng cước chuyến đi (Amount):</span>
-                  <span className="text-emerald-400 font-bold">{formatVND(selectedTx.amount)}</span>
+                  <span className="text-emerald-400 font-bold">{selectedTx.amount != null ? formatVND(selectedTx.amount) : 'Chưa có dữ liệu'}</span>
                 </div>
 
                 <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                  <span className="text-slate-400">Hoa hồng sàn (Commission 10%):</span>
-                  <span className="text-rose-400">-{formatVND(selectedTx.commission)}</span>
+                  <span className="text-slate-400">Hoa hồng sàn (Commission):</span>
+                  <span className="text-rose-400">{selectedTx.commission != null ? `-${formatVND(selectedTx.commission)}` : 'Chưa có dữ liệu'}</span>
                 </div>
+
+                {selectedTx.providerAmount != null && (
+                  <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                    <span className="text-slate-400">Thực nhận Đơn vị (Provider):</span>
+                    <span className="text-blue-400 font-bold">{formatVND(selectedTx.providerAmount)}</span>
+                  </div>
+                )}
+
+                {selectedTx.driverAmount != null && (
+                  <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                    <span className="text-slate-400">Thu nhập Tài xế (Driver):</span>
+                    <span className="text-indigo-400 font-bold">{formatVND(selectedTx.driverAmount)}</span>
+                  </div>
+                )}
+
+                {selectedTx.paymentMethod && (
+                  <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                    <span className="text-slate-400">Hình thức thanh toán:</span>
+                    <span className="text-slate-300">{selectedTx.paymentMethod}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
                   <span className="text-slate-400">Thời gian thanh toán (PaidAt):</span>
-                  <span className="text-slate-300">{selectedTx.paidAt ? new Date(selectedTx.paidAt).toLocaleString() : 'Chưa ghi nhận'}</span>
+                  <span className="text-slate-300">{selectedTx.paidAt ? new Date(selectedTx.paidAt).toLocaleString() : 'Chưa thanh toán'}</span>
                 </div>
               </div>
 

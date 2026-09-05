@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
-  DollarSign, 
-  TrendingUp, 
   CheckCircle, 
   AlertCircle, 
   Layers, 
@@ -12,10 +10,8 @@ import {
   Users,
   Activity,
   ShieldCheck,
-  Clock,
   Filter,
   BarChart2,
-  Calendar,
   Receipt,
   Zap
 } from 'lucide-react';
@@ -34,7 +30,6 @@ const ProviderDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [resources, setResources] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
 
   // Time filter
@@ -145,9 +140,8 @@ const ProviderDashboard = () => {
 
   // Financial Metrics from Backend
   const collectedRevenue = backendKpis.collectedRevenue ?? backendKpis.platformRevenue ?? 0;
-  const platformFees = backendKpis.platformFees ?? (collectedRevenue > 0 ? Math.round(collectedRevenue * 0.1) : 0);
-  const netRevenue = backendKpis.netRevenue ?? (collectedRevenue - platformFees);
-  const pendingSettlement = backendKpis.pendingSettlement ?? 0;
+  const platformFees = backendKpis.platformFees ?? null;
+  const netRevenue = backendKpis.netRevenue ?? null;
 
   const seriesData = Array.isArray(dashboardData?.series) ? dashboardData.series : [];
   const maxSeries = Math.max(...seriesData.map(s => Math.max(s.missions || 0, s.completed || 0)), 1);
@@ -377,11 +371,11 @@ const ProviderDashboard = () => {
               {/* Platform Fee */}
               <div className="bg-slate-950/60 border border-rose-500/20 p-3.5 rounded-xl flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Phí nền tảng sàn (10%)</span>
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Phí nền tảng sàn (Commission)</span>
                   <span className="text-xs text-slate-500">Chiết khấu trích nộp cho SmartEMS</span>
                 </div>
                 <span className="text-base font-bold font-mono text-rose-400 bg-rose-950/50 px-2.5 py-1 rounded-lg border border-rose-800/40">
-                  -{formatVND(platformFees)}
+                  {platformFees !== null ? `-${formatVND(platformFees)}` : 'Chưa có dữ liệu'}
                 </span>
               </div>
 
@@ -392,7 +386,7 @@ const ProviderDashboard = () => {
                   <span className="text-xs text-slate-500">Doanh thu giữ lại cho đơn vị</span>
                 </div>
                 <span className="text-base font-bold font-mono text-blue-300 bg-blue-950/50 px-2.5 py-1 rounded-lg border border-blue-800/40">
-                  {formatVND(netRevenue)}
+                  {netRevenue !== null ? formatVND(netRevenue) : 'Chưa có dữ liệu'}
                 </span>
               </div>
             </div>

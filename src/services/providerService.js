@@ -14,6 +14,12 @@ export const providerService = {
     return unwrapBaseResponse(response);
   },
 
+  // GET /api/v1/provider/payments
+  getPayments: async () => {
+    const response = await api.get('/v1/provider/payments');
+    return unwrapBaseResponse(response);
+  },
+
   // POST /api/v1/providers
   create: async (data) => {
     const response = await api.post('/v1/providers', data);
