@@ -3,7 +3,6 @@ import {
   DollarSign, 
   TrendingUp, 
   Building2, 
-  FileText, 
   RefreshCw, 
   Search, 
   Clock, 
@@ -11,10 +10,7 @@ import {
   ShieldCheck,
   Receipt,
   Filter,
-  Eye,
   X,
-  AlertCircle,
-  Download,
   Truck
 } from 'lucide-react';
 import { dashboardService } from '../../../../services/dashboardService';
@@ -115,23 +111,27 @@ const FinancialRevenue = () => {
   
   const providerPerformance = dashData?.details?.providerPerformance || [];
   const rawMissionDetails = dashData?.details?.missionDetails || [];
+  const rawRevenueLedger = dashData?.details?.revenueLedger || [];
 
-  // Map mission details to financial transactions
-  const transactions = rawMissionDetails.map(m => {
-    const isCompleted = m.status === 'COMPLETED';
-    const paymentStatus = isCompleted ? 'SUCCESS' : 'PENDING';
+  // Map real financial transactions from Backend revenueLedger (NOT from mission details)
+  const transactions = rawRevenueLedger.map((tx) => {
+    const mission = rawMissionDetails.find(m => m.missionId === tx.missionId);
     return {
-      missionId: m.missionId,
-      resourceCode: m.resourceCode || 'N/A',
-      driver: m.driver || 'Chưa gán',
-      destination: m.destination || 'Hiện trường',
-      urgency: m.urgency || 'HIGH',
-      status: m.status,
-      paymentStatus,
-      dispatchedAt: m.dispatchedAt,
-      acceptedAt: m.acceptedAt,
-      completedAt: m.completedAt,
-      paidAt: isCompleted ? m.completedAt : null,
+      id: tx.transactionId ?? null,
+      transactionId: tx.transactionId ?? null,
+      missionId: tx.missionId,
+      amount: tx.amount != null ? tx.amount : null,
+      commission: tx.commission != null ? tx.commission : null,
+      paymentStatus: tx.status || 'PENDING',
+      paidAt: tx.paidAt || null,
+      paymentMethod: tx.paymentMethod || null,
+      resourceCode: mission?.resourceCode || 'N/A',
+      driver: mission?.driver || 'Chưa gán',
+      destination: mission?.destination || 'Hiện trường',
+      urgency: mission?.urgency || 'NORMAL',
+      missionStatus: mission?.status || 'N/A',
+      dispatchedAt: mission?.dispatchedAt || null,
+      completedAt: mission?.completedAt || null,
       providerName: providers.find(p => p.id === Number(selectedProviderId))?.providerName || 'Đơn vị liên kết'
     };
   });
@@ -139,7 +139,8 @@ const FinancialRevenue = () => {
   // Filtered transactions
   const filteredTransactions = transactions.filter(t => {
     const matchesSearch = searchTerm
-      ? `MIS-${t.missionId}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ? (t.missionId ? `MIS-${t.missionId}` : '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.transactionId ? `TX-${t.transactionId}` : '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.resourceCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.driver.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
@@ -148,8 +149,9 @@ const FinancialRevenue = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Counters strictly calculated from Backend paymentStatus
   const pendingTransactionsCount = transactions.filter(t => t.paymentStatus === 'PENDING').length;
-  const successTransactionsCount = transactions.filter(t => t.paymentStatus === 'SUCCESS').length;
+  const successTransactionsCount = transactions.filter(t => t.paymentStatus === 'SUCCESS' || t.paymentStatus === 'PAID').length;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto font-sans text-slate-200">
@@ -413,11 +415,12 @@ const FinancialRevenue = () => {
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
                   <tr>
-                    <th className="py-3 px-4">Mã Nhiệm vụ</th>
+                    <th className="py-3 px-4">Mã GD / Ca</th>
                     <th className="py-3 px-4">Tài xế / Xe</th>
-                    <th className="py-3 px-4">Điểm đến</th>
-                    <th className="py-3 px-4">Mốc thời gian</th>
-                    <th className="py-3 px-4">Trạng thái thanh toán</th>
+                    <th className="py-3 px-4 text-right">Tổng tiền</th>
+                    <th className="py-3 px-4 text-right">Hoa hồng sàn</th>
+                    <th className="py-3 px-4">Thời gian thanh toán</th>
+                    <th className="py-3 px-4">Trạng thái</th>
                     <th className="py-3 px-4 text-center">Thao tác</th>
                   </tr>
                 </thead>
@@ -429,8 +432,9 @@ const FinancialRevenue = () => {
 
                       return (
                         <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
-                          <td className="py-3 px-4 text-red-400 font-bold text-xs">
-                            MIS-{tx.missionId}
+                          <td className="py-3 px-4">
+                            <div className="text-emerald-400 font-bold text-xs">{tx.transactionId ? `TX-${tx.transactionId}` : 'N/A'}</div>
+                            {tx.missionId && <div className="text-slate-500 text-[10px]">MIS-{tx.missionId}</div>}
                           </td>
 
                           <td className="py-3 px-4 font-sans">
@@ -438,13 +442,20 @@ const FinancialRevenue = () => {
                             <span className="text-slate-400 text-[11px]">{tx.driver}</span>
                           </td>
 
-                          <td className="py-3 px-4 font-sans text-slate-300 truncate max-w-[180px]" title={tx.destination}>
-                            {tx.destination}
+                          <td className="py-3 px-4 text-right font-bold text-slate-100">
+                            {tx.amount != null ? formatVND(tx.amount) : <span className="text-slate-500 font-normal">Chưa có dữ liệu</span>}
                           </td>
 
-                          <td className="py-3 px-4 text-slate-400 text-[10px]">
-                            <div>Điều xe: {tx.dispatchedAt ? new Date(tx.dispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
-                            {tx.completedAt && <div className="text-emerald-400">Xong: {new Date(tx.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>}
+                          <td className="py-3 px-4 text-right font-bold text-emerald-400">
+                            {tx.commission != null ? formatVND(tx.commission) : <span className="text-slate-500 font-normal">Chưa có dữ liệu</span>}
+                          </td>
+
+                          <td className="py-3 px-4 text-slate-300 text-[11px]">
+                            {tx.paidAt ? (
+                              <span className="text-emerald-400">{new Date(tx.paidAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                            ) : (
+                              <span className="text-slate-500 italic">Chưa thanh toán</span>
+                            )}
                           </td>
 
                           <td className="py-3 px-4">
@@ -467,15 +478,14 @@ const FinancialRevenue = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-500 text-xs">
-                        Không có dữ liệu ca đối soát nào phù hợp với bộ lọc.
+                      <td colSpan={7} className="py-12 text-center text-slate-500 text-xs">
+                        Chưa có giao dịch đối soát nào ghi nhận từ hệ thống.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-
           </div>
         </div>
       )}
@@ -487,7 +497,7 @@ const FinancialRevenue = () => {
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2 font-mono">
                 <Receipt size={16} className="text-emerald-400" />
-                Chi tiết ca đối soát MIS-{selectedDetail.missionId}
+                Chi tiết giao dịch {selectedDetail.transactionId ? `TX-${selectedDetail.transactionId}` : 'N/A'}
               </h3>
               <button
                 onClick={() => setSelectedDetail(null)}
@@ -500,9 +510,15 @@ const FinancialRevenue = () => {
             <div className="p-5 space-y-4 text-xs font-sans">
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 font-mono">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Mã Nhiệm vụ:</span>
-                  <span className="text-red-400 font-bold">MIS-{selectedDetail.missionId}</span>
+                  <span className="text-slate-500">Mã Giao dịch:</span>
+                  <span className="text-emerald-400 font-bold">{selectedDetail.transactionId ? `TX-${selectedDetail.transactionId}` : 'N/A'}</span>
                 </div>
+                {selectedDetail.missionId && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Mã Nhiệm vụ:</span>
+                    <span className="text-red-400 font-bold">MIS-{selectedDetail.missionId}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-slate-500">Mã Xe cứu thương:</span>
                   <span className="text-slate-200 font-bold">{selectedDetail.resourceCode}</span>
@@ -519,21 +535,37 @@ const FinancialRevenue = () => {
 
               <div className="space-y-2 font-mono">
                 <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                  <span className="text-slate-400">Trạng thái đối soát:</span>
+                  <span className="text-slate-400">Tổng tiền giao dịch:</span>
+                  <span className="text-white font-bold text-sm">
+                    {selectedDetail.amount != null ? formatVND(selectedDetail.amount) : 'Chưa có dữ liệu'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-slate-400">Hoa hồng sàn:</span>
+                  <span className="text-emerald-400 font-bold">
+                    {selectedDetail.commission != null ? formatVND(selectedDetail.commission) : 'Chưa có dữ liệu'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-slate-400">Trạng thái thanh toán:</span>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getPaymentStatusBadge(selectedDetail.paymentStatus).bg}`}>
                     {getPaymentStatusBadge(selectedDetail.paymentStatus).label}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                  <span className="text-slate-400">Thời gian phát lệnh:</span>
-                  <span className="text-slate-300">{selectedDetail.dispatchedAt ? new Date(selectedDetail.dispatchedAt).toLocaleString() : 'N/A'}</span>
+                  <span className="text-slate-400">Thời gian thanh toán (paidAt):</span>
+                  <span className={selectedDetail.paidAt ? 'text-emerald-400' : 'text-slate-500 italic'}>
+                    {selectedDetail.paidAt ? new Date(selectedDetail.paidAt).toLocaleString() : 'Chưa thanh toán'}
+                  </span>
                 </div>
 
-                {selectedDetail.paidAt && (
+                {selectedDetail.dispatchedAt && (
                   <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                    <span className="text-slate-400">Thời gian hoàn tất (PaidAt):</span>
-                    <span className="text-emerald-400">{new Date(selectedDetail.paidAt).toLocaleString()}</span>
+                    <span className="text-slate-400">Thời gian phát lệnh điều xe:</span>
+                    <span className="text-slate-300">{new Date(selectedDetail.dispatchedAt).toLocaleString()}</span>
                   </div>
                 )}
               </div>
@@ -543,7 +575,7 @@ const FinancialRevenue = () => {
                   <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
                   Xác thực hệ thống
                 </p>
-                Dữ liệu ca cấp cứu được xác thực trực tiếp từ hệ thống Backend SmartEMS. Không thực hiện can thiệp số dư trên máy khách.
+                Dữ liệu giao dịch được xác thực trực tiếp từ hệ thống Backend SmartEMS. Không can thiệp số dư trên giao diện máy khách.
               </div>
             </div>
 
