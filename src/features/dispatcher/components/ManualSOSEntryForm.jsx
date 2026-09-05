@@ -13,10 +13,10 @@ import {
   MapPin,
   X,
   AlertOctagon,
-  Heart,
   User,
   Phone,
   Check,
+  Navigation,
 } from "lucide-react";
 
 // Fix leaflet icon
@@ -29,16 +29,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
-
-// Mock Searchable Locations in HCMC
-const MOCK_LOCATIONS = [
-  { name: "Chợ Bến Thành, Quận 1", pos: [10.772, 106.698] },
-  { name: "Công viên Tao Đàn, Quận 1", pos: [10.775, 106.692] },
-  { name: "Nhà thờ Đức Bà, Quận 1", pos: [10.779, 106.698] },
-  { name: "Bệnh viện Chợ Rẫy, Quận 5", pos: [10.757, 106.66] },
-  { name: "Landmark 81, Bình Thạnh", pos: [10.795, 106.722] },
-  { name: "Cư xá Thanh Đa, Bình Thạnh", pos: [10.803, 106.718] },
-];
 
 // Click event handler inside MapContainer
 const MapClickHandler = ({ onClick }) => {
@@ -75,24 +65,54 @@ const ManualSOSEntryForm = ({ onSubmit, onClose }) => {
   const handleMapClick = (latlng) => {
     setCoords(latlng);
     setLocationText(
-      `Custom Pin Location: [${latlng[0].toFixed(5)}, ${latlng[1].toFixed(5)}]`,
+      searchQuery.trim()
+        ? `${searchQuery.trim()} [${latlng[0].toFixed(5)}, ${latlng[1].toFixed(5)}]`
+        : `Tọa độ GPS: [${latlng[0].toFixed(5)}, ${latlng[1].toFixed(5)}]`,
     );
   };
 
-  // Handle mock location search
+  // Handle location search or GPS coordinates input
   const handleSearch = (e) => {
     e.preventDefault();
-    const found = MOCK_LOCATIONS.find((loc) =>
-      loc.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-    if (found) {
-      setCoords(found.pos);
-      setLocationText(found.name);
-      setError("");
-    } else {
-      setError(
-        "Location not found in local HCMC GIS database. Click on map to place custom pin.",
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    // Check if query is latitude, longitude format: "10.772, 106.698"
+    const coordMatch = query.match(/^([-+]?[0-9]*\.?[0-9]+)[,\s]+([-+]?[0-9]*\.?[0-9]+)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        setCoords([lat, lng]);
+        setLocationText(`Tọa độ GPS: [${lat.toFixed(5)}, ${lng.toFixed(5)}]`);
+        setError("");
+        return;
+      }
+    }
+
+    // Use user-entered address directly
+    setLocationText(query);
+    setError("");
+  };
+
+  // Browser Geolocation
+  const handleGetCurrentLocation = () => {
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setCoords([lat, lng]);
+          setLocationText(`Vị trí GPS hiện tại: [${lat.toFixed(5)}, ${lng.toFixed(5)}]`);
+          setError("");
+        },
+        (err) => {
+          setError(`Không thể lấy vị trí từ trình duyệt: ${err?.message || "Từ chối quyền"}. Vui lòng bấm chọn trên bản đồ.`);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
+    } else {
+      setError("Trình duyệt không hỗ trợ Geolocation.");
     }
   };
 
@@ -291,14 +311,23 @@ const ManualSOSEntryForm = ({ onSubmit, onClose }) => {
             >
               <input
                 type="text"
-                placeholder="Search HCMC (e.g. Bến Thành, Landmark 81)"
+                placeholder="Nhập địa chỉ hoặc tọa độ GPS (lat, lng)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent border-none text-xs text-slate-200 outline-none w-full px-2"
               />
               <button
+                type="button"
+                onClick={handleGetCurrentLocation}
+                title="Lấy tọa độ GPS từ trình duyệt"
+                className="bg-slate-800 hover:bg-slate-700 text-emerald-400 p-2 rounded-lg transition-all shrink-0"
+              >
+                <Navigation size={14} />
+              </button>
+              <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-755 text-white p-2 rounded-lg transition-all shrink-0"
+                title="Xác nhận địa chỉ"
+                className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all shrink-0"
               >
                 <Search size={14} />
               </button>
