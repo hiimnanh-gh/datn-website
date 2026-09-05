@@ -1,15 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Megaphone, Plus, Image as ImageIcon, Send, Clock, CheckCircle2 } from 'lucide-react';
 import './Marketing.css';
 
-const INITIAL_CAMPAIGNS = [
-  { id: 1, title: 'Summer Safety Tips', status: 'PUBLISHED', date: 'Jun 10, 2026', views: 1205 },
-  { id: 2, title: 'New Fleet Expansion: Neonatal Units', status: 'DRAFT', date: 'Pending', views: 0 },
-  { id: 3, title: 'CPR Certification Drive', status: 'SCHEDULED', date: 'Jul 01, 2026', views: 0 },
-];
-
 const Marketing = () => {
-  const [campaigns] = useState(INITIAL_CAMPAIGNS);
+  const [campaigns] = useState([]);
 
   const getStatusIcon = (status) => {
     switch(status) {
@@ -71,25 +65,33 @@ const Marketing = () => {
         <div className="campaigns-list">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Recent Campaigns</h2>
           <div className="campaigns-wrapper">
-            {campaigns.map(camp => (
-              <div key={camp.id} className="campaign-card">
-                <div className="campaign-info">
-                  <div className="flex items-center gap-2 mb-1">
-                    {getStatusIcon(camp.status)}
-                    <span className={`status-text status-${camp.status.toLowerCase()}`}>
-                      {camp.status}
-                    </span>
-                  </div>
-                  <h3 className="campaign-title">{camp.title}</h3>
-                  <div className="campaign-meta">
-                    <span>{camp.date}</span>
-                    <span className="bullet">&bull;</span>
-                    <span>{camp.views} views</span>
-                  </div>
-                </div>
-                <button className="btn-outline-small">Manage</button>
+            {campaigns.length === 0 ? (
+              <div className="p-8 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
+                <Megaphone size={32} className="mx-auto mb-2 text-slate-300" />
+                <p className="font-semibold text-slate-700 text-sm">Chưa có chiến dịch truyền thông</p>
+                <p className="text-xs text-slate-400 mt-1">Backend chưa cung cấp API lưu trữ chiến dịch truyền thông (Backend Gap) hoặc chưa có dữ liệu.</p>
               </div>
-            ))}
+            ) : (
+              campaigns.map(camp => (
+                <div key={camp.id} className="campaign-card">
+                  <div className="campaign-info">
+                    <div className="flex items-center gap-2 mb-1">
+                      {getStatusIcon(camp.status)}
+                      <span className={`status-text status-${camp.status.toLowerCase()}`}>
+                        {camp.status}
+                      </span>
+                    </div>
+                    <h3 className="campaign-title">{camp.title}</h3>
+                    <div className="campaign-meta">
+                      <span>{camp.date}</span>
+                      <span className="bullet">&bull;</span>
+                      <span>{camp.views} views</span>
+                    </div>
+                  </div>
+                  <button className="btn-outline-small">Manage</button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
