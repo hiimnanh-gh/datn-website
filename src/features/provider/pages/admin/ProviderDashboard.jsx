@@ -31,6 +31,7 @@ const ProviderDashboard = () => {
   const [resources, setResources] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [error, setError] = useState(null);
 
   // Time filter
   const [timeRange, setTimeRange] = useState('TODAY'); // 'TODAY' | 'WEEK' | 'MONTH' | 'ALL'
@@ -38,6 +39,8 @@ const ProviderDashboard = () => {
   const getFilterParams = useCallback(() => {
     const params = {};
     const now = new Date();
+    params.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
+
     if (timeRange === 'TODAY') {
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
       params.from = startOfDay.toISOString();
@@ -53,6 +56,8 @@ const ProviderDashboard = () => {
       params.from = pastMonth.toISOString();
       params.to = now.toISOString();
       params.granularity = 'DAY';
+    } else if (timeRange === 'ALL') {
+      params.granularity = 'AUTO';
     }
     return params;
   }, [timeRange]);
@@ -147,48 +152,48 @@ const ProviderDashboard = () => {
   const maxSeries = Math.max(...seriesData.map(s => Math.max(s.missions || 0, s.completed || 0)), 1);
 
   return (
-    <div className="provider-dashboard-v2 text-slate-100 p-6 space-y-6 font-sans">
+    <div className="provider-dashboard-v2 text-slate-100 p-3.5 sm:p-6 space-y-4 sm:space-y-6 font-sans">
       
       {/* ── Dashboard Header ── */}
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-5 text-left">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-slate-800 pb-4 sm:pb-5 text-left">
         <div>
-          <h1 className="text-xl font-bold font-sans text-white flex items-center gap-2">
-            <Layers className="text-blue-500" size={22} />
-            Tổng Quan Vận Hành Đơn Vị (Provider Dashboard)
+          <h1 className="text-lg sm:text-xl font-bold font-sans text-white flex items-center gap-2">
+            <Layers className="text-blue-500 shrink-0" size={20} />
+            <span>Tổng Quan Vận Hành Đơn Vị</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1 font-sans">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 font-sans">
             Giám sát hiệu suất đội xe cấp cứu và đối soát tài chính thời gian thực từ Backend SmartEMS
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-800 text-emerald-300 rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-800 text-emerald-300 rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer disabled:opacity-50"
           >
             <Download size={14} className={isExporting ? 'animate-bounce' : ''} />
-            {isExporting ? 'Đang xuất...' : 'Xuất Báo cáo Excel'}
+            <span>{isExporting ? 'Đang xuất...' : 'Xuất Báo cáo'}</span>
           </button>
 
           <button
             onClick={fetchDashboardData}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin text-blue-400' : ''} />
-            {isLoading ? 'Đang tải...' : 'Làm mới'}
+            <span>{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
           </button>
         </div>
       </div>
 
       {/* ── Filter Toolbar ── */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 sm:pb-0">
           <Filter size={14} className="text-blue-400 shrink-0" />
-          <span className="text-slate-400 font-medium">Khoảng thời gian:</span>
+          <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] sm:text-xs">Khoảng thời gian:</span>
 
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 shrink-0">
             {[
               { id: 'TODAY', label: 'Hôm nay' },
               { id: 'WEEK', label: '7 ngày' },
@@ -198,7 +203,7 @@ const ProviderDashboard = () => {
               <button
                 key={tab.id}
                 onClick={() => setTimeRange(tab.id)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
                   timeRange === tab.id 
                     ? 'bg-blue-600 text-white shadow-sm' 
                     : 'text-slate-400 hover:text-slate-200'
@@ -211,10 +216,26 @@ const ProviderDashboard = () => {
         </div>
 
         <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Đơn vị: <strong className="text-slate-200">{user?.fullName || user?.username || 'Provider Unit'}</strong></span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+          <span className="truncate">Đơn vị: <strong className="text-slate-200">{user?.fullName || user?.username || 'Provider Unit'}</strong></span>
         </div>
       </div>
+
+      {/* ── Error Banner ── */}
+      {error && (
+        <div className="bg-rose-950/60 border border-rose-800/80 p-4 rounded-xl text-xs text-rose-300 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="text-rose-400 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={fetchDashboardData}
+            className="px-3 py-1 bg-rose-900/60 hover:bg-rose-800 text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
 
       {/* ── Loading State ── */}
       {isLoading && (
@@ -228,100 +249,100 @@ const ProviderDashboard = () => {
       {!isLoading && (
         <>
           {/* ── Operational Fleet & Driver Metrics (Exact KPIs) ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-left">
             
             {/* 1. Total Ambulances */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-slate-400 block">Tổng Đội Xe</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block truncate">Tổng Đội Xe</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-white">{totalAmbulances}</span>
-                <Truck size={18} className="text-slate-500" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-white">{totalAmbulances}</span>
+                <Truck size={16} className="text-slate-500 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-slate-400 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-slate-400 font-mono block truncate">
                 {liveOffline} xe ngoại tuyến
               </span>
             </div>
 
             {/* 2. Available Ambulances */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-emerald-400 block">Xe Sẵn Sàng (Available)</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-emerald-400 block truncate">Xe Sẵn Sàng (Available)</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-emerald-400">{availableAmbulances}</span>
-                <ShieldCheck size={18} className="text-emerald-500" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-emerald-400">{availableAmbulances}</span>
+                <ShieldCheck size={16} className="text-emerald-500 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-emerald-400/80 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-emerald-400/80 font-mono block truncate">
                 Sẵn sàng nhận lệnh
               </span>
             </div>
 
             {/* 3. Busy Ambulances */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-amber-400 block">Xe Đang Điều Động (Busy)</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-amber-400 block truncate">Xe Đang Điều Động</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-amber-400">{busyAmbulances}</span>
-                <Activity size={18} className="text-amber-500" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-amber-400">{busyAmbulances}</span>
+                <Activity size={16} className="text-amber-500 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-amber-400/80 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-amber-400/80 font-mono block truncate">
                 Hiệu suất: {utilization}%
               </span>
             </div>
 
             {/* 4. Maintenance Ambulances */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-red-400 block">Xe Đang Bảo Trì</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-red-400 block truncate">Xe Đang Bảo Trì</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-red-400">{maintenanceAmbulances}</span>
-                <AlertCircle size={18} className="text-red-500" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-red-400">{maintenanceAmbulances}</span>
+                <AlertCircle size={16} className="text-red-500 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-red-400/80 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-red-400/80 font-mono block truncate">
                 Tạm ngưng phục vụ
               </span>
             </div>
 
             {/* 5. Total Drivers */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-slate-400 block">Tổng Tài Xế Phụ Trách</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block truncate">Tổng Tài Xế Phụ Trách</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-white">{totalDrivers}</span>
-                <Users size={18} className="text-slate-500" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-white">{totalDrivers}</span>
+                <Users size={16} className="text-slate-500 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-slate-400 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-slate-400 font-mono block truncate">
                 Gán theo phương tiện
               </span>
             </div>
 
             {/* 6. Active Drivers */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-emerald-400 block">Tài Xế Đang Trên Ca</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-emerald-400 block truncate">Tài Xế Đang Trên Ca</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-emerald-400">{activeDrivers}</span>
-                <Zap size={18} className="text-emerald-500" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-emerald-400">{activeDrivers}</span>
+                <Zap size={16} className="text-emerald-500 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-emerald-400/80 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-emerald-400/80 font-mono block truncate">
                 Đang trực tuyến
               </span>
             </div>
 
             {/* 7. Completed Missions */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-blue-400 block">Chuyến Hoàn Thành</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-blue-400 block truncate">Chuyến Hoàn Thành</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-blue-400">{completedMissions}</span>
-                <CheckCircle size={18} className="text-blue-500" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-blue-400">{completedMissions}</span>
+                <CheckCircle size={16} className="text-blue-500 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-blue-400/80 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-blue-400/80 font-mono block truncate">
                 Đã trả viện thành công
               </span>
             </div>
 
             {/* 8. Fleet Utilization */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1.5 shadow-sm">
-              <span className="text-xs font-semibold text-indigo-400 block">Tỷ lệ Sử dụng Đội xe</span>
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl space-y-1 shadow-sm">
+              <span className="text-[11px] sm:text-xs font-semibold text-indigo-400 block truncate">Tỷ lệ Sử dụng Xe</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-indigo-300">{utilization}%</span>
-                <Percent size={18} className="text-indigo-400" />
+                <span className="text-xl sm:text-2xl font-bold font-mono text-indigo-300">{utilization}%</span>
+                <Percent size={16} className="text-indigo-400 sm:w-5 sm:h-5 shrink-0" />
               </div>
-              <span className="text-[11px] text-indigo-400/80 font-mono block">
+              <span className="text-[10px] sm:text-[11px] text-indigo-400/80 font-mono block truncate">
                 Fleet Utilization
               </span>
             </div>
@@ -329,63 +350,63 @@ const ProviderDashboard = () => {
           </div>
 
           {/* ── Section: Doanh thu & Tài chính Đơn vị ── */}
-          <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl text-left space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800 p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-xl text-left space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800/80 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Receipt size={20} />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Receipt size={18} className="sm:w-5 sm:h-5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                    Doanh thu & Đối soát Đơn vị
-                    <span className="text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full">
-                      FINANCE SETTLEMENT
+                    <span>Doanh thu & Đối soát</span>
+                    <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full whitespace-nowrap">
+                      FINANCE
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
                     Tổng hợp cước phát sinh và công nợ thực tế đồng bộ từ Backend
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-baseline gap-2 bg-slate-950/60 px-4 py-2 rounded-xl border border-slate-800">
-                <span className="text-xs text-slate-400 font-medium">Doanh thu ghi nhận:</span>
-                <span className="text-xl font-bold font-mono text-emerald-400">
+              <div className="flex items-baseline justify-between sm:justify-start gap-2 bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800">
+                <span className="text-[11px] sm:text-xs text-slate-400 font-medium">Doanh thu ghi nhận:</span>
+                <span className="text-base sm:text-xl font-bold font-mono text-emerald-400">
                   {formatVND(collectedRevenue)}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-1">
               {/* Collected Revenue */}
-              <div className="bg-slate-950/60 border border-emerald-500/20 p-3.5 rounded-xl flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Tổng cước phát sinh (Gross)</span>
-                  <span className="text-xs text-slate-500">Cước từ các cuốc xe đã điều động</span>
+              <div className="bg-slate-950/60 border border-emerald-500/20 p-3 sm:p-3.5 rounded-xl flex items-center justify-between gap-2">
+                <div className="space-y-0.5 min-w-0 pr-1">
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider block truncate">Tổng cước phát sinh</span>
+                  <span className="text-[11px] sm:text-xs text-slate-500 truncate block">Từ các cuốc đã điều động</span>
                 </div>
-                <span className="text-base font-bold font-mono text-emerald-400 bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-800/40">
+                <span className="text-xs sm:text-sm md:text-base font-bold font-mono text-emerald-400 bg-emerald-950/50 px-2 sm:px-2.5 py-1 rounded-lg border border-emerald-800/40 shrink-0 whitespace-nowrap">
                   {formatVND(collectedRevenue)}
                 </span>
               </div>
 
               {/* Platform Fee */}
-              <div className="bg-slate-950/60 border border-rose-500/20 p-3.5 rounded-xl flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Phí nền tảng sàn (Commission)</span>
-                  <span className="text-xs text-slate-500">Chiết khấu trích nộp cho SmartEMS</span>
+              <div className="bg-slate-950/60 border border-rose-500/20 p-3 sm:p-3.5 rounded-xl flex items-center justify-between gap-2">
+                <div className="space-y-0.5 min-w-0 pr-1">
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider block truncate">Phí sàn (Commission)</span>
+                  <span className="text-[11px] sm:text-xs text-slate-500 truncate block">Trích nộp cho SmartEMS</span>
                 </div>
-                <span className="text-base font-bold font-mono text-rose-400 bg-rose-950/50 px-2.5 py-1 rounded-lg border border-rose-800/40">
+                <span className="text-xs sm:text-sm md:text-base font-bold font-mono text-rose-400 bg-rose-950/50 px-2 sm:px-2.5 py-1 rounded-lg border border-rose-800/40 shrink-0 whitespace-nowrap">
                   {platformFees !== null ? `-${formatVND(platformFees)}` : 'Chưa có dữ liệu'}
                 </span>
               </div>
 
               {/* Net Revenue */}
-              <div className="bg-slate-950/60 border border-blue-500/20 p-3.5 rounded-xl flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Thực nhận đội xe (Net)</span>
-                  <span className="text-xs text-slate-500">Doanh thu giữ lại cho đơn vị</span>
+              <div className="bg-slate-950/60 border border-blue-500/20 p-3 sm:p-3.5 rounded-xl flex items-center justify-between gap-2">
+                <div className="space-y-0.5 min-w-0 pr-1">
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider block truncate">Thực nhận đội xe (Net)</span>
+                  <span className="text-[11px] sm:text-xs text-slate-500 truncate block">Doanh thu giữ lại</span>
                 </div>
-                <span className="text-base font-bold font-mono text-blue-300 bg-blue-950/50 px-2.5 py-1 rounded-lg border border-blue-800/40">
+                <span className="text-xs sm:text-sm md:text-base font-bold font-mono text-blue-300 bg-blue-950/50 px-2 sm:px-2.5 py-1 rounded-lg border border-blue-800/40 shrink-0 whitespace-nowrap">
                   {netRevenue !== null ? formatVND(netRevenue) : 'Chưa có dữ liệu'}
                 </span>
               </div>

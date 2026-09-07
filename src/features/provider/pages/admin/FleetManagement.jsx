@@ -200,41 +200,42 @@ const FleetManagement = () => {
   });
 
   return (
-    <div className="text-slate-100 p-6 space-y-6 font-sans bg-slate-950 min-h-screen">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 font-sans text-slate-100 min-h-screen bg-slate-950">
       
-      {/* Header */}
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-5">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-slate-800 pb-4 sm:pb-5">
         <div>
-          <h1 className="text-xl font-bold tracking-wider font-mono text-white uppercase flex items-center gap-2">
-            <Truck className="text-blue-500" size={24} />
-            Quản lý Đội xe (Fleet Management)
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Quản lý danh sách phương tiện cấp cứu và trạng thái vận hành của đơn vị.
+          <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+            <Truck className="text-blue-500 shrink-0" size={22} />
+            Quản lý Đội xe Cấp cứu
+          </h2>
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+            Giám sát trạng thái phương tiện và phân công tài xế trực thuộc đơn vị
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={fetchAllData}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors font-mono"
+            disabled={isLoading}
+            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors font-mono cursor-pointer disabled:opacity-50"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-            Làm mới Đội xe
+            <span>Làm mới</span>
           </button>
           <button
             onClick={() => handleOpenFormModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-lg shadow-blue-900/40"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-blue-900/40 cursor-pointer"
           >
             <Plus size={16} />
-            Thêm xe mới
+            <span>Thêm xe mới</span>
           </button>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="relative">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-md">
           <Search size={14} className="absolute left-3 top-3 text-slate-500" />
           <input
             type="text"
@@ -248,7 +249,7 @@ const FleetManagement = () => {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none"
+          className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none w-full sm:w-auto"
         >
           <option value="ALL">Trạng thái: Tất cả</option>
           <option value="AVAILABLE">AVAILABLE (Có sẵn)</option>
@@ -258,8 +259,75 @@ const FleetManagement = () => {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      {/* Content: Mobile Cards View (md:hidden) */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          <div className="py-12 text-center text-slate-500 font-sans bg-slate-900 border border-slate-800 rounded-xl">
+            Đang tải thông tin Đội xe...
+          </div>
+        ) : filteredFleet.length === 0 ? (
+          <div className="py-12 text-center text-slate-500 font-sans bg-slate-900 border border-slate-800 rounded-xl">
+            Không tìm thấy phương tiện phù hợp.
+          </div>
+        ) : (
+          filteredFleet.map(res => (
+            <div key={res.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-2.5 shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-bold text-blue-400 font-mono text-sm">
+                  <Truck size={16} className="text-blue-500" />
+                  {res.resourceCode}
+                </div>
+                <button 
+                  onClick={() => {
+                    setEditStatusModal(res);
+                    setNewStatus(res.status);
+                  }}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold border hover:opacity-80 transition-opacity cursor-pointer ${getStatusBadge(res.status)}`}
+                  title="Nhấn để đổi trạng thái"
+                >
+                  {res.status}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs font-sans text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Loại dịch vụ:</span>
+                  <span className="text-slate-200 font-medium truncate block">{res.resourceTypeName || `Type #${res.resourceTypeId}`}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Tài xế:</span>
+                  <span className="text-slate-200 font-medium truncate block">{res.currentDriverName || <span className="text-slate-500 italic">Chưa gán</span>}</span>
+                </div>
+              </div>
+
+              <div className="pt-1 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 truncate max-w-[180px]">
+                  {res.providerName || `Provider #${res.providerId}`}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenFormModal(res)}
+                    className="px-2.5 py-1 bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
+                    title="Sửa xe"
+                  >
+                    <Edit3 size={13} /> Sửa
+                  </button>
+                  <button
+                    onClick={() => handleDeleteResource(res.id, res.resourceCode)}
+                    className="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
+                    title="Xóa xe"
+                  >
+                    <Trash2 size={13} /> Xóa
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table (hidden md:block) */}
+      <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300 min-w-max">
             <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
@@ -316,14 +384,14 @@ const FleetManagement = () => {
                     <td className="py-3.5 px-4 text-right font-sans space-x-2">
                       <button
                         onClick={() => handleOpenFormModal(res)}
-                        className="p-1.5 bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300 rounded transition-colors"
+                        className="p-1.5 bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300 rounded transition-colors cursor-pointer"
                         title="Cập nhật thông tin xe"
                       >
                         <Edit3 size={14} />
                       </button>
                       <button
                         onClick={() => handleDeleteResource(res.id, res.resourceCode)}
-                        className="p-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded transition-colors"
+                        className="p-1.5 bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded transition-colors cursor-pointer"
                         title="Xóa xe"
                       >
                         <Trash2 size={14} />

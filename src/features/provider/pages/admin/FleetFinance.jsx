@@ -175,135 +175,136 @@ const FleetFinance = () => {
   });
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto font-sans text-slate-200">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto font-sans text-slate-200">
       
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-slate-800 pb-4 sm:pb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-            <Wallet className="text-emerald-400" size={26} />
-            Quản trị Tài chính & Đối soát Doanh thu Đội xe (Fleet Finance)
+          <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+            <Wallet className="text-emerald-400 shrink-0" size={22} />
+            Tài chính & Đối soát Doanh thu
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Theo dõi doanh thu, hoa hồng nộp sàn và tiến độ đối soát thanh toán theo thời gian thực từ Backend SmartEMS.
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+            Theo dõi doanh thu, hoa hồng nộp sàn và tiến độ đối soát thanh toán thời gian thực
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={fetchData}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+            disabled={isLoading}
+            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-            Làm mới
+            <span>Làm mới</span>
           </button>
         </div>
       </div>
 
       {/* ── KPI Summary Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         
         {/* Card 1: Gross Revenue */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
+        <div className="bg-slate-900 border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Tổng cước phát sinh (Gross)</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <TrendingUp size={16} />
+            <span className="text-[10px] sm:text-xs font-medium text-slate-400 font-mono uppercase truncate">Tổng cước (Gross)</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+              <TrendingUp size={15} />
             </div>
           </div>
-          <div className="text-2xl font-black text-white font-mono">
-            {grossRevenue != null ? formatVND(grossRevenue) : 'Chưa có dữ liệu'}
+          <div className="text-lg sm:text-2xl font-black text-white font-mono truncate">
+            {grossRevenue != null ? formatVND(grossRevenue) : 'Chưa có'}
           </div>
-          <p className="text-[11px] text-slate-400">
-            Doanh thu ghi nhận từ các chuyến cấp cứu
+          <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+            Doanh thu ghi nhận từ các chuyến
           </p>
         </div>
 
         {/* Card 2: Platform Fee */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
+        <div className="bg-slate-900 border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Phí nền tảng sàn (Commission)</span>
-            <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-              <ArrowDownLeft size={16} />
+            <span className="text-[10px] sm:text-xs font-medium text-slate-400 font-mono uppercase truncate">Phí sàn (Commission)</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+              <ArrowDownLeft size={15} />
             </div>
           </div>
-          <div className="text-2xl font-black text-rose-400 font-mono">
-            {platformFee != null ? `-${formatVND(platformFee)}` : 'Chưa có dữ liệu'}
+          <div className="text-lg sm:text-2xl font-black text-rose-400 font-mono truncate">
+            {platformFee != null ? `-${formatVND(platformFee)}` : 'Chưa có'}
           </div>
-          <p className="text-[11px] text-slate-400">
-            Chiết khấu trích nộp cho hệ thống sàn
+          <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+            Chiết khấu trích nộp hệ thống
           </p>
         </div>
 
         {/* Card 3: Net Revenue */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
+        <div className="bg-slate-900 border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 font-mono uppercase">Thực nhận Đơn vị (Net)</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-              <ArrowUpRight size={16} />
+            <span className="text-[10px] sm:text-xs font-medium text-slate-400 font-mono uppercase truncate">Thực nhận (Net)</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+              <ArrowUpRight size={15} />
             </div>
           </div>
-          <div className="text-2xl font-black text-blue-300 font-mono">
-            {netRevenue != null ? formatVND(netRevenue) : 'Chưa có dữ liệu'}
+          <div className="text-lg sm:text-2xl font-black text-blue-300 font-mono truncate">
+            {netRevenue != null ? formatVND(netRevenue) : 'Chưa có'}
           </div>
-          <p className="text-[11px] text-slate-400">
-            Cước thực nhận của đơn vị theo đối soát
+          <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+            Cước thực nhận theo đối soát
           </p>
         </div>
 
         {/* Card 4: Pending / Paid Status */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4.5 space-y-2 shadow-lg">
+        <div className="bg-slate-900 border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-400 font-mono uppercase">Tiến độ đối soát</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-              <Clock size={16} />
+            <span className="text-[10px] sm:text-xs font-medium text-amber-400 font-mono uppercase truncate">Tiến độ đối soát</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <Clock size={15} />
             </div>
           </div>
-          <div className="text-2xl font-black text-amber-400 font-mono">
-            {pendingCount} <span className="text-xs text-slate-400 font-normal">chờ / {paidCount} xong</span>
+          <div className="text-lg sm:text-2xl font-black text-amber-400 font-mono truncate">
+            {pendingCount} <span className="text-[11px] sm:text-xs text-slate-400 font-normal">chờ / {paidCount} xong</span>
           </div>
-          <p className="text-[11px] text-slate-400">
-            {paidCount} ca đã hoàn tất thanh toán
+          <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+            {paidCount} ca hoàn tất thanh toán
           </p>
         </div>
 
       </div>
 
       {/* ── Navigation Tabs ── */}
-      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('ledger')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'ledger'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <Receipt size={15} />
-          Sổ cái Giao dịch & Đối soát ({transactions.length})
+          <Receipt size={14} />
+          Sổ cái Giao dịch ({transactions.length})
         </button>
 
         <button
           onClick={() => setActiveTab('fleet')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'fleet'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <Truck size={15} />
-          Phương tiện & Tài xế Đội xe ({resources.length})
+          <Truck size={14} />
+          Xe & Tài xế Đội xe ({resources.length})
         </button>
       </div>
 
       {/* ── TAB 1: REVENUE LEDGER & SETTLEMENTS ── */}
       {activeTab === 'ledger' && (
-        <div className="space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl">
             
             {/* Filter Toolbar */}
-            <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="relative w-full sm:w-80">
+            <div className="p-3 sm:p-4 border-b border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
                 <Search size={14} className="absolute left-3 top-3 text-slate-500" />
                 <input
                   type="text"
@@ -315,11 +316,11 @@ const FleetFinance = () => {
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-xs text-slate-400 font-medium">Trạng thái:</span>
+                <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Trạng thái:</span>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none"
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none w-full sm:w-auto"
                 >
                   <option value="ALL">Tất cả trạng thái</option>
                   <option value="PENDING">Chờ thanh toán/đối soát</option>
@@ -328,7 +329,74 @@ const FleetFinance = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile View: Transaction Cards (md:hidden) */}
+            <div className="block md:hidden p-3 space-y-3">
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map((tx, idx) => {
+                  const badge = getPaymentBadge(tx.status);
+                  const BadgeIcon = badge.icon;
+                  return (
+                    <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5 shadow-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-red-400 font-bold font-mono text-sm block">MIS-{tx.missionId}</span>
+                          <span className="text-slate-500 font-mono text-[10px]">{tx.transactionId ? `TX-${tx.transactionId}` : 'N/A'}</span>
+                        </div>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.bg}`}>
+                          <BadgeIcon size={11} />
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/60">
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Phương tiện:</span>
+                          <span className="text-slate-200 font-semibold truncate block">{tx.resourceCode}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Tài xế:</span>
+                          <span className="text-slate-200 truncate block">{tx.driver}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Tổng cước:</span>
+                          <span className="font-bold text-emerald-400 font-mono">
+                            {tx.amount != null ? formatVND(tx.amount) : 'Chưa có'}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-slate-500 text-[10px] block">Hoa hồng sàn:</span>
+                          <span className="text-rose-400 font-mono">
+                            {tx.commission != null ? `-${formatVND(tx.commission)}` : 'Chưa có'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500">
+                          {tx.paidAt ? `Đã TT: ${new Date(tx.paidAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Chưa thanh toán'}
+                        </span>
+                        <button
+                          onClick={() => setSelectedTx(tx)}
+                          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded-lg text-xs font-medium cursor-pointer transition-colors"
+                        >
+                          Chi tiết
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-10 text-center text-slate-500 text-xs">
+                  Chưa có giao dịch đối soát nào ghi nhận.
+                </div>
+              )}
+            </div>
+
+            {/* Desktop View: Table (hidden md:block) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
                   <tr>
@@ -411,19 +479,54 @@ const FleetFinance = () => {
 
       {/* ── TAB 2: FLEET VEHICLES & DRIVERS ── */}
       {activeTab === 'fleet' && (
-        <div className="space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-sm text-white">Danh sách Phương tiện & Tài xế Đơn vị</h3>
-                <p className="text-xs text-slate-400">Đồng bộ trực tiếp từ hệ thống điều phối xe cấp cứu</p>
+                <h3 className="font-bold text-sm text-white">Phương tiện & Tài xế Đơn vị</h3>
+                <p className="text-[11px] sm:text-xs text-slate-400">Đồng bộ trực tiếp từ hệ thống điều phối xe cấp cứu</p>
               </div>
               <span className="text-xs text-emerald-400 font-mono font-bold bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800/50">
-                {resources.length} Xe hoạt động
+                {resources.length} Xe
               </span>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile View: Vehicle Cards (md:hidden) */}
+            <div className="block md:hidden p-3 space-y-3">
+              {resources.map((r, idx) => (
+                <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-slate-100 font-bold font-mono text-sm block">{r.resourceCode}</span>
+                      <span className="text-slate-400 text-[10px]">{r.extendedAttributes?.plate || 'Chưa có biển'}</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono border bg-slate-800 text-slate-300 border-slate-700">
+                      {r.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/60">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Loại dịch vụ:</span>
+                      <span className="text-indigo-300 font-medium truncate block">{r.resourceTypeName || 'Xe Cấp cứu'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Tài xế:</span>
+                      <span className="text-slate-200 font-medium truncate block">{r.currentDriverName || 'Chưa gán'}</span>
+                    </div>
+                  </div>
+
+                  {r.extendedAttributes?.model && (
+                    <div className="text-[11px] text-slate-400 font-sans">
+                      Xe: {r.extendedAttributes.model} {r.extendedAttributes?.year ? `(${r.extendedAttributes.year})` : ''}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop View: Table (hidden md:block) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
                   <tr>
