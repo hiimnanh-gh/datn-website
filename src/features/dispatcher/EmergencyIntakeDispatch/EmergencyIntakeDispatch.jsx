@@ -284,6 +284,9 @@ const EmergencyIntakeDispatch = () => {
 
   const handleOpenSimulationForRequest = async (request) => {
     if (!request || !request.id) return;
+    if (request.status === 'COMPLETED' || request.missionStatus === 'COMPLETED') {
+      return;
+    }
     setIsLoadingMissionForSim(true);
     try {
       let targetMission = null;
@@ -1085,14 +1088,16 @@ const EmergencyIntakeDispatch = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleOpenSimulationForRequest(selectedRequest)}
-                    disabled={isLoadingMissionForSim}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2"
-                  >
-                    {isLoadingMissionForSim ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
-                    <span>{isLoadingMissionForSim ? 'Đang tải...' : 'Mở Bảng Mô Phỏng Real-time'}</span>
-                  </button>
+                  {selectedRequest.status !== 'COMPLETED' && selectedRequest.missionStatus !== 'COMPLETED' && (
+                    <button
+                      onClick={() => handleOpenSimulationForRequest(selectedRequest)}
+                      disabled={isLoadingMissionForSim}
+                      className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                      {isLoadingMissionForSim ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
+                      <span>{isLoadingMissionForSim ? 'Đang tải...' : 'Mở Bảng Mô Phỏng Real-time'}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -505,7 +505,12 @@ const SimulationControlModal = ({ isOpen, onClose, mission, onRequestRefresh }) 
           </button>
 
           <div className="flex items-center gap-3">
-            {!simulation ? (
+            {mission?.status === 'COMPLETED' || activePhase === 'COMPLETED' || activeStatus === 'COMPLETED' ? (
+              <div className="px-4 py-2 bg-emerald-950/60 border border-emerald-800 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 size={16} />
+                <span>Nhiệm vụ đã hoàn tất - Mô phỏng kết thúc</span>
+              </div>
+            ) : !simulation ? (
               <button
                 onClick={handleCreateSimulation}
                 disabled={isCreating}
