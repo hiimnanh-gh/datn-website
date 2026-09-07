@@ -190,7 +190,7 @@ const Login = () => {
       if (primaryRole === 'ADMIN') {
         navigate('/admin/dashboard');
       } else if (primaryRole === 'PROVIDER' || primaryRole === 'PROVIDER_ADMIN') {
-        navigate('/provider/fleet');
+        navigate('/provider/dashboard');
       } else if (primaryRole === 'DISPATCHER') {
         navigate('/dispatcher/dispatch-requests');
       } else if (primaryRole === 'DRIVER') {

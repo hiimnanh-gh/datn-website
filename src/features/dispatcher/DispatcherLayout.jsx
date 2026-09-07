@@ -1,13 +1,14 @@
 import React from 'react';
 import { Outlet, Navigate, NavLink } from 'react-router-dom';
-import { ShieldAlert, Truck, Map } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, Truck, Map } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import AppLogo from '../../components/AppLogo';
 
 const NAV_ITEMS = [
-  { to: '/dispatcher/dispatch-requests', icon: ShieldAlert, label: 'Tiếp nhận & Điều phối (SOS)', hasBadge: true },
-  { to: '/dispatcher/dispatch-resources',icon: Truck,       label: 'Tài nguyên xe & Tài xế' },
-  { to: '/dispatcher/dispatch-map',      icon: Map,         label: 'Bản đồ điều phối Live' },
+  { to: '/dispatcher/dispatch-requests', icon: ShieldAlert,     label: 'Tiếp nhận & Điều phối (SOS)', hasBadge: true },
+  { to: '/dispatcher/dispatch-resources',icon: Truck,           label: 'Tài nguyên xe & Tài xế' },
+  { to: '/dispatcher/dispatch-map',      icon: Map,             label: 'Bản đồ điều phối Live' },
+  { to: '/dispatcher/dashboard',         icon: LayoutDashboard, label: 'Tổng quan Thống kê (Dashboard)' },
 ];
 
 const DispatcherLayout = () => {
@@ -22,18 +23,18 @@ const DispatcherLayout = () => {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
-      {/* Compact Slim Icon-Only Sidebar */}
+    <div className="flex flex-col md:flex-row h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
+      {/* Responsive Sidebar: Bottom Navigation on mobile, slim vertical sidebar on desktop */}
       <aside
-        className="w-16 h-screen bg-slate-900 border-r border-slate-800/80 shadow-2xl flex flex-col items-center py-4 px-2 shrink-0 z-50 select-none"
+        className="fixed bottom-0 left-0 right-0 h-14 md:relative md:h-screen md:w-16 bg-slate-900 border-t md:border-t-0 md:border-r border-slate-800/80 shadow-2xl flex flex-row md:flex-col items-center justify-around md:justify-start py-1.5 md:py-4 px-3 md:px-2 shrink-0 z-50 select-none"
       >
-        {/* Brand Logo Header (Icon only) */}
-        <div className="mb-4 flex flex-col items-center" title="SmartEMS Dispatch Center">
+        {/* Brand Logo Header (Icon only) - Hidden on mobile bottom bar */}
+        <div className="hidden md:flex mb-4 flex-col items-center" title="SmartEMS Dispatch Center">
           <AppLogo size={32} showText={false} textLight />
         </div>
 
-        {/* Live Indicator Dot */}
-        <div className="mb-5 flex items-center justify-center" title="Dispatcher Live System">
+        {/* Live Indicator Dot - Hidden on mobile bottom bar */}
+        <div className="hidden md:flex mb-5 items-center justify-center" title="Dispatcher Live System">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
@@ -41,14 +42,14 @@ const DispatcherLayout = () => {
         </div>
 
         {/* Navigation Icons */}
-        <nav className="flex-1 flex flex-col gap-3 w-full items-center font-sans">
+        <nav className="flex flex-row md:flex-col gap-1 md:gap-3 w-full justify-around md:justify-start items-center font-sans">
           {NAV_ITEMS.map(({ to, icon: IconComponent, label, hasBadge }) => (
             <NavLink
               key={to}
               to={to}
               title={label}
               className={({ isActive }) =>
-                `group relative flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200 cursor-pointer ${
+                `group relative flex items-center justify-center w-10 h-10 md:w-11 md:h-11 rounded-xl transition-all duration-200 cursor-pointer ${
                   isActive
                     ? 'bg-red-600 text-white font-semibold shadow-lg shadow-red-600/30 border border-red-500/40'
                     : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/80'
@@ -79,7 +80,7 @@ const DispatcherLayout = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden relative bg-slate-950 min-w-0">
+      <main className="flex-1 flex flex-col overflow-hidden relative bg-slate-950 min-w-0 pb-14 md:pb-0">
         <Outlet />
       </main>
     </div>

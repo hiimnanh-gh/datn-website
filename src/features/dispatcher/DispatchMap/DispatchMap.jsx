@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { RefreshCw, MapPin, Truck, Building2, AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
+import { RefreshCw, MapPin, Truck, Building2, AlertTriangle, ShieldCheck, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { dispatchRequestService } from '../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../services/dispatchResourceService';
@@ -120,6 +120,7 @@ const DispatchMap = () => {
   const [showRequests, setShowRequests] = useState(true);
   const [showResources, setShowResources] = useState(true);
   const [showHospitals, setShowHospitals] = useState(true);
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
 
   // 1. Initial REST Snapshot loader
   const fetchMapSnapshot = useCallback(async () => {
@@ -248,73 +249,87 @@ const DispatchMap = () => {
   return (
     <div className="h-full w-full relative bg-slate-950 font-sans">
       {/* Top Right User Profile */}
-      <div className="absolute top-4 right-4 z-[1000]">
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[1000]">
         <HeaderUserProfile profilePath="/dispatcher/profile" />
       </div>
 
       {/* Tactical Header Overlay */}
-      <div className="absolute top-4 left-4 z-[1000] bg-slate-900/90 backdrop-blur-md border border-slate-800 p-4 rounded-xl shadow-2xl space-y-2 text-xs">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${wsConnected ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'}`} />
-            <h2 className="text-slate-100 font-bold tracking-wide text-sm flex items-center gap-2">
-              Bản đồ điều phối (Dispatch Map)
+      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[1000] bg-slate-900/95 backdrop-blur-md border border-slate-800 p-3 sm:p-4 rounded-xl shadow-2xl space-y-2 text-xs max-w-[calc(100vw-5rem)] sm:max-w-xs transition-all">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${wsConnected ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'}`} />
+            <h2 className="text-slate-100 font-bold tracking-wide text-xs sm:text-sm flex items-center gap-1.5 truncate">
+              Bản đồ điều phối
             </h2>
           </div>
-          <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-            wsConnected ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 border-slate-700'
-          }`}>
-            {wsConnected ? 'LIVE WS' : 'POLLING'}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+              wsConnected ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 border-slate-700'
+            }`}>
+              {wsConnected ? 'LIVE WS' : 'POLLING'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsLegendOpen(!isLegendOpen)}
+              className="text-slate-400 hover:text-white p-0.5 rounded hover:bg-slate-800 cursor-pointer"
+              title={isLegendOpen ? "Thu gọn bảng chú thích" : "Mở rộng bảng chú thích"}
+            >
+              {isLegendOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          </div>
         </div>
 
-        <p className="text-slate-400 text-[11px] font-mono">
-          Nguồn chuẩn: Backend REST Snapshot + Realtime STOMP
-        </p>
+        {isLegendOpen && (
+          <>
+            <p className="text-slate-400 text-[10px] sm:text-[11px] font-mono">
+              Nguồn chuẩn: REST + Realtime STOMP
+            </p>
 
-        {/* Legend / Toggle Counters (Count from actual active arrays) */}
-        <div className="pt-2 border-t border-slate-800 space-y-1.5 font-mono">
-          <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-            <input
-              type="checkbox"
-              checked={showRequests}
-              onChange={(e) => setShowRequests(e.target.checked)}
-              className="accent-red-500 rounded"
-            />
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
-            <span>Sự cố Cấp cứu ({validRequests.length}/{requests.length})</span>
-          </label>
+            {/* Legend / Toggle Counters (Count from actual active arrays) */}
+            <div className="pt-2 border-t border-slate-800 space-y-1.5 font-mono">
+              <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                <input
+                  type="checkbox"
+                  checked={showRequests}
+                  onChange={(e) => setShowRequests(e.target.checked)}
+                  className="accent-red-500 rounded"
+                />
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
+                <span>Sự cố Cấp cứu ({validRequests.length}/{requests.length})</span>
+              </label>
 
-          <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-            <input
-              type="checkbox"
-              checked={showResources}
-              onChange={(e) => setShowResources(e.target.checked)}
-              className="accent-blue-500 rounded"
-            />
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-            <span>Xe cứu thương ({validResources.length}/{resources.length})</span>
-          </label>
+              <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                <input
+                  type="checkbox"
+                  checked={showResources}
+                  onChange={(e) => setShowResources(e.target.checked)}
+                  className="accent-blue-500 rounded"
+                />
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
+                <span>Xe cứu thương ({validResources.length}/{resources.length})</span>
+              </label>
 
-          <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-            <input
-              type="checkbox"
-              checked={showHospitals}
-              onChange={(e) => setShowHospitals(e.target.checked)}
-              className="accent-emerald-500 rounded"
-            />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-            <span>Bệnh viện ({validHospitals.length}/{hospitals.length})</span>
-          </label>
-        </div>
+              <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                <input
+                  type="checkbox"
+                  checked={showHospitals}
+                  onChange={(e) => setShowHospitals(e.target.checked)}
+                  className="accent-emerald-500 rounded"
+                />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                <span>Bệnh viện ({validHospitals.length}/{hospitals.length})</span>
+              </label>
+            </div>
 
-        <button
-          onClick={fetchMapSnapshot}
-          className="w-full mt-2 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-mono text-[11px] flex items-center justify-center gap-1.5 transition-colors"
-        >
-          <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
-          Làm mới dữ liệu
-        </button>
+            <button
+              onClick={fetchMapSnapshot}
+              className="w-full mt-2 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-mono text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
+              Làm mới dữ liệu
+            </button>
+          </>
+        )}
       </div>
 
       {/* Leaflet Map Container */}

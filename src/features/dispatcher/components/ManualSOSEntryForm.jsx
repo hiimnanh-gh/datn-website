@@ -144,12 +144,12 @@ const ManualSOSEntryForm = ({ onSubmit, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-scale-in text-left flex flex-col md:flex-row h-[90vh] md:h-[650px] font-sans">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-scale-in text-left flex flex-col md:flex-row h-[94vh] md:h-[650px] font-sans">
         {/* Left Side: Form Fields */}
         <form
           onSubmit={handleFormSubmit}
-          className="flex-1 p-6 flex flex-col justify-between overflow-y-auto space-y-4"
+          className="flex-1 p-4 sm:p-6 flex flex-col justify-between overflow-y-auto space-y-4"
         >
           <div className="flex justify-between items-center pb-2 border-b border-slate-800">
             <h3 className="text-lg font-bold font-mono tracking-wider text-white flex items-center gap-2">
@@ -302,7 +302,7 @@ const ManualSOSEntryForm = ({ onSubmit, onClose }) => {
         </form>
 
         {/* Right Side: Searchable Leaflet Map Input */}
-        <div className="flex-1 bg-slate-950 relative flex flex-col border-t border-slate-800 md:border-t-0 md:border-l border-slate-800">
+        <div className="flex-1 min-h-[240px] bg-slate-950 relative flex flex-col border-t border-slate-800 md:border-t-0 md:border-l border-slate-800">
           {/* Map Search input */}
           <div className="absolute top-4 left-4 right-4 z-[1000] flex gap-2">
             <form

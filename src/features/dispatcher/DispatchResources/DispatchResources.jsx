@@ -73,20 +73,20 @@ const DispatchResources = () => {
   });
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-sans p-6 overflow-y-auto">
+    <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-sans p-3 sm:p-6 overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Truck className="text-indigo-400" size={24} />
-            Tài nguyên điều phối (Dispatch Resources)
+          <h1 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+            <Truck className="text-indigo-400 shrink-0" size={24} />
+            <span className="truncate">Tài nguyên điều phối (Dispatch Resources)</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Quản lý danh sách phương tiện cấp cứu, nhà cung cấp và trạng thái vận hành thực tế.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={fetchAllData}
             className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors cursor-pointer"
@@ -102,7 +102,7 @@ const DispatchResources = () => {
       </div>
 
       {/* Toolbar Filters */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-3 text-slate-500" />
           <input
@@ -153,75 +153,77 @@ const DispatchResources = () => {
 
       {/* Resource Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <table className="w-full text-left text-xs text-slate-300">
-          <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
-            <tr>
-              <th className="py-3.5 px-4">Mã tài nguyên</th>
-              <th className="py-3.5 px-4">Loại xe / Dịch vụ</th>
-              <th className="py-3.5 px-4">Đơn vị (Provider)</th>
-              <th className="py-3.5 px-4">Tài xế hiện tại</th>
-              <th className="py-3.5 px-4">Trạng thái</th>
-              <th className="py-3.5 px-4">Cập nhật cuối</th>
-              <th className="py-3.5 px-4 text-right">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800/60 font-mono">
-            {isLoading ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-300 min-w-[650px]">
+            <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
-                  Đang tải danh sách Tài nguyên...
-                </td>
+                <th className="py-3.5 px-4">Mã tài nguyên</th>
+                <th className="py-3.5 px-4">Loại xe / Dịch vụ</th>
+                <th className="py-3.5 px-4">Đơn vị (Provider)</th>
+                <th className="py-3.5 px-4">Tài xế hiện tại</th>
+                <th className="py-3.5 px-4">Trạng thái</th>
+                <th className="py-3.5 px-4">Cập nhật cuối</th>
+                <th className="py-3.5 px-4 text-right">Thao tác</th>
               </tr>
-            ) : filteredResources.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
-                  Không tìm thấy tài nguyên nào phù hợp.
-                </td>
-              </tr>
-            ) : (
-              filteredResources.map(res => (
-                <tr key={res.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3 px-4 font-bold text-slate-100 flex items-center gap-2">
-                    <Truck size={14} className="text-indigo-400" />
-                    {res.resourceCode}
-                  </td>
-                  <td className="py-3 px-4 text-indigo-300 font-medium font-sans">
-                    {res.resourceTypeName || `ID: ${res.resourceTypeId}`}
-                  </td>
-                  <td className="py-3 px-4 text-slate-300 font-sans">
-                    {res.providerName || `Provider #${res.providerId}`}
-                  </td>
-                  <td className="py-3 px-4 text-slate-300 font-sans">
-                    {res.currentDriverName || <span className="text-slate-500 italic">Chưa gán</span>}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusBadge(res.status)}`}>
-                      {res.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-500 text-[11px]">
-                    {res.updatedAt ? new Date(res.updatedAt).toLocaleString() : 'N/A'}
-                  </td>
-                  <td className="py-3 px-4 text-right space-x-2 font-sans">
-                    <button
-                      onClick={() => setSelectedDetail(res)}
-                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition-colors"
-                      title="Xem chi tiết"
-                    >
-                      <Eye size={14} />
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 font-mono">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
+                    Đang tải danh sách Tài nguyên...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : filteredResources.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-500 font-sans">
+                    Không tìm thấy tài nguyên nào phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                filteredResources.map(res => (
+                  <tr key={res.id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-slate-100 flex items-center gap-2">
+                      <Truck size={14} className="text-indigo-400" />
+                      {res.resourceCode}
+                    </td>
+                    <td className="py-3 px-4 text-indigo-300 font-medium font-sans">
+                      {res.resourceTypeName || `ID: ${res.resourceTypeId}`}
+                    </td>
+                    <td className="py-3 px-4 text-slate-300 font-sans">
+                      {res.providerName || `Provider #${res.providerId}`}
+                    </td>
+                    <td className="py-3 px-4 text-slate-300 font-sans">
+                      {res.currentDriverName || <span className="text-slate-500 italic">Chưa gán</span>}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusBadge(res.status)}`}>
+                        {res.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-500 text-[11px]">
+                      {res.updatedAt ? new Date(res.updatedAt).toLocaleString() : 'N/A'}
+                    </td>
+                    <td className="py-3 px-4 text-right space-x-2 font-sans">
+                      <button
+                        onClick={() => setSelectedDetail(res)}
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition-colors"
+                        title="Xem chi tiết"
+                      >
+                        <Eye size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* DETAIL MODAL */}
       {selectedDetail && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
                 <Truck className="text-indigo-400" size={20} />

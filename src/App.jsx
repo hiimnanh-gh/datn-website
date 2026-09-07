@@ -25,6 +25,7 @@ import Profile from './features/admin/pages/Profile/Profile';
 
 // ── Dispatcher Layout ────────────────────────────────────
 import DispatcherLayout from './features/dispatcher/DispatcherLayout';
+import DispatcherDashboard from './features/dispatcher/DispatcherDashboard/DispatcherDashboard';
 
 // ── Provider Portal ───────────────────────────────────────
 import ProviderLayout from './features/provider/ProviderLayout';
@@ -41,7 +42,7 @@ const RootRedirect = () => {
   const userRole = user?.role?.toUpperCase() || (Array.isArray(user?.roles) ? user.roles[0]?.toUpperCase() : '');
   const userRoles = Array.isArray(user?.roles) ? user.roles.map(r => r.toUpperCase()) : [userRole];
 
-  if (userRoles.some(r => r.includes('PROVIDER'))) return <Navigate to="/provider/fleet" replace />;
+  if (userRoles.some(r => r.includes('PROVIDER'))) return <Navigate to="/provider/dashboard" replace />;
   if (userRoles.some(r => r.includes('ADMIN'))) return <Navigate to="/admin/dashboard" replace />;
   if (userRoles.some(r => r.includes('DISPATCHER'))) return <Navigate to="/dispatcher/dispatch-requests" replace />;
 
@@ -91,6 +92,7 @@ function App() {
           <Route path="dispatch-resources" element={<DispatchResources />} />
           <Route path="dispatch-map" element={<DispatchMap />} />
           <Route path="radar" element={<Navigate to="/dispatcher/dispatch-map" replace />} />
+          <Route path="dashboard" element={<DispatcherDashboard />} />
           <Route path="profile" element={<Profile />} />
 
           <Route path="*" element={<Navigate to="dispatch-requests" replace />} />
@@ -98,7 +100,7 @@ function App() {
 
         {/* Provider Portal Routes */}
         <Route path="/provider" element={<ProviderLayout />}>
-          <Route index element={<Navigate to="fleet" replace />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<ProviderDashboard />} />
           <Route path="fleet" element={<FleetManagement />} />
           <Route path="finance" element={<FleetFinance />} />
@@ -106,7 +108,7 @@ function App() {
           <Route path="commission" element={<Navigate to="/provider/finance" replace />} />
           <Route path="profile" element={<Profile />} />
           <Route path="drivers" element={<Navigate to="/provider/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="fleet" replace />} />
+          <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Route>
 
         {/* Catch-all */}

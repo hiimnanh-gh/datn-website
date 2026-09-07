@@ -190,6 +190,7 @@ const EmergencyIntakeDispatch = () => {
   const [recsModal, setRecsModal] = useState(null);
   const [isFullMapOpen, setIsFullMapOpen] = useState(false);
   const [isUpdatingSeverity, setIsUpdatingSeverity] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState('queue'); // 'queue' | 'detail' | 'dispatch'
 
   // 0. Update Severity / Urgency Handler
   const handleUpdateSeverity = async (newSeverity) => {
@@ -600,31 +601,31 @@ const EmergencyIntakeDispatch = () => {
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
       
-      <header className="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500">
+      <header className="min-h-14 py-2 px-3 sm:px-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shrink-0">
             <ShieldAlert size={20} />
           </div>
-          <div>
-            <h1 className="font-bold text-base text-slate-100 flex items-center gap-2">
+          <div className="min-w-0">
+            <h1 className="font-bold text-sm sm:text-base text-slate-100 flex items-center gap-1.5 truncate">
               Tiếp nhận & Điều phối
-              <span className="text-xs font-normal text-slate-400 font-mono">Emergency Intake & Dispatch</span>
+              <span className="text-xs font-normal text-slate-400 font-mono hidden md:inline">Emergency Intake & Dispatch</span>
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${wsConnected ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' : 'bg-amber-950/40 text-amber-400 border-amber-800'}`}>
+        <div className="flex items-center gap-2 sm:gap-4 text-xs shrink-0">
+          <div className={`flex items-center gap-1.5 px-2 py-1 sm:px-2.5 rounded-full border ${wsConnected ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' : 'bg-amber-950/40 text-amber-400 border-amber-800'}`}>
             {wsConnected ? <Wifi size={13} /> : <WifiOff size={13} />}
-            <span>{wsConnected ? 'WebSocket Live' : 'REST Polling'}</span>
+            <span className="hidden sm:inline">{wsConnected ? 'WebSocket Live' : 'REST Polling'}</span>
           </div>
 
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${apiError ? 'bg-red-950/40 text-red-400 border-red-800' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
+          <div className={`flex items-center gap-1.5 px-2 py-1 sm:px-2.5 rounded-full border ${apiError ? 'bg-red-950/40 text-red-400 border-red-800' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
             <span className={`w-2 h-2 rounded-full ${apiError ? 'bg-red-500 animate-ping' : 'bg-emerald-500'}`} />
-            <span>{apiError ? 'Lỗi API' : 'API OK'}</span>
+            <span className="hidden sm:inline">{apiError ? 'Lỗi API' : 'API OK'}</span>
           </div>
 
-          <span className="text-slate-400 font-mono hidden md:inline">
+          <span className="text-slate-400 font-mono hidden lg:inline">
             Cập nhật: {lastUpdated}
           </span>
 
@@ -636,14 +637,54 @@ const EmergencyIntakeDispatch = () => {
             <RefreshCw size={15} className={isLoadingRequests ? 'animate-spin' : ''} />
           </button>
 
-          <div className="pl-2 border-l border-slate-800">
+          <div className="pl-1 sm:pl-2 border-l border-slate-800">
             <HeaderUserProfile profilePath="/dispatcher/profile" />
           </div>
         </div>
       </header>
 
+      {/* Mobile Tab Navigation (< lg only) */}
+      <div className="lg:hidden flex items-center border-b border-slate-800 bg-slate-900 shrink-0 select-none">
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('queue')}
+          className={`flex-1 py-2.5 px-2 text-center text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+            activeMobileTab === 'queue'
+              ? 'border-red-500 text-red-400 bg-slate-800/60'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <ShieldAlert size={14} />
+          <span>Hàng đợi ({filteredRequests.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('detail')}
+          className={`flex-1 py-2.5 px-2 text-center text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+            activeMobileTab === 'detail'
+              ? 'border-indigo-500 text-indigo-400 bg-slate-800/60'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <FileText size={14} />
+          <span className="truncate">Chi tiết {selectedRequest ? `REQ-${selectedRequest.id}` : ''}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('dispatch')}
+          className={`flex-1 py-2.5 px-2 text-center text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+            activeMobileTab === 'dispatch'
+              ? 'border-emerald-500 text-emerald-400 bg-slate-800/60'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Truck size={14} />
+          <span className="truncate">Điều xe {selectedResource ? `(${selectedResource.resourceCode})` : ''}</span>
+        </button>
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
-        <section className="w-[30%] border-r border-slate-800 flex flex-col bg-slate-900/50">
+        <section className={`${activeMobileTab === 'queue' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[30%] border-r border-slate-800 flex-col bg-slate-900/50 flex-1 lg:flex-initial overflow-hidden`}>
           <div className="p-3 border-b border-slate-800 space-y-2 bg-slate-900">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -718,6 +759,7 @@ const EmergencyIntakeDispatch = () => {
                   onClick={() => {
                     setSelectedReqId(req.id);
                     fetchReqDetail(req.id);
+                    setActiveMobileTab('detail');
                   }}
                   className={`p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'bg-indigo-950/40 border-indigo-500 shadow-md' : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'}`}
                 >
@@ -754,7 +796,7 @@ const EmergencyIntakeDispatch = () => {
           </div>
         </section>
 
-        <section className="w-[38%] border-r border-slate-800 flex flex-col bg-slate-950">
+        <section className={`${activeMobileTab === 'detail' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[38%] border-r border-slate-800 flex-col bg-slate-950 flex-1 lg:flex-initial overflow-hidden`}>
           <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
             <h2 className="font-bold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
               Chi tiết Dispatch Request
@@ -1044,9 +1086,47 @@ const EmergencyIntakeDispatch = () => {
               </>
             )}
           </div>
+
+          {/* Mobile Bottom Navigation Bar for Detail Column */}
+          <div className="lg:hidden p-2.5 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveMobileTab('queue')}
+              className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              &larr; Hàng đợi
+            </button>
+            {selectedRequest && (
+              <button
+                type="button"
+                onClick={() => setActiveMobileTab('dispatch')}
+                className="flex-1 py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-colors"
+              >
+                <span>{isRequestDispatched ? 'Xem Trạng thái xe' : 'Sang Điều xe'}</span>
+                <ChevronRight size={14} />
+              </button>
+            )}
+          </div>
         </section>
 
-        <section className="w-[32%] flex flex-col bg-slate-900/30 font-sans">
+        <section className={`${activeMobileTab === 'dispatch' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[32%] flex-col bg-slate-900/30 font-sans flex-1 lg:flex-initial overflow-hidden`}>
+          {/* Mobile Navigation Header for Column 3 */}
+          <div className="lg:hidden px-3 py-2 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveMobileTab('detail')}
+              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium cursor-pointer"
+            >
+              &larr; {selectedRequest ? `Chi tiết REQ-${selectedRequest.id}` : 'Chi tiết yêu cầu'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMobileTab('queue')}
+              className="text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
+            >
+              Hàng đợi ({filteredRequests.length})
+            </button>
+          </div>
           {isRequestDispatched ? (
             <div className="flex-1 flex flex-col p-4 bg-slate-900 border-l border-slate-800 justify-between overflow-y-auto space-y-4">
               <div className="space-y-4">
@@ -1108,6 +1188,18 @@ const EmergencyIntakeDispatch = () => {
                   <Truck size={14} className="text-indigo-400" />
                   Tài nguyên xe & Tài xế
                 </span>
+                {!selectedRequest && (
+                  <div className="p-2 bg-amber-950/40 border border-amber-800/60 rounded-lg text-amber-300 text-[11px] flex items-center justify-between gap-2">
+                    <span>Chưa chọn yêu cầu cấp cứu.</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveMobileTab('queue')}
+                      className="underline text-amber-400 font-bold shrink-0 cursor-pointer"
+                    >
+                      Chọn ca cấp cứu &rarr;
+                    </button>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                   <select value={resStatusFilter} onChange={(e) => setResStatusFilter(e.target.value)} className="bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-slate-300 focus:outline-none">
                     <option value="ALL">Status: Tất cả</option>
@@ -1196,8 +1288,8 @@ const EmergencyIntakeDispatch = () => {
       </div>
 
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
                 <Send size={18} className="text-red-500" />
@@ -1269,8 +1361,8 @@ const EmergencyIntakeDispatch = () => {
       )}
 
       {resourceDetailModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="font-bold text-base">Chi tiết Xe: {resourceDetailModal.resourceCode}</h3>
             <button onClick={() => setResourceDetailModal(null)} className="mt-4 px-4 py-2 bg-slate-800 rounded-lg text-xs">Đóng</button>
           </div>
@@ -1279,8 +1371,8 @@ const EmergencyIntakeDispatch = () => {
 
            {/* ── TIMELINE MODAL (Normalized per contract) ── */}
       {timelineModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 sm:p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <FileText className="text-indigo-400" size={18} />
@@ -1321,8 +1413,8 @@ const EmergencyIntakeDispatch = () => {
 
       {/* ── RECOMMENDATIONS MODAL (Top 3 xe) ── */}
       {recsModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-sans">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 sm:p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <Sparkles className="text-amber-400" size={18} />
@@ -1349,7 +1441,7 @@ const EmergencyIntakeDispatch = () => {
                   return (
                     <div 
                       key={idx} 
-                      className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                      className={`p-3 sm:p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         isFirst 
                           ? 'bg-slate-950 border-amber-500/50 ring-1 ring-amber-500/30' 
                           : 'bg-slate-950/80 border-slate-800'
@@ -1396,7 +1488,7 @@ const EmergencyIntakeDispatch = () => {
                           }
                           setRecsModal(null);
                         }}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer shadow-md ${
+                        className={`w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer shadow-md text-center ${
                           isFirst 
                             ? 'bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold shadow-amber-600/30' 
                             : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
@@ -1434,28 +1526,28 @@ const EmergencyIntakeDispatch = () => {
 
       {/* ── FULL SCREEN / ENLARGED MAP MODAL ── */}
       {isFullMapOpen && selectedRequest && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-sans">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl h-[88vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="bg-slate-950 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-2 sm:p-4 font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl h-[92vh] md:h-[88vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="bg-slate-950 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500">
+                <div className="w-9 h-9 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shrink-0">
                   <MapPin size={20} />
                 </div>
-                <div>
-                  <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm sm:text-base text-slate-100 flex items-center gap-2 truncate">
                     Bản đồ Toàn cảnh Vị trí Sự cố REQ-{selectedRequest.id}
                     <span className={`text-[10px] px-2 py-0.5 rounded border ${getStatusBadge(selectedRequest.status)}`}>
                       {selectedRequest.status}
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-400 font-mono">
+                  <p className="text-xs text-slate-400 font-mono truncate">
                     {selectedRequest.address || selectedRequest.callerAddress || 'Hà Nội'} • Tọa độ: {selectedRequest.latitude?.toFixed(5)}, {selectedRequest.longitude?.toFixed(5)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-4 text-xs font-mono bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+              <div className="flex items-center justify-between sm:justify-end gap-3">
+                <div className="hidden sm:flex items-center gap-4 text-xs font-mono bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
                   <span className="flex items-center gap-1.5 text-red-400">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Hiện trường
                   </span>
