@@ -57,33 +57,62 @@ export function useAmbulanceTracking(simulationId = null, options = {}) {
       }));
     }
 
-    // Update single simulation tracking if matching simulationId
-    if (simulationId && (data.simulationId === simulationId || String(data.simulationId) === String(simulationId))) {
+    // Update single simulation tracking if matching simulationId or missionId
+    const matchesSim = simulationId && (data.simulationId === simulationId || String(data.simulationId) === String(simulationId));
+    const matchesMission = missionId && (data.missionId === missionId || String(data.missionId) === String(missionId));
+    if (matchesSim || matchesMission) {
       setSingleTracking(trackingItem);
     }
-  }, [simulationId]);
+  }, [simulationId, missionId]);
 
   // Fetch initial REST snapshot
   const fetchSnapshot = useCallback(async () => {
     try {
       if (simulationId) {
         const res = await ambulanceSimulationService.getTracking(simulationId);
-        if (res) handleTrackingMessage(res);
+        if (res) {
+          handleTrackingMessage(res);
+          return res;
+        }
       } else if (missionId) {
         const res = await ambulanceSimulationService.getTrackingByMission(missionId);
-        if (res) handleTrackingMessage(res);
+        if (res) {
+          handleTrackingMessage(res);
+          return res;
+        }
       }
-    } catch (err) {
+    } catch {
       // REST tracking fetch optional when WS is active
     }
+    return null;
   }, [simulationId, missionId, handleTrackingMessage]);
 
   useEffect(() => {
-    fetchSnapshot();
+    let isSubscribed = true;
+
+    // Fetch initial REST snapshot
+    const initSnapshot = async () => {
+      try {
+        let res = null;
+        if (simulationId) {
+          res = await ambulanceSimulationService.getTracking(simulationId);
+        } else if (missionId) {
+          res = await ambulanceSimulationService.getTrackingByMission(missionId);
+        }
+        if (isSubscribed && res) {
+          handleTrackingMessage(res);
+        }
+      } catch {
+        // Ignore initial fetch error when WS handles updates
+      }
+    };
+
+    void initSnapshot();
 
     // Connect & subscribe via WebSocket Service
     wsService.connect(
       () => {
+        if (!isSubscribed) return;
         setIsConnected(true);
 
         // 1. If Dispatcher or broad tracking mode, subscribe to dispatcher topic
@@ -116,17 +145,20 @@ export function useAmbulanceTracking(simulationId = null, options = {}) {
           };
         }
       },
-      (err) => {
-        setIsConnected(false);
+      () => {
+        if (isSubscribed) {
+          setIsConnected(false);
+        }
       }
     );
 
     return () => {
+      isSubscribed = false;
       if (subRef.current && typeof subRef.current.unsubscribe === 'function') {
         subRef.current.unsubscribe();
       }
     };
-  }, [simulationId, isDispatcher, handleTrackingMessage, fetchSnapshot]);
+  }, [simulationId, missionId, isDispatcher, handleTrackingMessage, fetchSnapshot]);
 
   return {
     ambulancesMap,

@@ -322,8 +322,13 @@ const EmergencyIntakeDispatch = () => {
         resourceId: resourceId,
         destinationId: targetMission?.destinationId || request.destinationId,
         destinationName: targetMission?.destinationName || request.destinationName,
-        status: targetMission?.status || 'ACCEPTED',
-        driverName: targetMission?.driverName || targetMission?.driver?.fullName || 'Đã điều phối'
+        status: targetMission?.status || request.missionStatus || 'ACCEPTED',
+        driverName: targetMission?.driverName || targetMission?.driver?.fullName || 'Đã điều phối',
+        latitude: request.latitude ?? targetMission?.latitude,
+        longitude: request.longitude ?? targetMission?.longitude,
+        destinationLatitude: targetMission?.destinationLatitude ?? request.destinationLatitude,
+        destinationLongitude: targetMission?.destinationLongitude ?? request.destinationLongitude,
+        address: request.address || request.callerAddress
       });
       setIsSimulationModalOpen(true);
     } catch (err) {
@@ -334,7 +339,12 @@ const EmergencyIntakeDispatch = () => {
         requestId: request.id,
         resourceCode: request.resourceCode || 'Xe Cấp cứu',
         resourceId: request.assignedResourceId || request.resourceId,
-        status: 'ACCEPTED'
+        status: request.missionStatus || 'ACCEPTED',
+        latitude: request.latitude,
+        longitude: request.longitude,
+        destinationLatitude: request.destinationLatitude,
+        destinationLongitude: request.destinationLongitude,
+        address: request.address || request.callerAddress
       });
       setIsSimulationModalOpen(true);
     } finally {
