@@ -128,50 +128,50 @@ const HospitalManagement = () => {
   });
 
   return (
-    <div className="p-6 bg-slate-950 min-h-full text-slate-100 font-sans space-y-6 overflow-y-auto">
+    <div className="p-3.5 sm:p-6 bg-slate-950 min-h-full text-slate-100 font-sans space-y-4 sm:space-y-6 overflow-y-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Building2 className="text-indigo-400" size={24} />
-            Quản lý Bệnh viện & Trung tâm Cấp cứu
+          <h1 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+            <Building2 className="text-indigo-400 shrink-0" size={24} />
+            <span>Quản lý Bệnh viện & TT Cấp cứu</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Danh sách các trung tâm tiếp nhận bệnh nhân và điểm hạ cánh xe cứu thương.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto">
           <button
             onClick={fetchHospitals}
-            className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
+            className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs transition-colors shrink-0"
             title="Tải lại dữ liệu"
           >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
           </button>
 
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
+            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all active:scale-95 whitespace-nowrap"
           >
-            <Plus size={16} />
-            Tạo Bệnh viện Mới
+            <Plus size={15} />
+            <span>Tạo Bệnh viện Mới</span>
           </button>
         </div>
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-        <Search size={18} className="text-slate-400" />
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 flex items-center gap-3">
+        <Search size={16} className="text-slate-400 shrink-0" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Tìm theo tên bệnh viện, địa chỉ, số điện thoại..."
+          placeholder="Tìm theo tên bệnh viện, địa chỉ, SĐT..."
           className="bg-transparent text-xs text-slate-100 focus:outline-none w-full placeholder:text-slate-500"
         />
         {searchTerm && (
-          <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white">
+          <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white shrink-0">
             <X size={16} />
           </button>
         )}
@@ -185,17 +185,17 @@ const HospitalManagement = () => {
           Không tìm thấy bệnh viện nào.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredHospitals.map(h => {
             const hName = h.hospitalName || h.name || `Bệnh viện #${h.id}`;
             const hPhone = h.contactPhone || h.phone || h.phoneNumber || 'N/A';
             const hAddress = h.hospitalAddress || h.address || 'Chưa cập nhật địa chỉ';
             return (
-              <div key={h.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
+              <div key={h.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-bold text-sm text-slate-100">{hName}</h3>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border shrink-0 ${
                       h.isActive !== false ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}>
                       {h.isActive !== false ? 'ACTIVE' : 'INACTIVE'}
@@ -219,20 +219,20 @@ const HospitalManagement = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-3 mt-4">
+                <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-3 mt-3.5">
                   <button
                     onClick={() => handleOpenModal(h)}
                     className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs flex items-center gap-1 transition-colors"
                   >
                     <Edit3 size={14} />
-                    Sửa
+                    <span>Sửa</span>
                   </button>
                   <button
                     onClick={() => handleDelete(h.id, hName)}
                     className="p-1.5 bg-red-950/50 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded-lg text-xs flex items-center gap-1 transition-colors"
                   >
                     <Trash2 size={14} />
-                    Xóa
+                    <span>Xóa</span>
                   </button>
                 </div>
               </div>
@@ -243,8 +243,8 @@ const HospitalManagement = () => {
 
       {/* Modal Add/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="font-bold text-sm text-slate-100">
                 {isEditing ? 'Cập nhật Bệnh viện' : 'Thêm Bệnh viện / Trung tâm Cấp cứu'}
@@ -292,7 +292,7 @@ const HospitalManagement = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1 font-medium">Vĩ độ (Latitude)</label>
                   <input

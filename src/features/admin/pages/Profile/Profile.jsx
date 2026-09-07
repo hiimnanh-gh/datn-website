@@ -176,35 +176,35 @@ const Profile = () => {
     : "US";
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 pb-12 space-y-6 font-sans text-slate-100">
+    <div className="min-h-screen bg-slate-950 p-3.5 sm:p-6 pb-12 space-y-4 sm:space-y-6 font-sans text-slate-100">
       {/* Header */}
       <div>
-        <h1 className="text-[24px] font-bold text-white flex items-center gap-2">
-          <User className="text-indigo-400" size={26} />
-          Thông tin tài khoản (My Profile)
+        <h1 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2">
+          <User className="text-indigo-400 shrink-0" size={24} />
+          <span>Thông tin tài khoản (My Profile)</span>
         </h1>
-        <p className="text-[13px] text-slate-400 mt-0.5">
+        <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
           Quản lý thông tin cá nhân và cập nhật mật khẩu bảo mật tài khoản.
         </p>
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-[1100px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 max-w-[1100px]">
         {/* Left Card: Avatar & Summary Info */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center text-center h-fit">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 flex flex-col items-center text-center h-fit">
           <div className="relative">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[32px] font-bold shadow-lg shadow-indigo-500/20">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl sm:text-[32px] font-bold shadow-lg shadow-indigo-500/20">
               {initials}
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-white">
-              <span className="material-symbols-outlined text-[12px] font-bold">
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-white">
+              <span className="material-symbols-outlined text-[10px] sm:text-[12px] font-bold">
                 check
               </span>
             </div>
           </div>
 
-          <h2 className="text-[18px] font-bold text-white mt-4">{fullName}</h2>
-          <p className="text-[12px] text-slate-400 font-mono mt-0.5">
+          <h2 className="text-base sm:text-[18px] font-bold text-white mt-3 sm:mt-4">{fullName}</h2>
+          <p className="text-[11px] sm:text-[12px] text-slate-400 font-mono mt-0.5">
             @{username}
           </p>
 
@@ -212,7 +212,7 @@ const Profile = () => {
             {userRoleDisplay}
           </div>
 
-          <div className="w-full border-t border-slate-800 my-5 pt-4 space-y-3 text-left text-[13px]">
+          <div className="w-full border-t border-slate-800 my-4 sm:my-5 pt-4 space-y-2.5 sm:space-y-3 text-left text-xs sm:text-[13px]">
             <div className="flex justify-between items-center">
               <span className="text-slate-500">Trạng thái</span>
               <span className="font-semibold text-emerald-400 flex items-center gap-1">
@@ -230,10 +230,10 @@ const Profile = () => {
         </div>
 
         {/* Right Column: Profile Info & Change Password Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Profile Information Card (Editable for ADMIN, Read-only for DISPATCHER / PROVIDER) */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-            <h3 className="text-[15px] font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+            <h3 className="text-sm sm:text-[15px] font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
               <Shield className="text-indigo-400" size={18} />
               {userRoleDisplay === "ADMIN" ? "Chỉnh sửa thông tin cá nhân" : "Thông tin hồ sơ (Chỉ xem)"}
             </h3>

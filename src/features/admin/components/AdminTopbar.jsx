@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import useTopbarStore from '../../../store/useTopbarStore';
 import HeaderUserProfile from '../../../components/HeaderUserProfile';
 
@@ -22,14 +23,15 @@ const AdminTopbar = ({ onMenuClick }) => {
   const slot = useTopbarStore((s) => s.slot);
 
   return (
-    <header className="h-16 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-sm flex justify-between items-center px-4 sm:px-6 w-full shrink-0">
+    <header className="h-14 sm:h-16 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-sm flex justify-between items-center px-3 sm:px-6 w-full shrink-0">
       {/* ── LEFT: Mobile hamburger + Page Title ── */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button 
           onClick={onMenuClick}
-          className="md:hidden text-slate-300 hover:bg-slate-800 p-2 rounded-xl transition-colors shrink-0 cursor-pointer"
+          className="md:hidden text-slate-300 hover:text-white hover:bg-slate-800 p-2 rounded-xl transition-colors shrink-0 cursor-pointer"
+          aria-label="Open Navigation Menu"
         >
-          <span className="material-symbols-outlined text-[20px]">menu</span>
+          <Menu size={20} />
         </button>
 
         <div className="min-w-0">

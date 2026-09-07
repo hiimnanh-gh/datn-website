@@ -115,41 +115,41 @@ const ServiceTypeManagement = () => {
   });
 
   return (
-    <div className="p-6 bg-slate-950 min-h-full text-slate-100 font-sans space-y-6 overflow-y-auto">
+    <div className="p-3.5 sm:p-6 bg-slate-950 min-h-full text-slate-100 font-sans space-y-4 sm:space-y-6 overflow-y-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Layers className="text-indigo-400" size={24} />
-            Quản lý Danh mục Loại xe & Dịch vụ Cấp cứu
+          <h1 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+            <Layers className="text-indigo-400 shrink-0" size={24} />
+            <span>Quản lý Danh mục Loại xe & Dịch vụ</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Phân loại dịch vụ cứu thương (Cấp cứu 115, Vận chuyển ICU, Chuyên gia y tế...)
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto">
           <button
             onClick={fetchServiceTypes}
-            className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs transition-colors"
+            className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs transition-colors shrink-0"
             title="Tải lại dữ liệu"
           >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
           </button>
 
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
+            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all active:scale-95 whitespace-nowrap"
           >
-            <Plus size={16} />
-            Tạo Loại dịch vụ Mới
+            <Plus size={15} />
+            <span>Tạo Loại Dịch Vụ Mới</span>
           </button>
         </div>
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-        <Search size={18} className="text-slate-400" />
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 flex items-center gap-3">
+        <Search size={16} className="text-slate-400 shrink-0" />
         <input
           type="text"
           value={searchTerm}
@@ -158,7 +158,7 @@ const ServiceTypeManagement = () => {
           className="bg-transparent text-xs text-slate-100 focus:outline-none w-full placeholder:text-slate-500"
         />
         {searchTerm && (
-          <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white">
+          <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white shrink-0">
             <X size={16} />
           </button>
         )}
@@ -172,12 +172,12 @@ const ServiceTypeManagement = () => {
           Chưa có loại dịch vụ nào.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredTypes.map(st => {
             const stName = st.displayName || st.typeName || st.name || `Loại dịch vụ #${st.id}`;
             const stCode = st.typeCode || `TYPE_${st.id}`;
             return (
-              <div key={st.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
+              <div key={st.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -192,20 +192,20 @@ const ServiceTypeManagement = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-3 mt-4">
+                <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-3 mt-3.5">
                   <button
                     onClick={() => handleOpenModal(st)}
                     className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs flex items-center gap-1 transition-colors"
                   >
                     <Edit3 size={14} />
-                    Sửa
+                    <span>Sửa</span>
                   </button>
                   <button
                     onClick={() => handleDelete(st.id, stName)}
                     className="p-1.5 bg-red-950/50 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded-lg text-xs flex items-center gap-1 transition-colors"
                   >
                     <Trash2 size={14} />
-                    Xóa
+                    <span>Xóa</span>
                   </button>
                 </div>
               </div>
@@ -216,8 +216,8 @@ const ServiceTypeManagement = () => {
 
       {/* Modal Add/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="font-bold text-sm text-slate-100">
                 {isEditing ? 'Cập nhật Loại dịch vụ' : 'Thêm Loại dịch vụ Mới'}

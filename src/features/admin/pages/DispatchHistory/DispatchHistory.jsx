@@ -156,54 +156,53 @@ const DispatchHistory = () => {
   );
 
   return (
-    <div className="p-6 bg-slate-950 min-h-full text-slate-100 font-sans space-y-6 overflow-y-auto">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 font-sans text-slate-100 min-h-screen bg-slate-950">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-slate-800 pb-4 sm:pb-5">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <History className="text-indigo-400" size={24} />
-            Quản lý Điều phối & Nhiệm vụ Cứu thương (Dispatch & Mission
-            Management)
+          <h1 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+            <History className="text-indigo-400 shrink-0" size={22} />
+            <span>Quản lý Điều phối & Nhiệm vụ</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Theo dõi, tra cứu toàn diện các lệnh điều xe cứu thương và yêu cầu
-            cấp cứu trên toàn hệ thống.
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+            Theo dõi, tra cứu toàn diện các lệnh điều xe cứu thương và yêu cầu cấp cứu trên toàn hệ thống
           </p>
         </div>
 
         <button
           onClick={fetchData}
-          className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+          disabled={isLoading}
+          className="flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-medium transition-colors cursor-pointer w-full sm:w-auto disabled:opacity-50"
         >
           <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-          Làm mới
+          <span>Làm mới</span>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab("missions")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === "missions"
               ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
               : "text-slate-400 hover:text-white hover:bg-slate-900"
           }`}
         >
-          <Truck size={15} />
-          Nhiệm vụ Điều xe (Missions) ({missions.length})
+          <Truck size={14} />
+          Nhiệm vụ Điều xe ({missions.length})
         </button>
 
         <button
           onClick={() => setActiveTab("requests")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === "requests"
               ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
               : "text-slate-400 hover:text-white hover:bg-slate-900"
           }`}
         >
-          <ShieldAlert size={15} />
-          Yêu cầu Cấp cứu (Requests) ({requests.length})
+          <ShieldAlert size={14} />
+          Yêu cầu Cấp cứu ({requests.length})
         </button>
       </div>
 
@@ -266,9 +265,128 @@ const DispatchHistory = () => {
         </select>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
+      {/* Main Content: Mobile Cards (md:hidden) + Desktop Tables (hidden md:block) */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl">
+        
+        {/* Mobile View: Missions Cards (md:hidden) */}
+        {activeTab === "missions" && (
+          <div className="block md:hidden p-3 space-y-3">
+            {paginatedList.length > 0 ? (
+              paginatedList.map((m, idx) => {
+                const urgBadge = getUrgencyBadge(m.urgency);
+                return (
+                  <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5 shadow-md">
+                    <div className="flex items-center justify-between">
+                      <span className="text-red-400 font-bold font-mono text-sm">MIS-{m.missionId}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${urgBadge.bg}`}>
+                          {urgBadge.label}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusBadge(m.status)}`}>
+                          {m.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/60">
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Xe cứu thương:</span>
+                        <span className="text-slate-200 font-semibold truncate block">{m.resourceCode || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Tài xế:</span>
+                        <span className="text-slate-200 truncate block">{m.driver || "Chưa gán"}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-slate-300 font-sans">
+                      <span className="text-slate-500 text-[10px] block">Điểm đến:</span>
+                      <span className="truncate block" title={m.destination}>{m.destination || "Hiện trường"}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {m.dispatchedAt ? new Date(m.dispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "N/A"}
+                      </span>
+                      <button
+                        onClick={() => setSelectedMission(m)}
+                        className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded-lg text-xs font-medium cursor-pointer transition-colors"
+                      >
+                        Chi tiết
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-10 text-center text-slate-500 text-xs">
+                Không có nhiệm vụ nào phù hợp với bộ lọc tìm kiếm.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mobile View: Requests Cards (md:hidden) */}
+        {activeTab === "requests" && (
+          <div className="block md:hidden p-3 space-y-3">
+            {paginatedList.length > 0 ? (
+              paginatedList.map((r, idx) => {
+                const urgBadge = getUrgencyBadge(r.urgencyLevel);
+                return (
+                  <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5 shadow-md">
+                    <div className="flex items-center justify-between">
+                      <span className="text-indigo-400 font-bold font-mono text-sm">REQ-{r.id}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${urgBadge.bg}`}>
+                          {urgBadge.label}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusBadge(r.status)}`}>
+                          {r.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/60">
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Người báo tin:</span>
+                        <span className="text-slate-200 font-semibold truncate block">{r.callerName || "Người dân"}</span>
+                        <span className="text-slate-400 text-[10px]">{r.callerPhone || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Loại dịch vụ:</span>
+                        <span className="text-indigo-300 font-medium truncate block">{r.serviceTypeName || `Loại ${r.serviceTypeId}`}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-slate-300 font-sans">
+                      <span className="text-slate-500 text-[10px] block">Địa chỉ sự cố:</span>
+                      <span className="truncate block" title={r.address || r.callerAddress}>{r.address || r.callerAddress || "Hà Nội"}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {r.createdAt ? new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "N/A"}
+                      </span>
+                      <button
+                        onClick={() => setSelectedRequest(r)}
+                        className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded-lg text-xs font-medium cursor-pointer transition-colors"
+                      >
+                        Chi tiết
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-10 text-center text-slate-500 text-xs">
+                Không có yêu cầu cấp cứu nào phù hợp với bộ lọc tìm kiếm.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Desktop View: Full Tables (hidden md:block) */}
+        <div className="hidden md:block overflow-x-auto">
           {activeTab === "missions" ? (
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
@@ -438,7 +556,7 @@ const DispatchHistory = () => {
         </div>
 
         {/* Pagination Controls */}
-        <div className="p-3.5 border-t border-slate-800 bg-slate-950 flex items-center justify-between text-xs text-slate-400">
+        <div className="p-3 sm:p-3.5 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <div>
             Hiển thị {paginatedList.length} trên tổng số {totalItems} bản ghi
           </div>

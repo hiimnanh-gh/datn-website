@@ -44,34 +44,34 @@ const FileStorageManagement = () => {
   });
 
   return (
-    <div className="p-6 bg-slate-950 min-h-full text-slate-100 font-sans space-y-6 overflow-y-auto">
+    <div className="p-3.5 sm:p-6 bg-slate-950 min-h-full text-slate-100 font-sans space-y-4 sm:space-y-6 overflow-y-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <HardDrive className="text-indigo-400" size={24} />
-            Quản lý Lưu trữ Tệp tin (MinIO Storage)
+          <h1 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+            <HardDrive className="text-indigo-400 shrink-0" size={24} />
+            <span>Quản lý Lưu trữ Tệp tin (MinIO)</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Quản lý và lưu trữ tài liệu y tế, hình ảnh hiện trường và các tệp đính kèm hệ thống.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={fetchFiles}
             className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-xl text-xs font-medium transition-colors cursor-pointer"
             title="Tải lại danh sách"
           >
-            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             <span>Làm mới</span>
           </button>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-        <Search size={18} className="text-slate-400" />
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 flex items-center gap-3">
+        <Search size={16} className="text-slate-400 shrink-0" />
         <input
           type="text"
           value={searchTerm}
@@ -80,13 +80,13 @@ const FileStorageManagement = () => {
           className="bg-transparent text-xs text-slate-100 focus:outline-none w-full placeholder:text-slate-500"
         />
         {searchTerm && (
-          <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white">
+          <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white shrink-0">
             <X size={16} />
           </button>
         )}
       </div>
 
-      {/* Files List Table */}
+      {/* Files List Table / Cards */}
       {isLoading ? (
         <div className="text-center py-12 text-slate-400 text-xs font-mono">Đang tải danh sách tệp trên MinIO...</div>
       ) : filteredFiles.length === 0 ? (
@@ -95,49 +95,84 @@ const FileStorageManagement = () => {
         </div>
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-          <table className="w-full text-left text-xs font-sans">
-            <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 font-medium">
-              <tr>
-                <th className="py-3 px-4">Tên tệp / Object Key</th>
-                <th className="py-3 px-4">Dung lượng</th>
-                <th className="py-3 px-4">Ngày tải lên</th>
-                <th className="py-3 px-4 text-right">Chi tiết</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {filteredFiles.map((fileObj, idx) => {
-                const objectKey = typeof fileObj === 'string' ? fileObj : (fileObj.objectKey || fileObj.name || `file-${idx}`);
-                const size = typeof fileObj === 'object' && fileObj.size ? `${(fileObj.size / 1024).toFixed(1)} KB` : 'N/A';
-                const lastModified = typeof fileObj === 'object' && fileObj.lastModified ? new Date(fileObj.lastModified).toLocaleString() : 'N/A';
+          {/* Mobile Cards (block md:hidden) */}
+          <div className="block md:hidden divide-y divide-slate-800/60 font-sans">
+            {filteredFiles.map((fileObj, idx) => {
+              const objectKey = typeof fileObj === 'string' ? fileObj : (fileObj.objectKey || fileObj.name || `file-${idx}`);
+              const size = typeof fileObj === 'object' && fileObj.size ? `${(fileObj.size / 1024).toFixed(1)} KB` : 'N/A';
+              const lastModified = typeof fileObj === 'object' && fileObj.lastModified ? new Date(fileObj.lastModified).toLocaleString() : 'N/A';
 
-                return (
-                  <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="py-3 px-4 font-mono text-slate-200 flex items-center gap-2">
-                      <FileText size={16} className="text-indigo-400 shrink-0" />
-                      <span className="truncate max-w-md">{objectKey}</span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-400 font-mono">{size}</td>
-                    <td className="py-3 px-4 text-slate-400 font-mono">{lastModified}</td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => handleViewMetadata(objectKey)}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-900/40 rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
-                      >
-                        Metadata
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+              return (
+                <div key={idx} className="p-3.5 space-y-2.5 hover:bg-slate-800/30 transition-colors">
+                  <div className="flex items-start gap-2">
+                    <FileText size={16} className="text-indigo-400 shrink-0 mt-0.5" />
+                    <span className="font-mono text-xs text-slate-200 break-all">{objectKey}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
+                    <div className="space-y-0.5">
+                      <div>Dung lượng: <span className="text-slate-200">{size}</span></div>
+                      <div className="text-[10px] text-slate-500">{lastModified}</div>
+                    </div>
+
+                    <button
+                      onClick={() => handleViewMetadata(objectKey)}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-900/40 rounded-lg text-[11px] font-medium transition-colors cursor-pointer shrink-0"
+                    >
+                      Metadata
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table (hidden md:block) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-xs font-sans">
+              <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 font-medium">
+                <tr>
+                  <th className="py-3 px-4">Tên tệp / Object Key</th>
+                  <th className="py-3 px-4">Dung lượng</th>
+                  <th className="py-3 px-4">Ngày tải lên</th>
+                  <th className="py-3 px-4 text-right">Chi tiết</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {filteredFiles.map((fileObj, idx) => {
+                  const objectKey = typeof fileObj === 'string' ? fileObj : (fileObj.objectKey || fileObj.name || `file-${idx}`);
+                  const size = typeof fileObj === 'object' && fileObj.size ? `${(fileObj.size / 1024).toFixed(1)} KB` : 'N/A';
+                  const lastModified = typeof fileObj === 'object' && fileObj.lastModified ? new Date(fileObj.lastModified).toLocaleString() : 'N/A';
+
+                  return (
+                    <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3 px-4 font-mono text-slate-200 flex items-center gap-2">
+                        <FileText size={16} className="text-indigo-400 shrink-0" />
+                        <span className="truncate max-w-md">{objectKey}</span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-400 font-mono">{size}</td>
+                      <td className="py-3 px-4 text-slate-400 font-mono">{lastModified}</td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => handleViewMetadata(objectKey)}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-900/40 rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
+                        >
+                          Metadata
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Metadata Modal */}
       {metadataModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <Info size={16} className="text-indigo-400" />

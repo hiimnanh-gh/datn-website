@@ -136,54 +136,131 @@ const ProviderManagement = () => {
   );
 
   return (
-    <div className="provider-management-page p-6 font-sans text-slate-100 flex flex-col h-full overflow-y-auto">
+    <div className="provider-management-page p-3.5 sm:p-6 font-sans text-slate-100 flex flex-col h-full overflow-y-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Building2 className="text-indigo-400" size={24} />
-            Quản lý Đơn vị (Providers)
+          <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+            <Building2 className="text-indigo-400 shrink-0" size={24} />
+            <span>Quản lý Đơn vị (Providers)</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Quản lý danh sách các đơn vị cung cấp xe cứu thương và phòng khám
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto">
           <button
             onClick={fetchProviders}
             className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-            Làm mới
+            <span>Làm mới</span>
           </button>
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-lg shadow-indigo-900/40"
+            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-lg shadow-indigo-900/40 whitespace-nowrap"
           >
             <Plus size={16} />
-            Thêm Đơn vị
+            <span>Thêm Đơn vị</span>
           </button>
         </div>
       </div>
 
       {/* Toolbar & Search */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4">
         <div className="relative max-w-md">
-          <Search size={16} className="absolute left-3 top-2.5 text-slate-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             placeholder="Tìm theo tên hoặc SĐT..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
           />
         </div>
       </div>
 
-      {/* Data Table */}
+      {/* Data Table / Cards */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl flex-1">
-        <div className="overflow-x-auto">
+        {/* Mobile Cards (block md:hidden) */}
+        <div className="block md:hidden divide-y divide-slate-800/60 font-sans">
+          {isLoading ? (
+            <div className="py-12 text-center text-slate-500 text-xs">
+              Đang tải danh sách...
+            </div>
+          ) : filteredProviders.length === 0 ? (
+            <div className="py-12 text-center text-slate-500 text-xs">
+              Không tìm thấy đơn vị nào.
+            </div>
+          ) : (
+            filteredProviders.map(provider => (
+              <div key={provider.id} className="p-3.5 space-y-2.5 hover:bg-slate-800/30 transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-bold text-slate-100 text-sm">{provider.providerName}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="font-mono text-slate-400 text-[11px]">#{provider.id}</span>
+                      {provider.businessLicense && (
+                        <span className="text-[10px] text-slate-500 font-mono">GPKD: {provider.businessLicense}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0 ${
+                    provider.isActive !== false
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                      : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                  }`}>
+                    <Activity size={10} />
+                    {provider.isActive !== false ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">
+                  <div className="flex items-center gap-1.5">
+                    <Phone size={12} className="text-slate-500 shrink-0" />
+                    <span>{provider.contactPhone || <span className="text-slate-600 italic">Trống</span>}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MapPin size={12} className="text-slate-500 shrink-0" />
+                    <span className="truncate text-slate-400">{provider.contactAddress || provider.address || 'Chưa cập nhật'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px]">
+                      {provider.providerType || 'PRIVATE'}
+                    </span>
+                    <span className="font-mono text-[11px] text-amber-400">
+                      Hoa hồng: {provider.commissionRate ?? 0}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleOpenModal(provider)}
+                      className="p-1.5 bg-slate-800 hover:bg-indigo-900/60 text-slate-300 hover:text-indigo-400 rounded transition-colors"
+                      title="Chỉnh sửa"
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(provider.id, provider.providerName)}
+                      className="p-1.5 bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-400 rounded transition-colors"
+                      title="Xóa"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table (hidden md:block) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
               <tr>
@@ -271,21 +348,21 @@ const ProviderManagement = () => {
         </div>
       </div>
 
-      {/* CREATE / EDIT MODAL */}
+      {/* Modal Add/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="modal-enter bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col">
-            <div className="bg-slate-950 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-white flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="modal-enter bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="bg-slate-950 px-5 py-4 border-b border-slate-800 flex justify-between items-center sticky top-0 z-10">
+              <h3 className="font-bold text-base sm:text-lg text-white flex items-center gap-2">
                 {isEditing ? <Edit3 className="text-indigo-400" size={20} /> : <Plus className="text-emerald-400" size={20} />}
-                {isEditing ? 'Cập nhật Đơn vị' : 'Thêm mới Đơn vị'}
+                <span>{isEditing ? 'Cập nhật Đơn vị' : 'Thêm mới Đơn vị'}</span>
               </h3>
               <button onClick={handleCloseModal} className="text-slate-500 hover:text-white transition-colors">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
+            <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Tên đơn vị <span className="text-rose-500">*</span></label>
                 <input
@@ -299,7 +376,7 @@ const ProviderManagement = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Loại hình đơn vị</label>
                   <select
@@ -327,7 +404,7 @@ const ProviderManagement = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Số điện thoại liên hệ</label>
                   <div className="relative">
