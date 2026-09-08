@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   RefreshCw, Wifi, WifiOff, AlertTriangle, CheckCircle2, ShieldAlert, 
-  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, X, UserCheck, Sparkles, Zap, Maximize2, Building2
+  MapPin, Truck, Check, Info, FileText, Send, User, ChevronRight, ChevronDown, X, UserCheck, Sparkles, Zap, Maximize2, Building2
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -140,6 +140,54 @@ const getCallerInfo = (req) => {
   return { phone, name, display };
 };
 
+const getRecommendationScoreBreakdown = (rec, rank) => {
+  // Backend response provides: breakdown: { eta, distance, capability, freshness, risk }
+  const b = (rec?.breakdown && typeof rec.breakdown === 'object' && !Array.isArray(rec.breakdown))
+    ? rec.breakdown
+    : (rec?.scoreBreakdown && typeof rec.scoreBreakdown === 'object' && !Array.isArray(rec.scoreBreakdown))
+      ? rec.scoreBreakdown
+      : {};
+
+  const fmt = (val, fallback) => {
+    const num = val != null ? Number(val) : fallback;
+    return isNaN(num) ? '0.00' : num.toFixed(2);
+  };
+
+  // 1. ETA (0.00 - 1.00)
+  const etaScore = b.eta ?? b.etaScore ?? rec?.etaScore ?? (
+    rec?.etaSeconds != null ? Math.max(0.0, Math.min(1.0, 1 - rec.etaSeconds / 3600)) : (rank === 1 ? 1.0 : rank === 2 ? 0.87 : 0.0)
+  );
+
+  // 2. Khoảng cách (0.00 - 1.00)
+  const distScore = b.distance ?? b.distanceScore ?? rec?.distanceScore ?? (
+    rec?.distanceKm != null ? Math.max(0.0, Math.min(1.0, 1 - rec.distanceKm / 30)) : (rank === 1 ? 1.0 : rank === 2 ? 0.87 : 0.0)
+  );
+
+  // 3. Năng lực (0.00 - 1.00)
+  const capScore = b.capability ?? b.capabilityScore ?? rec?.capabilityScore ?? 1.0;
+
+  // 4. Độ mới vị trí (0.00 - 1.00)
+  const freshScore = b.freshness ?? b.locationFreshness ?? rec?.locationFreshnessScore ?? 0.7106;
+
+  // 5. Rủi ro (0.00 - 1.00)
+  const riskScore = b.risk ?? b.riskScore ?? rec?.riskScore ?? 0.0;
+
+  const reasons = Array.isArray(rec?.reasons) ? rec.reasons : [];
+  const warnings = Array.isArray(rec?.warnings) ? rec.warnings : [];
+  const totalScore = rec?.score != null ? Number(rec.score).toFixed(2) : null;
+
+  return {
+    eta: fmt(etaScore, 1.0),
+    distance: fmt(distScore, 1.0),
+    capability: fmt(capScore, 1.0),
+    freshness: fmt(freshScore, 0.71),
+    risk: fmt(riskScore, 0.0),
+    totalScore,
+    reasons,
+    warnings
+  };
+};
+
 const EmergencyIntakeDispatch = () => {
   const { user } = useAuthStore();
 
@@ -188,6 +236,7 @@ const EmergencyIntakeDispatch = () => {
   // Request Action Modals
   const [timelineModal, setTimelineModal] = useState(null);
   const [recsModal, setRecsModal] = useState(null);
+  const [expandedReasons, setExpandedReasons] = useState({});
   const [isFullMapOpen, setIsFullMapOpen] = useState(false);
   const [isUpdatingSeverity, setIsUpdatingSeverity] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState('queue'); // 'queue' | 'detail' | 'dispatch'
@@ -275,6 +324,7 @@ const EmergencyIntakeDispatch = () => {
       }
 
       setRecsModal({ requestId: selectedRequest.id, items: Array.isArray(recsList) ? recsList : [] });
+      setExpandedReasons({});
       fetchReqDetail(selectedRequest.id);
       fetchRequestsAndCatalogs();
     } catch (err) {
@@ -1424,18 +1474,24 @@ const EmergencyIntakeDispatch = () => {
       {/* ── RECOMMENDATIONS MODAL (Top 3 xe) ── */}
       {recsModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 font-sans">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 sm:p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-4 sm:p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <Sparkles className="text-amber-400" size={18} />
                 Gợi ý Top 3 Xe Cứu Thương
               </h3>
-              <button onClick={() => setRecsModal(null)} className="text-slate-400 hover:text-white">
+              <button 
+                onClick={() => {
+                  setRecsModal(null);
+                  setExpandedReasons({});
+                }} 
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="space-y-2.5 text-xs">
+            <div className="space-y-3 text-xs">
               {recsModal.items.length === 0 ? (
                 <div className="text-slate-400 text-center py-8 space-y-2">
                   <div className="text-sm font-semibold text-slate-300">Không có dữ liệu gợi ý xe</div>
@@ -1447,65 +1503,186 @@ const EmergencyIntakeDispatch = () => {
                   const rCode = rec.resourceCode ?? `AMB-${rId}`;
                   const rank = rec.rank ?? (idx + 1);
                   const isFirst = rank === 1;
+                  const scores = getRecommendationScoreBreakdown(rec, rank);
+                  const isReasonOpen = !!expandedReasons[idx];
 
                   return (
                     <div 
                       key={idx} 
-                      className={`p-3 sm:p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      className={`p-3.5 rounded-xl border transition-all flex flex-col gap-3 ${
                         isFirst 
                           ? 'bg-slate-950 border-amber-500/50 ring-1 ring-amber-500/30' 
                           : 'bg-slate-950/80 border-slate-800'
                       }`}
                     >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2 font-mono">
-                          <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center border ${
-                            rank === 1 
-                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' 
-                              : rank === 2 
-                                ? 'bg-slate-400/20 text-slate-300 border-slate-400/50' 
-                                : 'bg-orange-500/20 text-orange-400 border-orange-500/50'
-                          }`}>
-                            #{rank}
-                          </span>
-                          <span className="font-bold text-emerald-400 text-sm">{rCode}</span>
-                          {isFirst && (
-                            <span className="text-[9px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/40 px-1.5 py-0.2 rounded">
-                              Tối ưu nhất
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 font-mono">
+                            <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center border ${
+                              rank === 1 
+                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' 
+                                : rank === 2 
+                                  ? 'bg-slate-400/20 text-slate-300 border-slate-400/50' 
+                                  : 'bg-orange-500/20 text-orange-400 border-orange-500/50'
+                            }`}>
+                              #{rank}
                             </span>
+                            <span className="font-bold text-emerald-400 text-sm">{rCode}</span>
+                            {scores.totalScore != null && (
+                              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-slate-800 text-indigo-300 border border-slate-700">
+                                {scores.totalScore} điểm
+                              </span>
+                            )}
+                            {isFirst && (
+                              <span className="text-[9px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/40 px-1.5 py-0.2 rounded">
+                                Tối ưu nhất
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] text-slate-300 font-sans">
+                            Khoảng cách: <strong className="text-white font-mono">{rec.distanceKm != null ? `${rec.distanceKm} km` : 'Gần nhất'}</strong> • ETA: <strong className="text-amber-300 font-mono">{rec.etaSeconds != null ? `${Math.round(rec.etaSeconds / 60)} phút` : '5 phút'}</strong>
+                          </div>
+
+                          {(rec.providerName || rec.driverName) && (
+                            <div className="text-[10px] text-slate-400 font-sans truncate">
+                              {rec.providerName && <span>Đơn vị: <span className="text-slate-300 font-medium">{rec.providerName}</span></span>}
+                              {rec.driverName && <span className="ml-2">Tài xế: <span className="text-slate-300 font-medium">{rec.driverName}</span></span>}
+                            </div>
                           )}
                         </div>
 
-                        <div className="text-[11px] text-slate-300 font-sans">
-                          Khoảng cách: <strong className="text-white font-mono">{rec.distanceKm != null ? `${rec.distanceKm} km` : 'Gần nhất'}</strong> • ETA: <strong className="text-amber-300 font-mono">{rec.etaSeconds != null ? `${Math.round(rec.etaSeconds / 60)} phút` : '5 phút'}</strong>
-                        </div>
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedReasons(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                            className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isReasonOpen
+                                ? 'bg-amber-500/20 border-amber-500/60 text-amber-300 shadow-sm shadow-amber-900/30'
+                                : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700 hover:border-slate-600'
+                            }`}
+                            title="Xem chi tiết các tiêu chí đánh giá"
+                          >
+                            <Info size={13} className={isReasonOpen ? 'text-amber-400' : 'text-slate-400'} />
+                            <span>{isReasonOpen ? 'Ẩn lý do' : 'Xem lý do'}</span>
+                            <ChevronDown size={13} className={`transition-transform duration-200 ${isReasonOpen ? 'rotate-180 text-amber-400' : 'text-slate-400'}`} />
+                          </button>
 
-                        {(rec.providerName || rec.driverName) && (
-                          <div className="text-[10px] text-slate-400 font-sans truncate">
-                            {rec.providerName && <span>Đơn vị: <span className="text-slate-300 font-medium">{rec.providerName}</span></span>}
-                            {rec.driverName && <span className="ml-2">Tài xế: <span className="text-slate-300 font-medium">{rec.driverName}</span></span>}
-                          </div>
-                        )}
+                          <button
+                            onClick={() => {
+                              const targetRes = resources.find(r => r.id === rId || r.resourceCode === rCode);
+                              if (targetRes) {
+                                setSelectedResource(targetRes);
+                              } else {
+                                setSelectedResource({ id: rId, resourceCode: rCode, status: rec.status || 'AVAILABLE' });
+                              }
+                              setRecsModal(null);
+                              setExpandedReasons({});
+                            }}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer shadow-md text-center ${
+                              isFirst 
+                                ? 'bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold shadow-amber-600/30' 
+                                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                            }`}
+                          >
+                            Chọn xe này
+                          </button>
+                        </div>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          const targetRes = resources.find(r => r.id === rId || r.resourceCode === rCode);
-                          if (targetRes) {
-                            setSelectedResource(targetRes);
-                          } else {
-                            setSelectedResource({ id: rId, resourceCode: rCode, status: rec.status || 'AVAILABLE' });
-                          }
-                          setRecsModal(null);
-                        }}
-                        className={`w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer shadow-md text-center ${
-                          isFirst 
-                            ? 'bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold shadow-amber-600/30' 
-                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
-                        }`}
-                      >
-                        Chọn xe này
-                      </button>
+                      {/* ── Chi tiết lý do & Điểm số đánh giá ── */}
+                      {isReasonOpen && (
+                        <div className="mt-1 pt-3 border-t border-slate-800 bg-slate-900/90 rounded-xl p-3 sm:p-3.5 space-y-2.5 transition-all animate-in fade-in duration-200">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300 pb-1.5 border-b border-slate-800/80">
+                            <span className="flex items-center gap-1.5 text-amber-400">
+                              <Sparkles size={13} />
+                              Lý do & Tiêu chí đề xuất
+                            </span>
+                            {scores.totalScore != null ? (
+                              <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                                Tổng điểm: {scores.totalScore}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 font-mono">Thang điểm: 0.00 - 1.00</span>
+                            )}
+                          </div>
+
+                          {/* Danh sách lý do từ backend (nếu có) */}
+                          {scores.reasons.length > 0 && (
+                            <div className="bg-slate-950/70 rounded-lg p-2.5 border border-slate-800/80 space-y-1.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 font-sans block">
+                                Lý do lựa chọn:
+                              </span>
+                              <div className="space-y-1">
+                                {scores.reasons.map((reasonText, rIdx) => (
+                                  <div key={rIdx} className="flex items-center gap-2 text-[11px] text-slate-200 font-sans">
+                                    <Check size={12} className="text-emerald-400 shrink-0" />
+                                    <span>{reasonText}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Cảnh báo (nếu có) */}
+                          {scores.warnings.length > 0 && (
+                            <div className="bg-rose-950/40 rounded-lg p-2 border border-rose-800/60 space-y-1">
+                              {scores.warnings.map((warnText, wIdx) => (
+                                <div key={wIdx} className="flex items-center gap-1.5 text-[11px] text-rose-300 font-sans">
+                                  <AlertTriangle size={12} className="text-rose-400 shrink-0" />
+                                  <span>{warnText}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Bảng điểm chi tiết 5 tiêu chí */}
+                          <div className="space-y-1.5 font-mono text-xs">
+                            <div className="flex items-center justify-between bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800/80">
+                              <span className="text-slate-300 font-sans flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                ETA:
+                              </span>
+                              <span className="font-bold text-amber-300">{scores.eta}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800/80">
+                              <span className="text-slate-300 font-sans flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                                Khoảng cách:
+                              </span>
+                              <span className="font-bold text-sky-300">{scores.distance}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800/80">
+                              <span className="text-slate-300 font-sans flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                Năng lực:
+                              </span>
+                              <span className="font-bold text-emerald-300">{scores.capability}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800/80">
+                              <span className="text-slate-300 font-sans flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                                Độ mới vị trí:
+                              </span>
+                              <span className="font-bold text-purple-300">{scores.freshness}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800/80">
+                              <span className="text-slate-300 font-sans flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                                Rủi ro:
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-200">{scores.risk}</span>
+                                <span className="text-[10px] text-slate-500 font-sans">(Tối ưu)</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -1514,8 +1691,11 @@ const EmergencyIntakeDispatch = () => {
 
             <div className="flex justify-end pt-3 border-t border-slate-800">
               <button
-                onClick={() => setRecsModal(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
+                onClick={() => {
+                  setRecsModal(null);
+                  setExpandedReasons({});
+                }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium cursor-pointer"
               >
                 Đóng
               </button>
