@@ -46,6 +46,11 @@ const OperationsOverview = () => {
       params.from = pastMonth.toISOString();
       params.to = now.toISOString();
       params.granularity = 'DAY';
+    } else if (timeRange === 'ALL') {
+      const pastYear = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      params.from = pastYear.toISOString();
+      params.to = now.toISOString();
+      params.granularity = 'DAY';
     }
     return params;
   }, [selectedProviderId, timeRange]);

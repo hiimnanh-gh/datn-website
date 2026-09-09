@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { dashboardService } from '../../../services/dashboardService';
+import { dispatchRequestService } from '../../../services/dispatchRequestService';
 import HeaderUserProfile from '../../../components/HeaderUserProfile';
 
 const getUrgencyBadge = (urgency) => {
@@ -69,6 +70,7 @@ const formatSecondsToMinutes = (seconds) => {
 
 const DispatcherDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
+  const [liveRequests, setLiveRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState(null);
@@ -97,7 +99,10 @@ const DispatcherDashboard = () => {
       params.to = now.toISOString();
       params.granularity = 'DAY';
     } else if (timeRange === 'ALL') {
-      params.granularity = 'AUTO';
+      const pastYear = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      params.from = pastYear.toISOString();
+      params.to = now.toISOString();
+      params.granularity = 'DAY';
     }
     return params;
   }, [timeRange]);
@@ -107,8 +112,12 @@ const DispatcherDashboard = () => {
     setError(null);
     try {
       const params = getFilterParams();
-      const res = await dashboardService.getDispatcherDashboard(params);
+      const [res, liveReqs] = await Promise.all([
+        dashboardService.getDispatcherDashboard(params).catch(() => null),
+        dispatchRequestService.getAll().catch(() => [])
+      ]);
       setDashboardData(res || null);
+      setLiveRequests(Array.isArray(liveReqs) ? liveReqs : []);
     } catch (err) {
       console.error('Error fetching dispatcher dashboard:', err);
       setError(err.response?.data?.message || err.message || 'Không thể tải dữ liệu thống kê từ máy chủ.');
@@ -151,7 +160,23 @@ const DispatcherDashboard = () => {
   const resourceStatusBreakdown = Array.isArray(breakdowns.resourceStatus) ? breakdowns.resourceStatus : [];
 
   const details = dashboardData?.details || {};
-  const requestDetails = Array.isArray(details.requestDetails) ? details.requestDetails : [];
+  const requestDetails = (Array.isArray(details.requestDetails) && details.requestDetails.length > 0)
+    ? details.requestDetails
+    : liveRequests;
+
+  // Live KPI fallbacks if dashboard API returns 0
+  const pendingCount = liveRequests.filter(r => r.status === 'PENDING').length;
+  const criticalPendingCount = liveRequests.filter(r => r.status === 'PENDING' && (r.urgencyLevel === 'CRITICAL' || r.urgency === 'CRITICAL')).length;
+  const processingCount = liveRequests.filter(r => r.status === 'DISPATCHING' || r.status === 'DISPATCHED' || r.status === 'EN_ROUTE').length;
+  const completedCount = liveRequests.filter(r => r.status === 'COMPLETED').length;
+
+  const totalRequestsDisplay = kpis.totalRequests != null && kpis.totalRequests > 0 
+    ? kpis.totalRequests 
+    : (timeRange === 'ALL' || timeRange === 'MONTH' ? Math.max(kpis.totalRequests || 0, liveRequests.length) : (kpis.totalRequests ?? 0));
+  const pendingRequestsDisplay = kpis.pendingRequests != null && kpis.pendingRequests > 0 ? kpis.pendingRequests : pendingCount;
+  const criticalPendingDisplay = kpis.criticalPendingRequests != null && kpis.criticalPendingRequests > 0 ? kpis.criticalPendingRequests : criticalPendingCount;
+  const processingRequestsDisplay = kpis.processingRequests != null && kpis.processingRequests > 0 ? kpis.processingRequests : processingCount;
+  const completedRequestsDisplay = kpis.completedRequests != null && kpis.completedRequests > 0 ? kpis.completedRequests : completedCount;
 
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-sans p-3 sm:p-6 overflow-y-auto space-y-5">
@@ -260,7 +285,7 @@ const DispatcherDashboard = () => {
             <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl space-y-1 shadow-sm">
               <span className="text-[11px] font-semibold text-slate-400 block uppercase font-mono">Tổng Ca Tiếp Nhận</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-white">{kpis.totalRequests ?? 0}</span>
+                <span className="text-2xl font-bold font-mono text-white">{totalRequestsDisplay}</span>
                 <ShieldAlert size={18} className="text-slate-500" />
               </div>
               <span className="text-[10px] text-slate-500 font-mono block">Toàn bộ yêu cầu</span>
@@ -270,7 +295,7 @@ const DispatcherDashboard = () => {
             <div className="bg-slate-900 border border-amber-500/30 p-3.5 rounded-xl space-y-1 shadow-sm bg-amber-950/10">
               <span className="text-[11px] font-semibold text-amber-400 block uppercase font-mono">Chờ Xử Lý (Pending)</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-amber-400">{kpis.pendingRequests ?? 0}</span>
+                <span className="text-2xl font-bold font-mono text-amber-400">{pendingRequestsDisplay}</span>
                 <Clock size={18} className="text-amber-500" />
               </div>
               <span className="text-[10px] text-amber-400/80 font-mono block">Cần tiếp nhận</span>
@@ -280,7 +305,7 @@ const DispatcherDashboard = () => {
             <div className="bg-slate-900 border border-red-500/40 p-3.5 rounded-xl space-y-1 shadow-sm bg-red-950/20">
               <span className="text-[11px] font-semibold text-red-400 block uppercase font-mono">Nguy Kịch (Critical)</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-red-400">{kpis.criticalPendingRequests ?? 0}</span>
+                <span className="text-2xl font-bold font-mono text-red-400">{criticalPendingDisplay}</span>
                 <AlertTriangle size={18} className="text-red-500 animate-pulse" />
               </div>
               <span className="text-[10px] text-red-400/80 font-mono block">Ưu tiên số 1</span>
@@ -290,7 +315,7 @@ const DispatcherDashboard = () => {
             <div className="bg-slate-900 border border-indigo-500/30 p-3.5 rounded-xl space-y-1 shadow-sm bg-indigo-950/10">
               <span className="text-[11px] font-semibold text-indigo-300 block uppercase font-mono">Đang Điều Phối</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-indigo-300">{kpis.processingRequests ?? 0}</span>
+                <span className="text-2xl font-bold font-mono text-indigo-300">{processingRequestsDisplay}</span>
                 <Activity size={18} className="text-indigo-400" />
               </div>
               <span className="text-[10px] text-indigo-400/80 font-mono block">Xe đang chạy</span>
@@ -300,7 +325,7 @@ const DispatcherDashboard = () => {
             <div className="bg-slate-900 border border-emerald-500/30 p-3.5 rounded-xl space-y-1 shadow-sm bg-emerald-950/10">
               <span className="text-[11px] font-semibold text-emerald-400 block uppercase font-mono">Hoàn Tất</span>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold font-mono text-emerald-400">{kpis.completedRequests ?? 0}</span>
+                <span className="text-2xl font-bold font-mono text-emerald-400">{completedRequestsDisplay}</span>
                 <CheckCircle2 size={18} className="text-emerald-500" />
               </div>
               <span className="text-[10px] text-emerald-400/80 font-mono block">Đã bàn giao</span>

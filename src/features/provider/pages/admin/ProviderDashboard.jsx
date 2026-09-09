@@ -57,7 +57,10 @@ const ProviderDashboard = () => {
       params.to = now.toISOString();
       params.granularity = 'DAY';
     } else if (timeRange === 'ALL') {
-      params.granularity = 'AUTO';
+      const pastYear = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      params.from = pastYear.toISOString();
+      params.to = now.toISOString();
+      params.granularity = 'DAY';
     }
     return params;
   }, [timeRange]);
