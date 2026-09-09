@@ -414,8 +414,8 @@ const EmergencyIntakeDispatch = () => {
       const detail = await dispatchRequestService.getById(idToFetch);
       let enriched = { ...detail };
 
-      // If callId exists, enrich from GET /api/v1/calls/{callId}
-      if (detail?.callId) {
+      // If callId exists and reporter info is missing, attempt fallback from GET /api/v1/calls/{callId}
+      if (detail?.callId && !detail?.reporterPhone && !detail?.audioUrl) {
         try {
           const callData = await callService.getById(detail.callId);
           if (callData) {
@@ -428,8 +428,8 @@ const EmergencyIntakeDispatch = () => {
               callInfo: callData,
             };
           }
-        } catch (callErr) {
-          console.warn('Call info fetch fallback:', callErr);
+        } catch {
+          // Silent fallback if call record not found
         }
       }
 
@@ -468,30 +468,6 @@ const EmergencyIntakeDispatch = () => {
 
       const reqList = Array.isArray(reqData) ? reqData : [];
       setRequests(reqList);
-
-      // Async background enrichment of list items with call info
-      Promise.all(
-        reqList.map(async (req) => {
-          if (!req.callId) return req;
-          try {
-            const call = await callService.getById(req.callId);
-            if (call) {
-              return {
-                ...req,
-                callerPhone: call.callerPhone || call.phoneNumber || call.phone || call.contactPhone || call.fromNumber || call.from,
-                callerName: call.callerName || call.contactName || call.victimName || call.name || call.fullName,
-                description: req.description || call.description || call.notes || call.note || call.locationDescription || call.reason,
-                address: req.address || call.address || call.callerAddress || call.location,
-              };
-            }
-          } catch (e) {
-            // ignore
-          }
-          return req;
-        })
-      ).then(enrichedList => {
-        setRequests(enrichedList);
-      });
 
       setProviders(Array.isArray(provData) ? provData : []);
       setServiceTypes(Array.isArray(stData) ? stData : []);

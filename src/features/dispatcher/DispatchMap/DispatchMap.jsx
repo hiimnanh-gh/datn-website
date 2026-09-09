@@ -7,7 +7,6 @@ import { RefreshCw, MapPin, Truck, Building2, AlertTriangle, ShieldCheck, Zap, C
 import { dispatchRequestService } from '../../../services/dispatchRequestService';
 import { dispatchResourceService } from '../../../services/dispatchResourceService';
 import { medicalHospitalService } from '../../../services/medicalHospitalService';
-import { callService } from '../../../services/callService';
 import wsService from '../../../services/websocket';
 import HeaderUserProfile from '../../../components/HeaderUserProfile';
 
@@ -144,29 +143,7 @@ const DispatchMap = () => {
       setResources(resList);
       setHospitals(hospList);
 
-      // Async background enrichment of requests with call info
-      Promise.all(
-        reqList.map(async (req) => {
-          if (!req.callId) return req;
-          try {
-            const call = await callService.getById(req.callId);
-            if (call) {
-              return {
-                ...req,
-                callerPhone: call.callerPhone || call.phoneNumber || call.phone || call.contactPhone || call.fromNumber || call.from,
-                callerName: call.callerName || call.contactName || call.victimName || call.name || call.fullName,
-                description: req.description || call.description || call.notes || call.note || call.locationDescription || call.reason,
-                address: req.address || call.address || call.callerAddress || call.location,
-              };
-            }
-          } catch (e) {
-            // ignore
-          }
-          return req;
-        })
-      ).then(enrichedList => {
-        setRequests(enrichedList);
-      });
+
     } catch (err) {
       console.error('Error fetching map snapshot data:', err);
     } finally {
