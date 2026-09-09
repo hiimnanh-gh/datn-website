@@ -50,7 +50,7 @@ const OperationsOverview = () => {
       const pastYear = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
       params.from = pastYear.toISOString();
       params.to = now.toISOString();
-      params.granularity = 'DAY';
+      params.granularity = 'MONTH';
     }
     return params;
   }, [selectedProviderId, timeRange]);
@@ -332,7 +332,13 @@ const OperationsOverview = () => {
               {seriesData.map((item, idx) => {
                 const reqHeight = Math.round(((item.requests || 0) / maxSeriesCount) * 100);
                 const compHeight = Math.round(((item.completed || 0) / maxSeriesCount) * 100);
-                const timeLabel = item.bucketStart ? new Date(item.bucketStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : idx;
+                const timeLabel = item.bucketStart 
+                  ? (timeRange === 'TODAY' 
+                      ? new Date(item.bucketStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : (timeRange === 'ALL'
+                          ? `T${new Date(item.bucketStart).getMonth() + 1}`
+                          : `${new Date(item.bucketStart).getDate()}/${new Date(item.bucketStart).getMonth() + 1}`))
+                  : idx;
 
                 return (
                   <div key={idx} className="flex-1 min-w-[28px] flex flex-col items-center gap-1 h-full justify-end group relative">

@@ -68,6 +68,19 @@ const formatSecondsToMinutes = (seconds) => {
   return s > 0 ? `${m}m ${s}s` : `${m}m`;
 };
 
+const formatBucketLabel = (bucketStart, range) => {
+  if (!bucketStart) return '';
+  const d = new Date(bucketStart);
+  if (isNaN(d.getTime())) return bucketStart;
+  if (range === 'TODAY') {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else if (range === 'ALL') {
+    return `T${d.getMonth() + 1}`;
+  } else {
+    return `${d.getDate()}/${d.getMonth() + 1}`;
+  }
+};
+
 const DispatcherDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [liveRequests, setLiveRequests] = useState([]);
@@ -102,7 +115,7 @@ const DispatcherDashboard = () => {
       const pastYear = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
       params.from = pastYear.toISOString();
       params.to = now.toISOString();
-      params.granularity = 'DAY';
+      params.granularity = 'MONTH';
     }
     return params;
   }, [timeRange]);
@@ -349,7 +362,7 @@ const DispatcherDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             
             {/* 1. Trend Over Time (Bar Chart) */}
-            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4 shadow-sm">
+            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4 shadow-sm min-w-0 overflow-hidden">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                   <BarChart2 className="text-red-400" size={16} />
@@ -366,14 +379,14 @@ const DispatcherDashboard = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="h-44 flex items-end gap-1 sm:gap-2 pt-6 pb-2 border-b border-slate-800">
+                  <div className="h-44 flex items-end gap-1 sm:gap-2 pt-6 pb-2 border-b border-slate-800 overflow-x-auto">
                     {seriesData.map((item, idx) => {
                       const count = item.requests ?? item.assigned ?? 0;
                       const completed = item.completed ?? 0;
                       const heightPercent = Math.min(100, Math.max(8, Math.round((count / maxSeries) * 100)));
 
                       return (
-                        <div key={idx} className="flex-1 flex flex-col items-center gap-1 group relative h-full justify-end">
+                        <div key={idx} className="flex-1 min-w-[24px] max-w-[48px] flex flex-col items-center gap-1 group relative h-full justify-end">
                           <div
                             style={{ height: `${heightPercent}%` }}
                             className="w-full max-w-[28px] bg-gradient-to-t from-red-600 to-amber-500 hover:brightness-125 rounded-t transition-all cursor-pointer relative"
@@ -382,8 +395,8 @@ const DispatcherDashboard = () => {
                               Tiếp nhận: {count} • Xong: {completed}
                             </div>
                           </div>
-                          <span className="text-[9px] font-mono text-slate-500 truncate max-w-full">
-                            {item.bucketStart ? item.bucketStart.slice(11, 16) || item.bucketStart.slice(5, 10) : `#${idx + 1}`}
+                          <span className="text-[9px] font-mono text-slate-500 truncate max-w-full text-center">
+                            {formatBucketLabel(item.bucketStart, timeRange) || `#${idx + 1}`}
                           </span>
                         </div>
                       );

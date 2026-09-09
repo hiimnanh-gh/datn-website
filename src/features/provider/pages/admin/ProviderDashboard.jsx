@@ -60,7 +60,7 @@ const ProviderDashboard = () => {
       const pastYear = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
       params.from = pastYear.toISOString();
       params.to = now.toISOString();
-      params.granularity = 'DAY';
+      params.granularity = 'MONTH';
     }
     return params;
   }, [timeRange]);
