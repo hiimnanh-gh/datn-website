@@ -320,57 +320,6 @@ const DispatcherDashboard = () => {
 
           </div>
 
-          {/* ── Quick Operation Hub Actions ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Link
-              to="/dispatcher/dispatch-requests"
-              className="p-4 bg-gradient-to-r from-red-950/60 to-slate-900 border border-red-500/40 hover:border-red-500 rounded-xl flex items-center justify-between transition-all group shadow-md"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 group-hover:scale-105 transition-transform">
-                  <ShieldAlert size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-100 group-hover:text-red-400 transition-colors">Bàn Tiếp Nhận & Điều Xe (SOS)</h3>
-                  <p className="text-xs text-slate-400">Xử lý hàng đợi ca cấp cứu và phát lệnh điều xe</p>
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-slate-500 group-hover:text-red-400 group-hover:translate-x-1 transition-all" />
-            </Link>
-
-            <Link
-              to="/dispatcher/dispatch-map"
-              className="p-4 bg-gradient-to-r from-indigo-950/60 to-slate-900 border border-indigo-500/40 hover:border-indigo-500 rounded-xl flex items-center justify-between transition-all group shadow-md"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
-                  <MapPin size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-100 group-hover:text-indigo-400 transition-colors">Bản Đồ Điều Phối Real-time</h3>
-                  <p className="text-xs text-slate-400">Theo dõi GPS trực tiếp xe cứu thương & bệnh viện</p>
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
-            </Link>
-
-            <Link
-              to="/dispatcher/dispatch-resources"
-              className="p-4 bg-gradient-to-r from-blue-950/60 to-slate-900 border border-blue-500/40 hover:border-blue-500 rounded-xl flex items-center justify-between transition-all group shadow-md"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
-                  <Truck size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-100 group-hover:text-blue-400 transition-colors">Quản Lý Phương Tiện & Tài Xế</h3>
-                  <p className="text-xs text-slate-400">Danh sách tài nguyên xe, đơn vị và tình trạng trực</p>
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-            </Link>
-          </div>
-
           {/* ── Operational Charts & Breakdowns ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             
